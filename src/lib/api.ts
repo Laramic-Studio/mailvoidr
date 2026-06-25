@@ -161,7 +161,18 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
   return fallback;
 }
 
+export interface HealthResponse {
+  status: string;
+  service: string;
+  timestamp: string;
+}
+
+export async function fetchHealth(): Promise<HealthResponse> {
+  const { data } = await api.get<HealthResponse>('/health');
+  return data;
+}
+
 export async function checkHealth(): Promise<boolean> {
-  const { data } = await api.get<{ status: string }>('/health');
+  const data = await fetchHealth();
   return data.status === 'ok';
 }

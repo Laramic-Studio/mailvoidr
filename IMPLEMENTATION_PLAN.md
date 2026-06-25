@@ -200,20 +200,22 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 **Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
 
-**Next up:** Marketing — Features page, then Pricing (wire to plans/credits API).
+**Next up:** Marketing — Docs landing (honest copy, remove fictional SDKs). Pricing skipped (Module 19 deferred).
 
-**Polish backlog:** Paid template marketplace, OAuth JWT exchange, SMTP path tracking, geo IP enrichment, CSV export, Module 23 CMS, Module 24 enterprise backend.
+**Polish backlog:** Paid template marketplace, OAuth JWT exchange, SMTP path tracking, geo IP enrichment, CSV export, Module 23 CMS, Module 24 enterprise backend, Blog/About/Enterprise marketing pages.
 
 ---
 
 ## Module 0 — Foundation + static marketing
 
-**Status: ✅ Shipped** (Home landing wired — honest copy + real API samples; Features/Pricing still on dummyData)
+**Status: ✅ Shipped** (Home + Features + Status wired — honest copy; Pricing still on dummyData)
 
 **Goal:** SPA deploys, talks to Laravel health check, marketing pages live without auth.
 
 ### Frontend files
-- `pages/marketing/Home.tsx` — **wired** (`content/marketing/home.ts`, health in footer)
+- `pages/marketing/Home.tsx` — **wired** (`content/marketing/home.ts`)
+- `pages/marketing/Features.tsx` — **wired** (`content/marketing/features.ts`)
+- `pages/marketing/Status.tsx` — **wired** (`content/marketing/status.ts`, live API health)
 - Other `pages/marketing/*` — still static / dummyData
 - `pages/docs/DocsLanding.tsx`, `pages/docs/DocsArticle.tsx` (static for now)
 - Layouts: `MarketingLayout`, `DocsLayout`
@@ -1051,7 +1053,7 @@ GET /search?q=...&types[]=sends&types[]=templates&types[]=domains&types[]=virtua
 | `Contact.tsx` | `POST /contact` → `contact_inquiries` table | ✅ Shipped |
 | `Pricing.tsx` | `GET /plans` (exists) | ✅ Static / existing |
 | `Blog.tsx` | CMS or MD files — defer | ⏸️ Deferred |
-| `Status.tsx` | External status API or manual JSON — defer | ⏸️ Deferred |
+| `Status.tsx` | Live probe of `GET /api/v1/health` + static component list | ✅ Shipped v1 |
 | `Enterprise.tsx` | Static + contact form | ✅ Marketing-only |
 
 ### Done when
