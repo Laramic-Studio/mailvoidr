@@ -1,4 +1,4 @@
-import type { InvitationPreview, Workspace, WorkspaceListResponse } from "@/types";
+import type { InvitationPreview, PendingInvitationsResponse, Workspace, WorkspaceListResponse } from "@/types";
 import { api } from "@/lib/api";
 
 export async function fetchWorkspaces(): Promise<WorkspaceListResponse> {
@@ -24,6 +24,16 @@ export async function fetchInvitation(workspaceId: string): Promise<InvitationPr
   return data;
 }
 
+export async function fetchInvitationByToken(token: string): Promise<InvitationPreview> {
+  const { data } = await api.get<InvitationPreview>(`/invitations/token/${token}`);
+  return data;
+}
+
+export async function fetchPendingInvitations(): Promise<PendingInvitationsResponse> {
+  const { data } = await api.get<PendingInvitationsResponse>("/invitations/pending");
+  return data;
+}
+
 export async function acceptInvitation(workspaceId: string): Promise<{
   message: string;
   workspace: Workspace;
@@ -34,6 +44,29 @@ export async function acceptInvitation(workspaceId: string): Promise<{
     workspace: Workspace;
     redirect: string;
   }>(`/invitations/${workspaceId}/accept`);
+  return data;
+}
+
+export async function acceptInvitationByToken(token: string): Promise<{
+  message: string;
+  workspace: Workspace;
+  redirect: string;
+}> {
+  const { data } = await api.post<{
+    message: string;
+    workspace: Workspace;
+    redirect: string;
+  }>(`/invitations/token/${token}/accept`);
+  return data;
+}
+
+export async function declineInvitationByToken(token: string): Promise<{
+  message: string;
+  redirect: string;
+}> {
+  const { data } = await api.post<{ message: string; redirect: string }>(
+    `/invitations/token/${token}/decline`,
+  );
   return data;
 }
 

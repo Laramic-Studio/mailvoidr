@@ -8,6 +8,10 @@ export const queryKeys = {
     all: ["workspaces"] as const,
     invitation: (workspaceId: string) => ["invitations", workspaceId] as const,
   },
+  invitationToken: (token: string) => ["invitations", "token", token] as const,
+  invitations: {
+    pending: ["invitations", "pending"] as const,
+  },
   virtualEmails: {
     all: (search?: string) => ["virtual-emails", search ?? ""] as const,
     detail: (id: string) => ["virtual-emails", id] as const,
@@ -49,5 +53,10 @@ export const queryKeys = {
     list: (filters: Record<string, string | undefined>) =>
       ['sends', 'list', filters.status ?? 'all', filters.search ?? '', filters.domain ?? 'all', filters.period ?? ''] as const,
     detail: (id: string) => ['sends', 'detail', id] as const,
+  },
+  team: {
+    members: (workspaceId: string) => ['team', workspaceId, 'members'] as const,
+    invitations: (workspaceId: string) => ['team', workspaceId, 'invitations'] as const,
+    activity: (workspaceId: string) => ['team', workspaceId, 'activity'] as const,
   },
 } as const;

@@ -1,5 +1,10 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  inviteAcceptPath,
+  postAuthDestination,
+  readPendingInviteToken,
+} from "@/lib/invite-flow";
 
 export function AuthLoading() {
   return (
@@ -7,18 +12,6 @@ export function AuthLoading() {
       Loading…
     </div>
   );
-}
-
-function postAuthRedirect(user: NonNullable<ReturnType<typeof useAuth>["user"]>) {
-  if (!user.email_verified) {
-    return "/verify-email";
-  }
-
-  if (!user.onboarding_completed) {
-    return "/onboarding";
-  }
-
-  return "/dashboard";
 }
 
 /** Requires a valid JWT session. */
@@ -40,6 +33,7 @@ export function ProtectedLayout() {
 /** Login, register, etc. — redirect away if already signed in. */
 export function GuestLayout() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <AuthLoading />;
@@ -50,13 +44,16 @@ export function GuestLayout() {
       return <AuthLoading />;
     }
 
-    return <Navigate to={postAuthRedirect(user)} replace />;
+    const inviteToken =
+      new URLSearchParams(location.search).get("invite_token") ?? readPendingInviteToken();
+
+    return <Navigate to={postAuthDestination(user, { inviteToken })} replace />;
   }
 
   return <Outlet />;
 }
 
-/** After auth: enforce verify-email → onboarding → dashboard order. */
+/** After auth: enforce verify-email → invite or onboarding → dashboard. */
 export function OnboardingLayout() {
   const { user, isLoading } = useAuth();
   const location = useLocation();
@@ -71,10 +68,14 @@ export function OnboardingLayout() {
   }
 
   if (!user.email_verified && path !== "/verify-email") {
-    return <Navigate to="/verify-email" replace />;
+    return <Navigate to={postAuthDestination(user)} replace />;
   }
 
   if (user.email_verified && !user.onboarding_completed && path !== "/onboarding") {
+    const invitePath = inviteAcceptPath();
+    if (invitePath) {
+      return <Navigate to={invitePath} replace />;
+    }
     return <Navigate to="/onboarding" replace />;
   }
 

@@ -1,17 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acceptInvitation,
+  acceptInvitationByToken,
   createWorkspace,
   declineInvitation,
+  declineInvitationByToken,
   fetchInvitation,
+  fetchInvitationByToken,
+  fetchPendingInvitations,
   fetchWorkspaces,
   flattenWorkspaces,
   switchWorkspace,
 } from "@/lib/api/workspaces";
+import { clearPendingInvite } from "@/lib/invite-flow";
 import { queryKeys } from "@/lib/query-keys";
-import { useWorkspaceStore } from "@/stores/workspace-store";
-import { WORKSPACE_STORAGE_KEY } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { WORKSPACE_STORAGE_KEY } from "@/lib/api";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useMemo, useEffect } from "react";
 
 export function useWorkspaces() {
@@ -61,7 +66,7 @@ export function useWorkspaceMutations() {
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all });
-    await queryClient.invalidateQueries({ queryKey: ['settings'] });
+    await queryClient.invalidateQueries({ queryKey: ["settings"] });
     await refreshUser();
   };
 
@@ -93,6 +98,26 @@ export function useInvitation(workspaceId: string | null) {
   });
 }
 
+export function useInvitationByToken(token: string | null) {
+  return useQuery({
+    queryKey: queryKeys.invitationToken(token ?? ""),
+    queryFn: () => fetchInvitationByToken(token!),
+    enabled: Boolean(token),
+    retry: false,
+  });
+}
+
+export function usePendingInvitations() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: queryKeys.invitations.pending,
+    queryFn: fetchPendingInvitations,
+    enabled: Boolean(user?.email_verified),
+    retry: false,
+  });
+}
+
 export function useInvitationMutations(workspaceId: string) {
   const queryClient = useQueryClient();
   const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
@@ -101,15 +126,44 @@ export function useInvitationMutations(workspaceId: string) {
   const accept = useMutation({
     mutationFn: () => acceptInvitation(workspaceId),
     onSuccess: async ({ workspace }) => {
+      clearPendingInvite();
       setWorkspace(workspace);
       await refreshUser();
       await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all });
       await queryClient.invalidateQueries({ queryKey: queryKeys.me });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.invitations.pending });
     },
   });
 
   const decline = useMutation({
     mutationFn: () => declineInvitation(workspaceId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all });
+    },
+  });
+
+  return { accept, decline };
+}
+
+export function useInvitationTokenMutations(token: string) {
+  const queryClient = useQueryClient();
+  const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
+  const refreshUser = useAuth().refreshUser;
+
+  const accept = useMutation({
+    mutationFn: () => acceptInvitationByToken(token),
+    onSuccess: async ({ workspace }) => {
+      clearPendingInvite();
+      setWorkspace(workspace);
+      await refreshUser();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.me });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.invitations.pending });
+    },
+  });
+
+  const decline = useMutation({
+    mutationFn: () => declineInvitationByToken(token),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all });
     },

@@ -77,10 +77,10 @@ function App() {
           {/* Mid-login 2FA — no session yet */}
           <Route path="/2fa" element={<TwoFA />} />
 
+          <Route path="/invite" element={<InviteAccept />} />
+
           {/* Authenticated app */}
           <Route element={<ProtectedLayout />}>
-            <Route path="/invite" element={<InviteAccept />} />
-
             <Route element={<OnboardingLayout />}>
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/onboarding" element={<Onboarding />} />

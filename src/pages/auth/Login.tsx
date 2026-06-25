@@ -1,18 +1,33 @@
-import { type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { type FormEvent, useEffect } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+import { inviteAcceptPath, postAuthDestination, storePendingInviteToken } from "@/lib/invite-flow";
 import { Github, Mail } from "lucide-react";
 
 export default function Login() {
   const nav = useNavigate();
   const location = useLocation();
-  const redirectTo = (location.state as { from?: string } | null)?.from;
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite_token");
+  const redirectTo =
+    inviteAcceptPath(inviteToken) ??
+    (location.state as { from?: string } | null)?.from ??
+    null;
+  const registerHref = inviteToken
+    ? `/register?invite_token=${encodeURIComponent(inviteToken)}`
+    : "/register";
   const { login } = useAuth();
   const { loading, run } = useAsyncAction();
+
+  useEffect(() => {
+    if (inviteToken) {
+      storePendingInviteToken(inviteToken);
+    }
+  }, [inviteToken]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,11 +40,19 @@ export default function Login() {
       });
 
       if (response.two_factor_required && response.login_token) {
-        nav("/2fa", { state: { login_token: response.login_token } });
+        nav("/2fa", {
+          state: {
+            login_token: response.login_token,
+            redirectTo: redirectTo ?? postAuthDestination({ email_verified: true, onboarding_completed: false }, { inviteToken }),
+          },
+        });
         return;
       }
 
-      nav(redirectTo || "/dashboard");
+      nav(
+        redirectTo ??
+          postAuthDestination(response.user, { inviteToken }),
+      );
     }, { fallbackMessage: "Sign in failed" });
   }
 
@@ -75,7 +98,7 @@ export default function Login() {
         </fieldset>
       </form>
       <p className="mt-6 text-center text-[13px] text-muted-foreground">
-        Don&apos;t have an account? <Link to="/register" className="text-foreground hover:underline">Create one</Link>
+        Don&apos;t have an account? <Link to={registerHref} className="text-foreground hover:underline">Create one</Link>
       </p>
     </AuthLayout>
   );

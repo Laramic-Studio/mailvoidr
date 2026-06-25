@@ -1,18 +1,53 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { OtpInput } from "@/components/auth/OtpInput";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { resendEmailOtp, verifyEmailOtp } from "@/lib/api/auth";
+import { fetchPendingInvitations } from "@/lib/api/workspaces";
+import {
+  inviteAcceptPath,
+  readPendingInviteToken,
+  storePendingInviteToken,
+  storePendingInviteWorkspace,
+} from "@/lib/invite-flow";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { Mail } from "lucide-react";
 
 const OTP_LENGTH = 6;
 
+async function resolvePostVerifyDestination(inviteToken: string | null): Promise<string> {
+  const token = inviteToken ?? readPendingInviteToken();
+  if (token) {
+    storePendingInviteToken(token);
+    const invitePath = inviteAcceptPath(token);
+    if (invitePath) return invitePath;
+  }
+
+  try {
+    const pending = await fetchPendingInvitations();
+    const first = pending.data[0];
+    if (first) {
+      if (first.invite_token) {
+        storePendingInviteToken(first.invite_token);
+        return inviteAcceptPath(first.invite_token)!;
+      }
+      storePendingInviteWorkspace(first.workspace_id);
+      return inviteAcceptPath(null, first.workspace_id)!;
+    }
+  } catch {
+    // Fall through to onboarding when pending invites cannot be loaded.
+  }
+
+  return "/onboarding";
+}
+
 export default function VerifyEmail() {
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite_token");
   const { user, refreshUser } = useAuth();
   const { loading, run } = useAsyncAction();
   const [resending, setResending] = useState(false);
@@ -24,7 +59,8 @@ export default function VerifyEmail() {
     await run(async () => {
       await verifyEmailOtp(code);
       await refreshUser();
-      nav("/onboarding");
+      const destination = await resolvePostVerifyDestination(inviteToken);
+      nav(destination);
     }, { fallbackMessage: "Invalid verification code" });
   }
 
@@ -52,7 +88,9 @@ export default function VerifyEmail() {
       <p className="mt-2 text-sm text-muted-foreground">
         We sent a 6-digit code to{" "}
         <span className="font-mono text-foreground">{user?.email ?? "your email"}</span>.
-        You can paste the full code into the first box.
+        {inviteToken || readPendingInviteToken() ? (
+          <> After verifying, you&apos;ll return to your workspace invitation.</>
+        ) : null}
       </p>
       <form data-testid="verify-form" onSubmit={handleSubmit} className="mt-8 space-y-6">
         <fieldset disabled={inputsDisabled} className="space-y-6 border-0 p-0 m-0 min-w-0">

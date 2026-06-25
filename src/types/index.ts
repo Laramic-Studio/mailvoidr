@@ -74,6 +74,80 @@ export interface InvitationPreview {
   role: string;
   invited_by: UserSummary | null;
   invited_at: string | null;
+  email?: string;
+  requires_signup?: boolean;
+}
+
+export interface PendingInvitation {
+  workspace_id: string;
+  role: string;
+  invited_at: string | null;
+  invite_token: string | null;
+  workspace: Workspace;
+}
+
+export interface PendingInvitationsResponse {
+  data: PendingInvitation[];
+}
+
+export interface WorkspaceRoleOption {
+  value: string;
+  label: string;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  role_label: string;
+  joined_at: string | null;
+  last_active_at: string | null;
+  membership_id: string | null;
+}
+
+export interface TeamMemberListResponse {
+  data: TeamMember[];
+  meta: {
+    can_manage: boolean;
+    assignable_roles: WorkspaceRoleOption[];
+  };
+}
+
+export interface TeamInvitation {
+  id: string;
+  type?: 'member' | 'email';
+  user_id: string | null;
+  email: string;
+  name: string | null;
+  role: string;
+  role_label: string;
+  invited_at: string | null;
+  expires_at: string | null;
+  invited_by_id: string;
+}
+
+export interface TeamInvitationListResponse {
+  data: TeamInvitation[];
+}
+
+export interface TeamActivity {
+  id: string;
+  event: string;
+  summary: string;
+  metadata: Record<string, unknown> | null;
+  occurred_at: string;
+  actor: UserSummary | null;
+}
+
+export interface TeamActivityListResponse {
+  data: TeamActivity[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
 export interface VirtualEmail {

@@ -1,16 +1,27 @@
-import { type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { type FormEvent, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+import { useInvitationByToken } from "@/hooks/useWorkspaces";
+import { storePendingInviteToken, verifyEmailPath } from "@/lib/invite-flow";
 import { Github, Mail, Check } from "lucide-react";
 
 export default function Register() {
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite_token");
+  const invitePreview = useInvitationByToken(inviteToken);
   const { register } = useAuth();
   const { loading, run } = useAsyncAction();
+
+  useEffect(() => {
+    if (inviteToken) {
+      storePendingInviteToken(inviteToken);
+    }
+  }, [inviteToken]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -18,21 +29,35 @@ export default function Register() {
     const password = String(form.get("password"));
 
     await run(async () => {
+      if (inviteToken) {
+        storePendingInviteToken(inviteToken);
+      }
+
       await register({
         name: String(form.get("name")),
         email: String(form.get("email")),
         password,
         password_confirmation: password,
+        invite_token: inviteToken ?? undefined,
       });
-      nav("/verify-email");
+
+      nav(verifyEmailPath(inviteToken));
     }, { fallbackMessage: "Registration failed" });
   }
+
+  const loginHref = inviteToken
+    ? `/login?invite_token=${encodeURIComponent(inviteToken)}`
+    : "/login";
 
   return (
     <AuthLayout>
       <div>
         <h1 className="text-2xl tracking-tight font-medium">Create your account</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">Start sending in under 5 minutes. No credit card required.</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {invitePreview.data?.workspace
+            ? `Join ${invitePreview.data.workspace.name} on Mailvoidr.`
+            : "Start sending in under 5 minutes. No credit card required."}
+        </p>
       </div>
       <div className="mt-8 space-y-2.5">
         <button type="button" disabled={loading} data-testid="social-github" className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed">
@@ -63,6 +88,8 @@ export default function Register() {
             name="email"
             type="email"
             required
+            defaultValue={invitePreview.data?.email ?? ""}
+            readOnly={Boolean(invitePreview.data?.email)}
             placeholder="you@company.com"
             data-testid="field-email"
             autoComplete="email"
@@ -91,7 +118,7 @@ export default function Register() {
         </fieldset>
       </form>
       <p className="mt-6 text-center text-[13px] text-muted-foreground">
-        Already have an account? <Link to="/login" className="text-foreground hover:underline">Sign in</Link>
+        Already have an account? <Link to={loginHref} className="text-foreground hover:underline">Sign in</Link>
       </p>
     </AuthLayout>
   );
