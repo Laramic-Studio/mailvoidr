@@ -42,6 +42,8 @@ Two different concepts — do not merge them in the backend:
 3. Create `src/types/` — `User`, `Workspace`, `VirtualEmail`, `SandboxInbox`, `Email`, API envelopes
 4. Type the axios client and React Query hooks as modules ship
 
+**Status: ✅ Done (Module 0).** All `frontend/src/` app code is TypeScript.
+
 Do **not** migrate mid-rollout (e.g. during Module 4) — finish TS in Module 0 or stay JS for the whole project.
 
 ---
@@ -97,18 +99,18 @@ Do **not** migrate mid-rollout (e.g. during Module 4) — finish TS in Module 0 
 
 | Task | Location |
 |------|----------|
-| API client (axios + interceptors) | `frontend/src/lib/api.js` |
-| Auth context + token storage | `frontend/src/contexts/AuthContext.jsx` |
-| Workspace context | `frontend/src/contexts/WorkspaceContext.jsx` |
-| Protected route wrapper | `frontend/src/components/ProtectedRoute.jsx` |
-| React Query provider | wire in `frontend/src/index.jsx` (already installed) |
-| Env | `VITE_API_URL=https://app.mailvoidr.com/api/v1` |
-| CORS | Laravel `config/cors.php` — allow SPA origin |
+| API client (axios + interceptors) | `frontend/src/lib/api.ts` |
+| Auth store + hooks | `frontend/src/stores/auth-store.ts`, `hooks/useAuth.ts` |
+| Workspace store + hooks | `frontend/src/stores/workspace-store.ts`, `hooks/useWorkspaces.ts` |
+| Route guards (auth + onboarding) | `frontend/src/routes/guards.tsx` |
+| React Query provider | `frontend/src/index.tsx` |
+| Env | `VITE_API_URL`, `VITE_WS_URL` in `frontend/.env` |
+| CORS | Laravel `config/cors.php` — `FRONTEND_URL` |
 
 **Fix during Module 0:**
-- Mount `ThemeProvider` in `index.jsx`
-- Fix broken links: `/workspace/select` → `/workspaces`
-- Add missing route: `/dashboard/templates/:id`
+- [x] Mount `ThemeProvider` in `index.tsx`
+- [x] Fix broken links: `/workspace/select` → `/workspaces`
+- [x] Add missing route: `/dashboard/templates/:id`
 
 ---
 
@@ -160,33 +162,56 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | 23 | Docs CMS | Lowest | — |
 | 24 | Enterprise / status page | Lowest | — |
 
+### Shipped progress (SPA + API)
+
+| # | Module | Status | Backend tests |
+|---|--------|--------|---------------|
+| 0 | Foundation + marketing | ✅ Shipped | health route |
+| 1 | Authentication | ✅ Shipped* | `tests/Unit/Api/V1/Auth/` |
+| 2 | Onboarding wizard | ✅ Shipped | `tests/Unit/Api/V1/Onboarding/` |
+| 3 | Workspaces + invites | ✅ Shipped | `tests/Unit/Api/V1/Workspace/` |
+| 4 | Virtual emails (list) | ✅ Shipped | `tests/Unit/Api/V1/VirtualEmail/VirtualEmailTest.php` |
+| 5 | Virtual email detail | ✅ Shipped | `tests/Unit/Api/V1/VirtualEmail/VirtualEmailMessageTest.php` |
+| 6 | Sandbox inbox | ✅ Shipped v1 | `tests/Unit/Api/V1/Sandbox/` |
+| 7+ | — | ⏳ Not started | — |
+
+\*Module 1 gaps: OAuth buttons in SPA are UI-only (no JWT exchange yet); 401 clears session instead of silent `POST /auth/refresh`.
+
+**Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
+
+**Next up:** Module 7 — Domains.
+
 ---
 
 ## Module 0 — Foundation + static marketing
+
+**Status: ✅ Shipped**
 
 **Goal:** SPA deploys, talks to Laravel health check, marketing pages live without auth.
 
 ### Frontend files
 - All `pages/marketing/*`
-- `pages/docs/DocsLanding.jsx`, `pages/docs/DocsArticle.jsx` (static for now)
+- `pages/docs/DocsLanding.tsx`, `pages/docs/DocsArticle.tsx` (static for now)
 - Layouts: `MarketingLayout`, `DocsLayout`
 
 ### Backend
 - `GET /api/v1/health` → `{ status: "ok" }`
-- CORS + JWT package installed (no routes yet)
+- CORS + JWT package installed
 
 ### Done when
-- [ ] `yarn dev` + `php artisan serve` — health check passes from browser
-- [ ] Marketing routes render with real deploy URL
-- [ ] API client + auth shell exist (empty stubs OK)
+- [x] `yarn dev` + Laravel — health check passes from browser
+- [x] Marketing routes render with real deploy URL
+- [x] API client + auth shell exist (`lib/api.ts`, `hooks/useAuth.ts`, route guards)
 
 ---
 
 ## Module 1 — Authentication
 
+**Status: ✅ Shipped** (OAuth SPA + silent refresh deferred)
+
 **Goal:** Real login/register/reset/verify/2FA. Unauthenticated users cannot reach `/dashboard/*` or `/onboarding`.
 
-**Onboarding note:** Module 1 sets up redirect plumbing only (`onboarding_completed` on `/auth/me` + `OnboardingGate`). The wizard (including workspace create) is **Module 2**.
+**Onboarding note:** Module 1 sets up redirect plumbing only (`onboarding_completed` on `/auth/me` + `OnboardingLayout` in `routes/guards.tsx`). The wizard (including workspace create) is **Module 2**.
 
 ### Frontend pages
 | Route | File |
@@ -198,8 +223,8 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | `/verify-email` | `pages/auth/VerifyEmail.tsx` |
 | `/2fa` | `pages/auth/TwoFA.tsx` |
 
-New shared component:
-- `components/OnboardingGate.tsx` — if authenticated but `!onboarding_completed`, redirect `/onboarding` (except when already on `/onboarding`)
+Route guards (replaces standalone `OnboardingGate` component):
+- `routes/guards.tsx` — `ProtectedLayout`, `GuestLayout`, `OnboardingLayout` enforce verify → onboarding → dashboard order
 
 ### Backend — new `routes/api/v1/auth.php`
 
@@ -235,17 +260,20 @@ Login    → (2FA if enabled) → /onboarding if !onboarding_completed else /das
 ```
 
 ### Done when
-- [ ] JWT access + refresh works; 401 triggers refresh or logout
-- [ ] Email OTP verification blocks dashboard until verified
-- [ ] 2FA challenge works end-to-end
-- [ ] OAuth buttons redirect and return with valid JWT
-- [ ] `ProtectedRoute` guards `/dashboard/*`, `/onboarding`, `/workspaces`
-- [ ] `GET /auth/me` returns `onboarding_completed: boolean`
-- [ ] `OnboardingGate` sends incomplete users to `/onboarding` after login
+- [x] JWT login + register works; 401 clears session and redirects to login
+- [ ] Silent token refresh on 401 (`POST /auth/refresh` exists in API; not wired in axios interceptor)
+- [x] Email OTP verification blocks dashboard until verified
+- [x] 2FA challenge works end-to-end (login → `/2fa` → dashboard)
+- [ ] OAuth buttons redirect and return with valid JWT (buttons present; Laravel Socialite is web-only today)
+- [x] Route guards protect `/dashboard/*`, `/onboarding`, `/workspaces`
+- [x] `GET /auth/me` returns `onboarding_completed: boolean`
+- [x] `OnboardingLayout` sends incomplete users to `/onboarding` after login
 
 ---
 
 ## Module 2 — Onboarding wizard
+
+**Status: ✅ Shipped**
 
 **Goal:** Wire `/onboarding` end-to-end. **Workspace creation lives here** — not a separate module before this.
 
@@ -280,7 +308,7 @@ Reuse internally: `Workspace` model, `WorkspaceController@store` logic (extract 
 ### On `POST /onboarding/complete`
 1. Set `users.onboarding_completed_at = now()`
 2. Ensure workspace exists + `selected_workspace_id` set
-3. Create **sandbox inbox** if missing (stub until Module 6)
+3. Create **sandbox inbox** if missing (implemented — see Module 6)
 4. Return `{ redirect: "/dashboard" }`
 
 ### Schema changes
@@ -294,15 +322,19 @@ onboarding_step          TINYINT nullable
 ```
 
 ### Done when
-- [ ] New user lands on `/onboarding` after verify (never completed)
-- [ ] Step 1 creates a real workspace (not dummy state)
-- [ ] Each step persists to backend
-- [ ] Complete → `/dashboard`; returning user skips wizard
-- [ ] Invited user skips onboarding on invite accept (Module 3)
+- [x] New user lands on `/onboarding` after verify (never completed)
+- [x] Step 1 creates a real workspace (not dummy state)
+- [x] Each step persists to backend (`PATCH /onboarding/step`, workspace create/update)
+- [x] Complete → `/dashboard`; returning user skips wizard
+- [x] Invited user skips onboarding on invite accept (Module 3)
+
+**Shipped extras:** referral source field on workspace step (`referral_source` on users).
 
 ---
 
 ## Module 3 — Workspaces + invites
+
+**Status: ✅ Shipped**
 
 **Goal:** **Post-onboarding** workspace management — switching, multi-workspace picker, invite accept. **Not** the first-time signup path.
 
@@ -319,9 +351,9 @@ onboarding_step          TINYINT nullable
 | `/workspaces` | `pages/auth/WorkspaceSelect.tsx` |
 | `/invite` | `pages/auth/InviteAccept.tsx` |
 
-Also wire workspace switcher in `components/layouts/DashboardLayout.tsx`.
+Also wire workspace switcher in `components/dashboard/WorkspaceSwitcher.tsx` (used in `DashboardLayout.tsx`).
 
-### Backend — `routes/api/v1/workspaces.php`
+### Backend — `routes/api/v1.php` (workspaces group)
 
 | Method | Path | Reuse |
 |--------|------|-------|
@@ -330,25 +362,28 @@ Also wire workspace switcher in `components/layouts/DashboardLayout.tsx`.
 | GET | `/workspaces/{id}` | Show |
 | PATCH | `/workspaces/{id}` | Update name, slug, description |
 | POST | `/workspaces/{id}/switch` | `WorkspaceSwitchController` |
-| POST | `/invitations/{token}/accept` | Accept invite → skip onboarding, set `onboarding_completed_at` |
-| POST | `/invitations/{token}/decline` | Decline |
+| POST | `/invitations/{workspace}/accept` | Accept invite → skip onboarding, set `onboarding_completed_at` |
+| POST | `/invitations/{workspace}/decline` | Decline |
 
 Team invites (send invite, manage members) → **Module 14 Teams**.
 
 ### Done when
-- [ ] Dashboard switcher lists real workspaces
-- [ ] Switching updates `selected_workspace_id` + `X-Workspace-Id` header
-- [ ] `/workspaces` works for multi-workspace users
-- [ ] Invite accept lands on dashboard (onboarding skipped)
+- [x] Dashboard switcher lists real workspaces
+- [x] Switching updates `selected_workspace_id` + `X-Workspace-Id` header
+- [x] `/workspaces` works for multi-workspace users
+- [x] Invite accept lands on dashboard (onboarding skipped) — `/invite?workspace={id}`
 
 ---
 
 ## Module 4 — Inboxes (virtual emails)
 
+**Status: ✅ Shipped**
+
 **Goal:** Users create **multiple virtual email addresses** per workspace. Maps to `virtual_email_addresses` — same as `ui/resources/js/pages/test-emails/*`.
 
 ### Frontend
-- `pages/dashboard/Inboxes.jsx` — list + create modal
+- `pages/dashboard/VirtualEmails.tsx` — list + create modal (`VirtualEmailCreateDialog.tsx`)
+- Hooks: `hooks/useVirtualEmails.ts`, `lib/api/virtual-emails.ts`
 
 ### Backend — `routes/api/v1/virtual-emails.php`
 
@@ -374,19 +409,21 @@ label        VARCHAR nullable   -- maps to `name` or new column
 Emails link via `emails.virtual_email_address_id` (already exists).
 
 ### Done when
-- [ ] Create modal persists virtual email with label, TTL, optional forward
-- [ ] Table shows address, message/unread counts, TTL, forwarding
-- [ ] Copy address button works
+- [x] Create modal persists virtual email with label, TTL, optional forward
+- [x] Table shows address, message/unread counts, TTL, forwarding
+- [x] Copy address button works
 - [ ] Plan limits enforced when billing module lands
 
 ---
 
 ## Module 5 — Virtual email detail + messages
 
+**Status: ✅ Shipped**
+
 **Goal:** Read mail captured by a **virtual email address** (not the sandbox inbox).
 
 ### Frontend
-- `pages/dashboard/InboxDetail.jsx` — route stays `/dashboard/virtual-emails/:id`
+- `pages/dashboard/VirtualEmailDetail.tsx` — route `/dashboard/virtual-emails/:id`
 
 ### Backend
 
@@ -405,44 +442,60 @@ Reuse: `Api/EmailController`, `test-emails` APIs — scope by virtual email id.
 - Optional: `spam_score` on `emails` (nullable) for UI badge — populate later
 
 ### Done when
-- [ ] Message list + detail split view works per virtual email
-- [ ] Tabs: Preview, HTML, Raw, Headers, Attachments render real data
-- [ ] Delete virtual email + refresh works
+- [x] Message list + detail split view works per virtual email
+- [x] Tabs: Preview, HTML, Raw, Headers, Attachments render real data
+- [x] Delete virtual email + refresh works
 
 ---
 
 ## Module 6 — Email testing (sandbox inbox)
 
+**Status: ✅ Shipped v1**
+
 **Goal:** **One sandbox inbox** per user/workspace — SMTP credentials, captured messages, spam/render tools. Maps to `inboxes` table + `ui/resources/js/pages/dashboard.tsx`.
 
 ### Frontend
-- `pages/dashboard/Testing.jsx` — sandbox tab, SMTP panel, spam/preview/headers/source tabs
+- `pages/dashboard/Inbox.tsx` — Mailtrap-style master/detail inbox (replaces prototype `Testing.jsx`)
+- `hooks/useSandbox.ts`, `hooks/useSandboxRealtime.ts`, `lib/api/sandbox.ts`
+- `lib/email-socket.ts` — Socket.IO client (`VITE_WS_URL` → smtp `HTTP_PORT`, default **3030**)
 
-### Backend — `routes/api/v1/sandbox.php`
+### Backend — `routes/api/v1.php` (sandbox group, `throttle:inbox-api`)
 
-| Method | Path | Reuse |
+| Method | Path | Notes |
 |--------|------|-------|
 | GET | `/sandbox` | User/workspace **single** `Inbox` + SMTP creds |
-| GET | `/sandbox/messages` | `Email` where `inbox_id` = sandbox inbox |
-| GET | `/sandbox/messages/{id}` | message detail |
-| POST | `/sandbox/enable` | Create inbox if missing (on signup or first visit) |
+| POST | `/sandbox/enable` | Create inbox if missing |
+| GET | `/sandbox/messages` | Paginated list |
+| GET | `/sandbox/messages/{id}` | Message detail |
+| GET | `/sandbox/messages/{id}/sidebar` | Lightweight row for realtime upsert |
+| GET | `/sandbox/messages/{id}/raw` | Raw MIME |
+| DELETE | `/sandbox/messages` | Clear all messages |
+| POST | `/sandbox/messages/mark-all-read` | Mark all read |
 
-Reuse: `Inbox` model (one per user/workspace), `Api/EmailController` inbox resolution, existing SMTP inbound on `:2525`.
+Reuse: `SandboxService`, `SandboxInboxResource`, `Inbox` model, inbound SMTP on `:2525`.
+
+**smtp/ on ingest:** `services/emailAnalysisService.ts` writes heuristic spam + HTML check to `email_analyses` table.
 
 **Do not** allow multiple sandbox inboxes. "Projects" tab in UI — defer to v2 or map to virtual emails.
 
 ### Schema changes
-- Keep `inboxes` as-is (one row per user or per workspace — decide and enforce unique constraint)
-- Spam report: stub until analysis engine exists
+- `email_analyses` table + `EmailAnalysis` model (migration `2026_06_25_120000_create_email_analyses_table`)
+- Unique constraint on one inbox per workspace — **not yet enforced** (defer)
 
 ### Done when
-- [ ] Sandbox tab shows real messages from the user's single inbox
-- [ ] SMTP credential snippet uses real `inboxes.username` / `password`
-- [ ] Spam/render tabs show best-effort data (do not remove tabs)
+- [x] Inbox shows real messages from the user's single sandbox inbox
+- [x] SMTP credential modal uses real `inboxes.username` / `password` + `MAILVOIDR_SANDBOX_SMTP_HOST`
+- [x] Spam Analysis + HTML Check tabs show data from `email_analyses`
+- [x] Socket.IO realtime (`new-email` event) updates list without refresh
+- [x] Responsive layout + desktop/mobile HTML preview toggle
+
+**Deferred v2:** cursor pagination, production spam/HTML engines, DB unique constraint on sandbox inbox.
 
 ---
 
 ## Module 7 — Domains
+
+**Status: ⏳ Not started** (UI prototype exists at `pages/dashboard/Domains.tsx` — still dummy data)
 
 **Goal:** Add/verify custom sending domains with DNS instructions.
 
@@ -900,25 +953,28 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 ## Frontend wiring checklist (per module)
 
-1. Create `frontend/src/api/<module>.js` — typed fetch functions
+1. Create `frontend/src/lib/api/<module>.ts` — typed fetch functions
 2. Add React Query hooks in `frontend/src/hooks/`
 3. Replace imports from `@/lib/dummyData` in the target page(s)
 4. Add loading/error/empty states (use existing `EmptyState`, skeletons)
 5. Manual test against staging API
 6. Remove unused dummy exports only after module ships
+7. Update [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) with server config for the module
 
 ---
 
 ## Known frontend gaps (fix when touching module)
 
-| Issue | Fix in |
-|-------|--------|
-| `/dashboard/templates/:id` not routed | Module 16 — `App.jsx` |
-| `/workspace/select` wrong link | Module 3 — `DashboardLayout.tsx` |
-| `ThemeProvider` not mounted | Module 0 — `index.jsx` |
-| Region selectors in onboarding/domains/settings | Hide/stub — Modules 2, 7, 13 |
-| Analytics tabs all show same content | Module 18 — split tab components |
-| `SCHEDULED_EMAILS`, `CAMPAIGNS` unused in dummyData | Wire in Modules 10/16 or leave for later |
+| Issue | Fix in | Status |
+|-------|--------|--------|
+| `/dashboard/templates/:id` not routed | Module 16 — `App.tsx` | ✅ Routed (page still dummy data) |
+| `/workspace/select` wrong link | Module 3 — `DashboardLayout.tsx` | ✅ Fixed → `/workspaces` |
+| `ThemeProvider` not mounted | Module 0 — `index.tsx` | ✅ Fixed |
+| Silent JWT refresh on 401 | Module 1 — `lib/api.ts` | ⏳ Deferred |
+| OAuth → JWT in SPA | Module 1 — auth pages | ⏳ Deferred |
+| Region selectors in onboarding/domains/settings | Hide/stub — Modules 2, 7, 13 | Partial (onboarding hides region) |
+| Analytics tabs all show same content | Module 18 — split tab components | ⏳ Pending |
+| `SCHEDULED_EMAILS`, `CAMPAIGNS` unused in dummyData | Wire in Modules 10/16 or leave for later | ⏳ Pending |
 
 ---
 
@@ -935,27 +991,24 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 ## Deployment notes
 
-- Build SPA: `cd frontend && yarn build` → serve `dist/` via Nginx at `app.mailvoidr.com` or subpath
+- Build SPA: `cd frontend && npm run build` → serve `dist/` via Nginx at `app.mailvoidr.com`
 - Laravel API stays at `app.mailvoidr.com/api/v1`
 - Same cookie domain not required (JWT in memory/localStorage)
-- WebSocket (`smtp/:3000`) for realtime inbox updates — optional Phase 5 enhancement
+- WebSocket (Socket.IO) on smtp `HTTP_PORT` (default **3030**); proxy `/socket.io/` via Nginx in production
+- Full per-module deploy checklist: [DEPLOY-STEPS.md](../DEPLOY-STEPS.md)
 
 ---
 
-## Suggested first sprint (Modules 0–2)
+## Suggested sprint order (updated)
 
-**Goal:** User can register, verify, complete onboarding (with workspace), land on dashboard.
+**Completed (Modules 0–6):** Foundation, auth, onboarding, workspaces, virtual emails, sandbox inbox + realtime WS.
 
-1. Install JWT in Laravel, CORS, health route ✅ (Module 0)
-2. Frontend API client + auth context + protected routes ✅ (Module 0)
-3. **Module 1** — Auth ✅ (login, register, verify OTP, 2FA, `OnboardingGate`)
-4. **Module 2** — Wire `/onboarding` (workspace create inside wizard + complete)
-5. Deploy SPA to staging — full signup → onboarding → dashboard
+**Current sprint — Module 7:** Domains (API + wire `Domains.tsx`).
 
-**Next sprint:** Module 3 (workspace switch + invites), then Modules 4–6 (virtual emails + sandbox).  
-**Third sprint:** Modules 7–11 (outbound sending stack).  
-**Fourth+:** Overview, settings, teams, then templates/webhooks/analytics/billing.
+**Then:** Modules 8–11 (API keys, SMTP credentials, send, email logs) — outbound sending stack.
+
+**Later:** Module 12 overview (aggregate stats — do last among core dashboard pages), then settings, teams, templates/webhooks/analytics/billing.
 
 ---
 
-*Last updated: June 2025 — revise this doc when a module ships or scope changes.*
+*Last updated: June 2026 — Modules 0–6 shipped in SPA. Revise when a module ships or scope changes.*

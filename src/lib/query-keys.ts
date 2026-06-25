@@ -25,4 +25,7 @@ export const queryKeys = {
     message: (messageId: string) => ['sandbox', 'message', messageId] as const,
     messageRaw: (messageId: string) => ['sandbox', 'message', messageId, 'raw'] as const,
   },
+  domains: {
+    all: ['domains'] as const,
+  },
 } as const;

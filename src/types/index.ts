@@ -161,6 +161,38 @@ export interface SandboxResponse {
   stats: SandboxStats | null;
 }
 
+export interface DomainDnsRecord {
+  type: string;
+  name: string;
+  value: string;
+  purpose: string;
+  note?: string;
+}
+
+export interface DomainRecordStatus {
+  ownership: 'pass' | 'pending' | 'fail';
+  spf: 'pass' | 'pending' | 'fail';
+  dkim: 'pass' | 'pending' | 'fail';
+}
+
+export interface VerifiedDomain {
+  id: string;
+  domain: string;
+  status: 'pending' | 'verified' | 'failed';
+  ownership_verified: boolean;
+  dkim_verified: boolean;
+  spf_verified: boolean;
+  verified_at: string | null;
+  last_checked_at: string | null;
+  created_at: string | null;
+  dns_records: DomainDnsRecord[];
+  records: DomainRecordStatus;
+}
+
+export interface DomainListResponse {
+  data: VerifiedDomain[];
+}
+
 export interface ApiErrorBody {
   message: string;
   errors?: Record<string, string[]>;

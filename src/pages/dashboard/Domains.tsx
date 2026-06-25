@@ -1,135 +1,369 @@
-import { DashboardLayout } from "@/components/layouts/DashboardLayout";
-import { PageHeader } from "@/components/PageHeader";
-import { DOMAINS, DNS_RECORDS } from "@/lib/dummyData";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, ShieldCheck, Globe, Copy, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Fragment, useState } from 'react';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { useDomainMutations, useDomains } from '@/hooks/useDomains';
+import { toastError, toastSuccess } from '@/lib/toast';
+import type { DomainDnsRecord, VerifiedDomain } from '@/types';
+import {
+  Plus,
+  Globe,
+  Copy,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
+
+function displayStatus(status: VerifiedDomain['status']): string {
+  if (status === 'failed') return 'warning';
+  return status;
+}
+
+function recordClass(status: string): string {
+  if (status === 'pass') return 'border-primary/40 text-primary';
+  if (status === 'fail') return 'border-destructive/40 text-destructive';
+  return 'border-border text-muted-foreground';
+}
+
+function DnsRecordRow({
+  record,
+  domainId,
+  copiedField,
+  onCopy,
+}: {
+  record: DomainDnsRecord;
+  domainId: string;
+  copiedField: string | null;
+  onCopy: (value: string, field: string) => void;
+}) {
+  const field = `${domainId}-${record.purpose}`;
+
+  return (
+    <div className="grid grid-cols-[60px_140px_1fr_auto] items-center gap-4 p-4">
+      <span className="font-mono text-[11px] uppercase tracking-wider text-primary">
+        {record.type}
+      </span>
+      <div>
+        <div className="font-mono text-[12.5px]">{record.name}</div>
+        <div className="label-mono mt-0.5">{record.purpose}</div>
+        {record.note ? (
+          <p className="mt-1 text-[11px] text-muted-foreground">{record.note}</p>
+        ) : null}
+      </div>
+      <div className="truncate font-mono text-[12px] text-muted-foreground">{record.value}</div>
+      <button
+        type="button"
+        className="text-muted-foreground hover:text-foreground"
+        onClick={() => onCopy(record.value, field)}
+      >
+        <Copy className="h-3 w-3" />
+        {copiedField === field ? (
+          <span className="sr-only">Copied</span>
+        ) : null}
+      </button>
+    </div>
+  );
+}
 
 export default function Domains() {
   const [showAdd, setShowAdd] = useState(false);
+  const [domainInput, setDomainInput] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [domainToDelete, setDomainToDelete] = useState<VerifiedDomain | null>(null);
+
+  const { data, isLoading, isError } = useDomains();
+  const { create, verify, remove } = useDomainMutations();
+
+  const domains = data?.data ?? [];
+
+  const verifiedCount = domains.filter((d) => d.status === 'verified').length;
+  const warningCount = domains.filter((d) => d.status === 'failed').length;
+  const pendingCount = domains.filter((d) => d.status === 'pending').length;
+
+  async function handleAdd() {
+    const domain = domainInput.trim();
+    if (!domain) return;
+
+    try {
+      const result = await create.mutateAsync(domain);
+      setShowAdd(false);
+      setDomainInput('');
+      setExpandedId(result.domain.id);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not add domain.');
+    }
+  }
+
+  async function handleVerify(id: string) {
+    setVerifyingId(id);
+    try {
+      const result = await verify.mutateAsync(id);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not verify domain.');
+    } finally {
+      setVerifyingId(null);
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!domainToDelete) return;
+
+    try {
+      const result = await remove.mutateAsync(domainToDelete.id);
+      if (expandedId === domainToDelete.id) setExpandedId(null);
+      setDomainToDelete(null);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not remove domain.');
+    }
+  }
+
+  async function copyValue(value: string, field: string) {
+    await navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    toastSuccess('Copied.');
+    window.setTimeout(() => setCopiedField(null), 1500);
+  }
+
   return (
     <DashboardLayout>
       <PageHeader
         eyebrow="Operate"
         title="Domains"
-        description="Verified sending domains with continuous SPF, DKIM, and DMARC monitoring."
+        description="Verify custom sending domains with SPF, DKIM, and ownership DNS records."
         actions={
-          <button data-testid="domain-add-btn" onClick={() => setShowAdd(true)} className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-[13px] font-medium hover:bg-primary/90">
+          <button
+            type="button"
+            data-testid="domain-add-btn"
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+          >
             <Plus className="h-3 w-3" /> Add domain
           </button>
         }
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border border border-border mb-6">
+      <div className="mb-6 grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-3">
         {[
-          ["Verified", DOMAINS.filter((d) => d.status === "verified").length, "primary"],
-          ["Warning", DOMAINS.filter((d) => d.status === "warning").length, "warn"],
-          ["Pending", DOMAINS.filter((d) => d.status === "pending").length, "info"],
-          ["Avg reputation", "94 / 100", "primary"],
-        ].map(([l, v, t]) => (
-          <div key={l} className="bg-card p-5">
-            <div className="label-mono">{l}</div>
-            <div className={`mt-2 text-2xl font-medium tracking-tight ${t === "primary" ? "text-foreground" : ""}`}>{v}</div>
+          ['Verified', verifiedCount, 'primary'],
+          ['Needs attention', warningCount, 'warn'],
+          ['Pending', pendingCount, 'info'],
+        ].map(([label, value, tone]) => (
+          <div key={label} className="bg-card p-5">
+            <div className="label-mono">{label}</div>
+            <div
+              className={`mt-2 text-2xl font-medium tracking-tight ${
+                tone === 'primary' ? 'text-foreground' : ''
+              }`}
+            >
+              {value}
+            </div>
           </div>
         ))}
       </div>
 
       <div className="border border-border bg-card">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left p-3 label-mono">Domain</th>
-              <th className="text-left p-3 label-mono">Status</th>
-              <th className="text-left p-3 label-mono">Reputation</th>
-              <th className="text-left p-3 label-mono">Records</th>
-              <th className="text-left p-3 label-mono">Sent · 30d</th>
-              <th className="text-left p-3 label-mono">Region</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {DOMAINS.map((d) => (
-              <tr key={d.id} data-testid={`domain-row-${d.id}`} className="border-b border-border last:border-0 hover:bg-accent/30">
-                <td className="p-3"><div className="inline-flex items-center gap-2"><Globe className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-medium">{d.name}</span></div></td>
-                <td className="p-3"><StatusBadge status={d.status} /></td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1 w-16 bg-muted overflow-hidden">
-                      <div className={`h-full ${d.reputation > 90 ? "bg-primary" : d.reputation > 70 ? "bg-amber-500" : "bg-destructive"}`} style={{ width: `${d.reputation}%` }} />
-                    </div>
-                    <span className="font-mono text-[12px]">{d.reputation}</span>
-                  </div>
-                </td>
-                <td className="p-3">
-                  <div className="flex items-center gap-1 font-mono text-[11px]">
-                    {["spf", "dkim", "dmarc", "mx"].map((k) => (
-                      <span key={k} className={`px-1.5 py-0.5 border ${
-                        d[k] === "pass" ? "border-primary/40 text-primary" :
-                        d[k] === "warn" ? "border-amber-500/40 text-amber-500" :
-                        d[k] === "fail" ? "border-destructive/40 text-destructive" :
-                        "border-border text-muted-foreground"
-                      }`}>{k.toUpperCase()}</span>
-                    ))}
-                  </div>
-                </td>
-                <td className="p-3 font-mono text-muted-foreground">{d.sent.toLocaleString()}</td>
-                <td className="p-3 font-mono text-muted-foreground">{d.region}</td>
-                <td className="p-3"><ChevronRight className="h-4 w-4 text-muted-foreground" /></td>
+        {isLoading ? (
+          <div className="flex justify-center p-12 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+        ) : isError ? (
+          <p className="p-8 text-sm text-destructive">Could not load domains.</p>
+        ) : domains.length === 0 ? (
+          <div className="p-12 text-center">
+            <Globe className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">
+              No domains yet. Use @*.mailvoidr.com without verification, or add a custom domain.
+            </p>
+          </div>
+        ) : (
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="label-mono p-3 text-left">Domain</th>
+                <th className="label-mono p-3 text-left">Status</th>
+                <th className="label-mono p-3 text-left">Records</th>
+                <th className="label-mono p-3 text-left">Added</th>
+                <th className="p-3" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {domains.map((domain) => (
+                <Fragment key={domain.id}>
+                  <tr
+                    data-testid={`domain-row-${domain.id}`}
+                    className="border-b border-border hover:bg-accent/30"
+                  >
+                    <td className="p-3">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 text-left"
+                        onClick={() =>
+                          setExpandedId(expandedId === domain.id ? null : domain.id)
+                        }
+                      >
+                        {expandedId === domain.id ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{domain.domain}</span>
+                      </button>
+                    </td>
+                    <td className="p-3">
+                      <StatusBadge status={displayStatus(domain.status)} />
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1 font-mono text-[11px]">
+                        {(['ownership', 'spf', 'dkim'] as const).map((key) => (
+                          <span
+                            key={key}
+                            className={`border px-1.5 py-0.5 ${recordClass(domain.records[key])}`}
+                          >
+                            {key.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="p-3 font-mono text-muted-foreground">
+                      {domain.created_at
+                        ? new Date(domain.created_at).toLocaleDateString()
+                        : '—'}
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          disabled={verifyingId === domain.id}
+                          onClick={() => handleVerify(domain.id)}
+                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[12px] hover:bg-accent"
+                        >
+                          <RefreshCw
+                            className={`h-3 w-3 ${
+                              verifyingId === domain.id ? 'animate-spin' : ''
+                            }`}
+                          />
+                          Verify
+                        </button>
+                        <button
+                          type="button"
+                          disabled={remove.isPending}
+                          onClick={() => setDomainToDelete(domain)}
+                          className="rounded-md border border-border p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedId === domain.id ? (
+                    <tr key={`${domain.id}-dns`} className="border-b border-border bg-muted/20">
+                      <td colSpan={5} className="p-0">
+                        <div className="border-t border-border px-5 py-4">
+                          <h3 className="text-sm font-medium">
+                            DNS records for{' '}
+                            <span className="font-mono">{domain.domain}</span>
+                          </h3>
+                          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                            Add these records at your DNS provider, then click Verify.
+                          </p>
+                          <div className="mt-4 divide-y divide-border border border-border bg-card">
+                            {domain.dns_records.map((record) => (
+                              <DnsRecordRow
+                                key={record.purpose}
+                                record={record}
+                                domainId={domain.id}
+                                copiedField={copiedField}
+                                onCopy={copyValue}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* DNS records sample */}
-      <div className="mt-8">
-        <h3 className="text-base font-medium">DNS records for <span className="font-mono">mail.acme.com</span></h3>
-        <p className="text-[12.5px] text-muted-foreground mt-0.5">Add the following records to your DNS provider. We re-check every 5 minutes.</p>
-        <div className="mt-4 border border-border bg-card divide-y divide-border">
-          {DNS_RECORDS.map((r, i) => (
-            <div key={i} className="p-4 grid grid-cols-[60px_140px_1fr_auto] items-center gap-4">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-primary">{r.type}</span>
-              <div>
-                <div className="font-mono text-[12.5px]">{r.host}</div>
-                <div className="label-mono mt-0.5">{r.purpose}</div>
-              </div>
-              <div className="font-mono text-[12px] text-muted-foreground truncate">{r.value}</div>
-              <div className="flex items-center gap-2">
-                <StatusBadge status={r.status} />
-                <button className="text-muted-foreground hover:text-foreground"><Copy className="h-3 w-3" /></button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {showAdd && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur flex items-center justify-center p-6">
-          <div data-testid="domain-add-modal" className="w-full max-w-md border border-border bg-card">
+      {showAdd ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-6 backdrop-blur">
+          <div
+            data-testid="domain-add-modal"
+            className="w-full max-w-md border border-border bg-card"
+          >
             <div className="border-b border-border p-4">
               <h3 className="text-base font-medium">Add a domain</h3>
-              <p className="text-[12.5px] text-muted-foreground mt-0.5">We recommend a subdomain like <span className="font-mono">mail.yourcompany.com</span>.</p>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                We recommend a subdomain like{' '}
+                <span className="font-mono">mail.yourcompany.com</span>.
+              </p>
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="label-mono block mb-1.5">Domain</label>
-                <input data-testid="domain-add-input" placeholder="mail.yourcompany.com" className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono" />
-              </div>
-              <div>
-                <label className="label-mono block mb-1.5">Region</label>
-                <select className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm">
-                  <option>us-east-1</option><option>eu-west-1</option><option>ap-south-1</option>
-                </select>
+                <label className="label-mono mb-1.5 block">Domain</label>
+                <input
+                  data-testid="domain-add-input"
+                  value={domainInput}
+                  onChange={(e) => setDomainInput(e.target.value)}
+                  placeholder="mail.yourcompany.com"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
+                />
               </div>
             </div>
-            <div className="border-t border-border p-4 flex items-center justify-end gap-2">
-              <button onClick={() => setShowAdd(false)} className="border border-border rounded-md px-3 py-1.5 text-[13px] hover:bg-accent">Cancel</button>
-              <button onClick={() => setShowAdd(false)} className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-[13px] font-medium">Add domain</button>
+            <div className="flex items-center justify-end gap-2 border-t border-border p-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAdd(false);
+                  setDomainInput('');
+                }}
+                className="rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={create.isPending || !domainInput.trim()}
+                onClick={handleAdd}
+                className="rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {create.isPending ? 'Adding…' : 'Add domain'}
+              </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
+
+      <ConfirmDeleteDialog
+        open={Boolean(domainToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setDomainToDelete(null);
+        }}
+        resourceName={domainToDelete?.domain ?? ''}
+        resourceLabel="domain"
+        title="Remove domain"
+        description={
+          domainToDelete
+            ? `Sending from ${domainToDelete.domain} will stop working. Type the domain name below to confirm removal.`
+            : undefined
+        }
+        confirmLabel="Remove domain"
+        onConfirm={handleDeleteConfirm}
+        isPending={remove.isPending}
+        testId="domain-delete-dialog"
+      />
     </DashboardLayout>
   );
 }
