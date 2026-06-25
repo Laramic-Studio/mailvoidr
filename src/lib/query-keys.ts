@@ -37,4 +37,9 @@ export const queryKeys = {
   send: {
     history: ['send', 'history'] as const,
   },
+  sends: {
+    list: (filters: Record<string, string | undefined>) =>
+      ['sends', 'list', filters.status ?? 'all', filters.search ?? '', filters.domain ?? 'all', filters.period ?? ''] as const,
+    detail: (id: string) => ['sends', 'detail', id] as const,
+  },
 } as const;

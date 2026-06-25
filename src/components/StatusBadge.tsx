@@ -7,9 +7,9 @@ const TONE = {
 };
 
 const MAP = {
-  delivered: "success", verified: "success", active: "success", operational: "success", pass: "success", paid: "success", complete: "success", up: "success",
+  delivered: "success", verified: "success", active: "success", operational: "success", pass: "success", paid: "success", complete: "success", up: "success", sent: "success",
   opened: "info", clicked: "info", scheduled: "info",
-  warning: "warn", deferred: "warn", warn: "warn", pending: "warn", degraded: "warn", monitoring: "warn",
+  warning: "warn", deferred: "warn", warn: "warn", pending: "warn", degraded: "warn", monitoring: "warn", queued: "warn",
   bounced: "error", complained: "error", failed: "error", fail: "error", paused: "error", down: "error", revoked: "error",
 };
 

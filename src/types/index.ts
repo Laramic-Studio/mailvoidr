@@ -253,6 +253,53 @@ export interface EmailSendHistoryResponse {
   };
 }
 
+export interface EmailSendLog {
+  id: string;
+  message_id: string | null;
+  from: string;
+  recipient: string | null;
+  recipients: string[];
+  domain: string;
+  subject: string | null;
+  status: string;
+  source: string;
+  error_message: string | null;
+  response: string | null;
+  queued_at: string | null;
+  sent_at: string | null;
+  bounced_at: string | null;
+  created_at: string | null;
+}
+
+export interface EmailSendTimelineEvent {
+  event: string;
+  label: string;
+  occurred_at: string;
+  payload: Record<string, unknown> | null;
+}
+
+export interface EmailSendLogListResponse {
+  data: EmailSendLog[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+export interface EmailSendLogDetailResponse {
+  email_send: EmailSendLog;
+  timeline: EmailSendTimelineEvent[];
+}
+
+export interface SendLogFilters {
+  status?: string;
+  search?: string;
+  domain?: string;
+  period?: '24h' | '7d' | '30d';
+}
+
 export interface EmailPreview {
   subject: string;
   from: string | null;
