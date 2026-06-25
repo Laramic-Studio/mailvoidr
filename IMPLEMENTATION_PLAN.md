@@ -121,14 +121,14 @@ Laravel today has **no onboarding** — signup goes straight to dashboard. The S
 ```
 Register → Verify email → 2FA (if on) → Onboarding (creates workspace here) → Dashboard
 Login    → 2FA (if on) → Onboarding (if incomplete) → Dashboard
-Invite accept → Dashboard (skip onboarding — joined existing workspace)
+Invite accept → Verify email (if new) → Accept invite → Dashboard (skip onboarding — joined existing workspace)
 ```
 
 | Module | What it delivers for this journey |
 |--------|-----------------------------------|
-| **1 — Auth** | JWT login/register/verify/2FA. `GET /auth/me` returns `onboarding_completed`. `OnboardingGate` redirects incomplete users to `/onboarding`. |
-| **2 — Onboarding** | Wire `/onboarding` wizard. **Workspace is created inside onboarding** (step 1), not a separate pre-step. Sets `onboarding_completed_at`, provisions sandbox inbox. |
-| **3 — Workspaces + invites** | **After onboarding:** switch workspace, `/workspaces` picker, invite accept. Dashboard switcher. Not part of first-time signup flow. |
+| **1 — Auth** | JWT login/register/verify/2FA. `GET /auth/me` returns `onboarding_completed`. `OnboardingGate` redirects incomplete users to `/onboarding`. Register accepts optional `invite_token`. |
+| **2 — Onboarding** | Wire `/onboarding` wizard. **Workspace is created inside onboarding** (step 1), not a separate pre-step. Sets `onboarding_completed_at`, provisions sandbox inbox. **Skipped** when user accepts a workspace invite. |
+| **3 — Workspaces + invites** | **After onboarding:** switch workspace, `/workspaces` picker, invite accept. `/invite?workspace={id}` for existing users; `/invite?token={token}` for email invites (incl. users not on the platform yet). |
 
 Module 1 does **not** implement the wizard — only the gate that sends new users there after auth succeeds.
 
@@ -152,7 +152,8 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | 13 | Settings | Medium | 1, 3 |
 | 14 | Teams | Medium | 3 |
 | 15 | Live sending + credits | Medium | 10 |
-| 16 | Templates | Medium | 10 |
+| 16 | Templates (workspace library) | Medium | 10 |
+| 16b | Template marketplace (free) | Medium | 16 |
 | 17 | Webhooks | Medium | 10, 11 |
 | 18 | Analytics | Lower | 11 + new tracking |
 | 19 | Billing (full) | Lower | 15 |
@@ -173,13 +174,29 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | 4 | Virtual emails (list) | ✅ Shipped | `tests/Unit/Api/V1/VirtualEmail/VirtualEmailTest.php` |
 | 5 | Virtual email detail | ✅ Shipped | `tests/Unit/Api/V1/VirtualEmail/VirtualEmailMessageTest.php` |
 | 6 | Sandbox inbox | ✅ Shipped v1 | `tests/Unit/Api/V1/Sandbox/` |
-| 7+ | — | ⏳ Not started | — |
+| 7 | Domains | ✅ Shipped | `tests/Unit/Api/V1/Domain/` |
+| 8 | API keys | ✅ Shipped | `tests/Unit/Api/V1/ApiKey/` |
+| 9 | SMTP credentials | ✅ Shipped | `tests/Unit/Api/V1/Smtp/` |
+| 10 | Send email (compose) | ✅ Shipped | `tests/Unit/Api/V1/Send/` |
+| 11 | Email logs (outbound) | ✅ Shipped | `tests/Unit/Api/V1/EmailSend/` |
+| 13 | Settings | ✅ Shipped | `tests/Unit/Api/V1/Settings/` |
+| 14 | Teams | ✅ Shipped | `tests/Unit/Api/V1/Team/` |
+| 15 | Live sending + credits | ✅ Shipped† | `tests/Unit/Api/V1/Credit/` |
+| 12 | Dashboard overview | ⏳ Not started | — |
+| 16 | Templates (workspace library) | ✅ Shipped | `tests/Unit/Api/V1/Template/` |
+| 16b | Template marketplace (free) | ✅ Shipped | `tests/Unit/Api/V1/Template/TemplateMarketplaceTest.php` |
+| 17 | Webhooks | ✅ Shipped | `tests/Unit/Api/V1/Webhook/WebhookTest.php` |
+| 18+ | Analytics, billing (full), … | ⏳ Not started | — |
 
 \*Module 1 gaps: OAuth buttons in SPA are UI-only (no JWT exchange yet); 401 clears session instead of silent `POST /auth/refresh`.
 
+†Module 15: credits API + sidebar widget + `Billing.tsx` overview tab wired; full billing redesign deferred to Module 19.
+
 **Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
 
-**Next up:** Module 7 — Domains.
+**Next up:** Module 18 — Analytics (or Module 12 Dashboard overview scoped).
+
+**Then:** Module 19 Billing (full) → remaining lower-priority modules.
 
 ---
 
@@ -364,14 +381,18 @@ Also wire workspace switcher in `components/dashboard/WorkspaceSwitcher.tsx` (us
 | POST | `/workspaces/{id}/switch` | `WorkspaceSwitchController` |
 | POST | `/invitations/{workspace}/accept` | Accept invite → skip onboarding, set `onboarding_completed_at` |
 | POST | `/invitations/{workspace}/decline` | Decline |
+| GET | `/invitations/token/{token}` | Public preview (email invite — Module 14) |
+| GET | `/invitations/pending` | Current user's pending invites (Module 14) |
+| POST | `/invitations/token/{token}/accept` | Accept by token after auth (Module 14) |
 
-Team invites (send invite, manage members) → **Module 14 Teams**.
+Team invite **send** + member management → **Module 14 Teams**.
 
 ### Done when
 - [x] Dashboard switcher lists real workspaces
 - [x] Switching updates `selected_workspace_id` + `X-Workspace-Id` header
 - [x] `/workspaces` works for multi-workspace users
-- [x] Invite accept lands on dashboard (onboarding skipped) — `/invite?workspace={id}`
+- [x] Invite accept lands on dashboard (onboarding skipped) — `/invite?workspace={id}` or `/invite?token={token}`
+- [x] New-user path: register → verify → accept invite (token in session; not onboarding)
 
 ---
 
@@ -495,12 +516,12 @@ Reuse: `SandboxService`, `SandboxInboxResource`, `Inbox` model, inbound SMTP on 
 
 ## Module 7 — Domains
 
-**Status: ⏳ Not started** (UI prototype exists at `pages/dashboard/Domains.tsx` — still dummy data)
+**Status: ✅ Shipped**
 
 **Goal:** Add/verify custom sending domains with DNS instructions.
 
 ### Frontend
-- `pages/dashboard/Domains.jsx`
+- `pages/dashboard/Domains.tsx` — `hooks/useDomains.ts`, `lib/api/domains.ts`
 
 ### Backend — reuse live sending stack
 
@@ -514,23 +535,23 @@ Reuse: `SandboxService`, `SandboxInboxResource`, `Inbox` model, inbound SMTP on 
 
 Hide **region** column in UI or show static "Default" — no multi-region backend.
 
-Reputation bar: compute simple score from verification status + send bounce rate (later) or show verification status only for v1.
-
-### Schema changes
-Minimal — `verified_domains` exists. Optional: `reputation_score` cached column.
+Reputation bar: verification status only for v1 (no bounce-rate score yet).
 
 ### Done when
-- [ ] Add domain modal + DNS panel match real records from `DnsVerificationService`
-- [ ] Status badges (verified / pending / warning) reflect DB
+- [x] Add domain modal + DNS panel match real records from `DnsVerificationService`
+- [x] Status badges (verified / pending / warning) reflect DB
+- [ ] Plan limits enforced when billing module lands
 
 ---
 
 ## Module 8 — API keys
 
+**Status: ✅ Shipped**
+
 **Goal:** Create, rotate, revoke keys with scopes.
 
 ### Frontend
-- `pages/dashboard/APIKeys.jsx`
+- `pages/dashboard/APIKeys.tsx` — `hooks/useApiKeys.ts`, `lib/api/api-keys.ts`
 
 ### Backend — extend `ApiKeyService`
 
@@ -541,28 +562,23 @@ Minimal — `verified_domains` exists. Optional: `reputation_score` cached colum
 | POST | `/api-keys/{id}/rotate` |
 | DELETE | `/api-keys/{id}` |
 
-### Schema changes
-```sql
--- api_keys table
-scopes JSON nullable   -- ["send.write", "logs.read", ...]
-requests_count INT default 0  -- optional counter
-```
-
-Enforce scopes in `auth.api_key` middleware when request hits `/api/v1/mail/*`.
+Scopes stored on `api_keys.scopes` JSON; enforced in `auth.api_key` middleware for `/api/v1/mail/*`.
 
 ### Done when
-- [ ] Create modal saves name + scopes; returns full key once
-- [ ] Mask/reveal/copy token works
-- [ ] Revoked keys styled and rejected by mail API
+- [x] Create modal saves name + scopes; returns full key once
+- [x] Mask/reveal/copy token works
+- [x] Revoked keys styled; revoked keys rejected by mail API
 
 ---
 
 ## Module 9 — SMTP credentials
 
+**Status: ✅ Shipped**
+
 **Goal:** Show live SMTP credentials for outbound sending.
 
 ### Frontend
-- `pages/dashboard/SMTP.jsx`
+- `pages/dashboard/SMTP.tsx` — `hooks/useSmtpCredentials.ts`, `lib/api/smtp-credentials.ts`
 
 ### Backend — reuse `SendingAccountService`
 
@@ -572,47 +588,51 @@ Enforce scopes in `auth.api_key` middleware when request hits `/api/v1/mail/*`.
 | POST | `/smtp-credentials` | enable live sending if not active |
 | POST | `/smtp-credentials/{id}/rotate-password` |
 
-v1: one credential set per workspace/user (not multi-region cards). UI can show one "Production" card; hide EU/Staging cards or label as "Coming soon" without removing layout.
+v1: one credential set per workspace. UI shows one production card.
 
 ### Done when
-- [ ] Credentials match `sending_accounts` table
-- [ ] Nodemailer snippet uses real host/port/username
+- [x] Credentials match `sending_accounts` table
+- [x] Nodemailer snippet uses real host/port/username
+- [x] Enable live sending + rotate password wired
 
 ---
 
 ## Module 10 — Send email (dashboard compose)
 
+**Status: ✅ Shipped**
+
 **Goal:** Compose and send from dashboard (not only external API).
 
 ### Frontend
-- `pages/dashboard/SendEmail.jsx`
+- `pages/dashboard/SendEmail.tsx` — `hooks/useSend.ts`, `lib/api/send.ts`
 
 ### Backend
 
 | Method | Path | Reuse |
 |--------|------|-------|
 | POST | `/send` | `SendMailService::queue` |
-| POST | `/send/preview` | render HTML preview (optional) |
+| POST | `/send/preview` | render HTML preview |
 | GET | `/send/history` | recent sends for compose history tab |
 
-Tabs **Scheduled**, **Transactional**, **Templates** — wire when Modules 16+ land; show empty states until then (do not remove tabs).
+Tabs **Scheduled**, **Transactional**, **Templates** — empty states until Modules 16+ land.
 
-### Schema changes
-None for basic send. Attachments: add `email_send_attachments` when needed.
+Live-sending gate + credit check surfaced in compose UI (Module 15).
 
 ### Done when
-- [ ] Compose sends via API using verified from-domain
-- [ ] History tab shows real `email_sends`
-- [ ] Preview modal renders submitted HTML
+- [x] Compose sends via API using verified from-domain
+- [x] History tab shows real `email_sends`
+- [x] Preview modal renders submitted HTML
 
 ---
 
 ## Module 11 — Email logs (outbound)
 
+**Status: ✅ Shipped**
+
 **Goal:** Searchable outbound send log with detail drawer.
 
 ### Frontend
-- `pages/dashboard/EmailLogs.jsx`
+- `pages/dashboard/EmailLogs.tsx` — `hooks/useSends.ts`, `lib/api/sends.ts`
 
 ### Backend
 
@@ -622,23 +642,21 @@ None for basic send. Attachments: add `email_send_attachments` when needed.
 | GET | `/sends/{id}` | detail + timeline |
 | POST | `/sends/{id}/retry` | re-queue failed |
 
-### Schema changes
-```sql
--- email_send_events table (new)
-id, email_send_id, event, payload JSON, occurred_at
--- Events: queued, sent, delivered, bounced, deferred, failed, opened, clicked
-```
-
-Populate `sent`, `delivered`, `bounced` from existing columns + relay webhooks as they arrive.
+### Schema changes (shipped)
+- `email_send_events` table — timeline events per send
+- `html_body`, `text_body`, `reply_to` on `email_sends` (for retry + detail drawer)
 
 ### Done when
-- [ ] Filters and status pills work
-- [ ] Detail drawer shows timeline + raw JSON event
+- [x] Filters and status pills work
+- [x] Detail drawer shows timeline + payload
+- [x] Retry failed sends (deducts credits when live sending enabled)
 - [ ] "View in inbox" links when return-path capture exists
 
 ---
 
 ## Module 12 — Dashboard overview
+
+**Status: ⏳ Not started** (UI prototype at `pages/dashboard/Overview.tsx` — still dummy data)
 
 **Goal:** Aggregate stats, charts, recent activity.
 
@@ -668,39 +686,46 @@ Open/click rates on overview: show only after Module 18 tracking exists; use sen
 
 ## Module 13 — Settings
 
+**Status: ✅ Shipped**
+
 **Goal:** Profile, security, workspace, notification prefs.
 
 ### Frontend
-- `pages/dashboard/Settings.jsx`
+- `pages/dashboard/Settings.tsx` — `hooks/useSettings.ts`, `lib/api/settings.ts`
+- Domains / SMTP / Branding **not** in Settings nav (those pages live in sidebar as separate modules).
 
 ### Backend
 
 | Section | Endpoints |
 |---------|-----------|
-| Profile | `PATCH /auth/me`, avatar upload |
-| Security | 2FA enable/disable, `PATCH /auth/password` |
-| Workspace | `PATCH /workspaces/{id}` |
-| Notifications | `PATCH /users/notification-preferences` (new JSON column on users) |
-| API prefs | workspace settings JSON |
-| Branding | defer to v2 — show UI, save stub |
-| Danger zone | `POST /workspaces/{id}/transfer`, `DELETE /workspaces/{id}` |
+| Profile | `PATCH /auth/me`, `PATCH /auth/password` |
+| Security | `GET/POST/DELETE /settings/two-factor/*` |
+| Notifications | `PATCH /settings/notifications` (JSON on `users`) |
+| Workspace | `GET /settings`, `PATCH /settings/workspaces/{id}` |
+| General | workspace name/slug via settings snapshot |
+| Danger zone | `DELETE /settings/workspaces/{id}` |
 
-Hide or disable region selector — single default region only.
+Workspace policy toggles (2FA required, public invites, default role) are **saved but not enforced** elsewhere yet.
 
 ### Done when
-- [ ] Each settings section persists and reloads correctly
-- [ ] Domain/SMTP sections link to real pages
+- [x] Profile, security (2FA), notifications, workspace, danger zone persist and reload
+- [x] Settings cache keyed by `selected_workspace_id`; invalidates on workspace switch
+- [ ] Avatar upload
+- [ ] Enforce workspace policy toggles app-wide
 
 ---
 
 ## Module 14 — Teams
 
+**Status: ✅ Shipped**
+
 **Goal:** Members, invitations, roles, activity.
 
 ### Frontend
-- `pages/dashboard/Teams.jsx`
+- `pages/dashboard/Teams.tsx` — `hooks/useTeam.ts`, `lib/api/team.ts`
+- Invite / manage / revoke dialogs; roles tab static reference cards
 
-### Backend — extend workspace members
+### Backend — workspace members + email invitations
 
 | Method | Path |
 |--------|------|
@@ -709,25 +734,44 @@ Hide or disable region selector — single default region only.
 | DELETE | `/workspaces/{id}/members/{userId}` | remove |
 | GET | `/workspaces/{id}/invitations` |
 | POST | `/workspaces/{id}/invitations` |
-| DELETE | `/invitations/{id}` | revoke |
+| DELETE | `/workspaces/{id}/invitations/{id}` | revoke (pivot id or email-invite ULID) |
 | GET | `/workspaces/{id}/activity` | member audit log |
+| GET | `/invitations/pending` | current user's pending workspace invites |
+| GET | `/invitations/token/{token}` | public preview (new users) |
+| POST | `/invitations/token/{token}/accept` | accept after auth |
+| POST | `/invitations/token/{token}/decline` | decline |
 
-### Schema changes
-Extend `workspace_user.role` enum: `owner`, `admin`, `developer`, `billing_manager`, `viewer` (migrate `member` → `developer`).
+Module 3 routes still handle `/invitations/{workspace}/accept|decline` for existing users.
+
+### Schema changes (shipped)
+- `workspace_user.role` → `owner`, `admin`, `developer`, `billing_manager`, `viewer` (`member` → `developer`)
+- `workspace_activities` table — team audit events
+- `workspace_email_invitations` table — invite by email before user exists
+
+### Invite behaviour
+- **Existing user:** `workspace_user` pending row + email with `/invite?workspace={id}`
+- **New user:** `workspace_email_invitations` row + email with `/invite?token={token}` → register → verify → accept → dashboard (onboarding skipped on accept)
+- Register/login claim pending email invites; `invite_token` optional on `POST /auth/register`
 
 ### Done when
-- [ ] All four tabs use real data
-- [ ] Invite flow matches Module 3 accept page
+- [x] All four tabs use real data (members, invitations, roles reference, activity)
+- [x] Invite by email works for users not on the platform yet
+- [x] Role change + remove member + revoke invitation
+- [x] Invite accept flow integrated with Module 3 (`InviteAccept.tsx`, onboarding skip)
+- [ ] Resend invitation (UI stub disabled)
 
 ---
 
 ## Module 15 — Live sending activation + credits
 
+**Status: ✅ Shipped** (billing UI interim — full redesign in Module 19)
+
 **Goal:** Enable outbound, buy credits, enforce limits.
 
 ### Frontend
-- Billing usage pieces in `Billing.jsx` (overview tab partial)
-- "Enable live sending" may live in SMTP or Settings until Billing module complete
+- `CreditsUsageWidget` in `DashboardLayout` sidebar
+- `pages/dashboard/Billing.tsx` — credits summary + transactions + Stripe checkout (overview tab partial)
+- Live-sending banner on Send page when not enabled
 
 ### Backend — reuse
 - `SendingAccountService`, `SendCreditService`, `CreditPurchaseService`, Stripe webhook
@@ -737,24 +781,29 @@ Extend `workspace_user.role` enum: `owner`, `admin`, `developer`, `billing_manag
 | POST | `/live-sending/enable` |
 | GET | `/credits` | balance + free tier usage |
 | POST | `/credits/checkout` | Stripe session |
+| POST | `/credits/checkout/confirm` | confirm after redirect |
 | GET | `/credits/transactions` |
 
-**Fix existing bug:** call `SendCreditService::deduct()` in `SendMailService::queue()`.
+**Bug fix (shipped):** `SendCreditService::deduct()` called in `SendMailService::queue()`; live-sending gate before outbound send.
 
 ### Done when
-- [ ] User must enable live sending before SMTP/API outbound works
-- [ ] Credit balance visible in dashboard layout usage widget
-- [ ] Stripe checkout completes and updates balance
+- [x] User must enable live sending before SMTP/API outbound works
+- [x] Credit balance visible in dashboard layout usage widget
+- [x] Stripe checkout session + confirm updates balance
+- [ ] Full billing page redesign (plans, invoices, payment methods — Module 19)
 
 ---
 
 ## Module 16 — Templates
 
+**Status: ✅ Shipped**
+
 **Goal:** Template gallery, versions, variables, send with template.
 
 ### Frontend
-- `pages/dashboard/Templates.jsx`
-- **Add route:** `/dashboard/templates/:id` (missing in `App.jsx`)
+- `pages/dashboard/Templates.tsx`, `TemplateDetail.tsx`
+- `hooks/useTemplates.ts`, `lib/api/templates.ts`
+- Send email **Templates** tab wired (`SendEmail.tsx`)
 
 ### Backend — new resource
 
@@ -763,55 +812,134 @@ Extend `workspace_user.role` enum: `owner`, `admin`, `developer`, `billing_manag
 | GET/POST | `/templates` |
 | GET/PATCH/DELETE | `/templates/{id}` |
 | POST | `/templates/{id}/versions` |
+| POST | `/templates/{id}/preview` |
 
-### Schema — new tables
-```
-email_templates       id, workspace_id, name, subject, html_body, category, ...
-email_template_versions  id, template_id, version, html_body, created_at
-```
+### Schema
+- `email_templates` — workspace-scoped metadata + `current_version_id`
+- `email_template_versions` — immutable snapshots
+- `email_sends.email_template_id`, `email_template_version_id`, `template_variables`
 
-Wire SendEmail template picker to this API.
+Send API accepts `template_id` + `variables` (pins version at queue time).
 
 ### Done when
-- [ ] CRUD + template detail page works
-- [ ] Send flow can select template and merge variables
+- [x] CRUD + template detail page works
+- [x] Send flow can select template and merge variables
+- [x] Version history + preview with `{{variable}}` substitution
+
+**Note:** Module 16 is the **workspace library** (copies you send from). **Module 16b** adds a **free public marketplace** on top — no paid listings in v1.
+
+---
+
+## Module 16b — Template marketplace (free)
+
+**Status: ✅ Shipped**
+
+**Goal:** Sidebar marketplace of **free** public templates. Users publish templates (public by default), browse others’ templates, **add to library** → appears in Send email Templates tab. Paid listings deferred to a future module.
+
+### Product model (important)
+
+Two concepts — do not merge in the UI:
+
+| Surface | Route (proposed) | What it is |
+|---------|------------------|------------|
+| **Marketplace** (sidebar) | `/dashboard/templates/marketplace` | Browse **public** templates from all users. Free only in v1. |
+| **My templates** | `/dashboard/templates` | Workspace **library** — templates you created or added from marketplace. |
+| **Send → Templates tab** | `/dashboard/send` | Same library as “My templates” (send-ready only). |
+
+**Rules (v1):**
+- **Free only** — no price, no checkout, no creator payouts. Plan paid marketplace later (likely with Module 19 billing).
+- **Public by default** — new templates are `visibility: public` unless user sets **private**.
+- **Private** — visible only in creator’s workspace library; not listed in marketplace.
+- **Add to library** — copies a **snapshot** of the public template into the workspace (`source_template_id` FK). Original author updates do not auto-change installed copies.
+- **Upload** — same create flow as Module 16; marketplace is just the public catalog view.
+
+### Frontend
+- Rename / split sidebar: **Templates** → **Marketplace** (+ **My templates** sub-nav or tabs)
+- `pages/dashboard/TemplateMarketplace.tsx` — grid, search, category filter, preview, “Add to library”
+- `Templates.tsx` — filter to workspace library; badge “From marketplace” when `source_template_id` set
+- Create/edit template — visibility toggle (default **public**)
+
+### Backend
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/template-marketplace` | Paginated public templates; search, category |
+| GET | `/template-marketplace/{template}` | Preview (no workspace required beyond auth) |
+| POST | `/template-marketplace/{template}/add` | Fork into current workspace library |
+| PATCH | `/templates/{id}` | Add `visibility`: `public` \| `private` (default `public` on create) |
+
+Extend Module 16 create: `visibility` defaults to `public`.
+
+### Schema changes
+```
+email_templates
+  visibility          ENUM public|private  DEFAULT public
+  source_template_id  ULID nullable FK → email_templates  -- set on fork from marketplace
+  published_at        TIMESTAMP nullable                 -- when made public
+```
+
+Index: `(visibility, created_at)` for marketplace listing. Workspace library query unchanged (`workspace_id`).
+
+**Out of scope v1:** `price_cents`, purchases, Stripe, revenue share, ratings, moderation queue (add before heavy public launch).
+
+### Done when
+- [x] Marketplace page lists public templates (free only)
+- [x] Create template defaults to public; user can mark private
+- [x] “Add to library” forks template into workspace
+- [x] Send Templates tab shows library (own + added)
+- [x] Private templates never appear in marketplace
+
+### Future (not v1)
+- Paid templates + checkout
+- Creator payouts / revenue share
+- Ratings, featured, moderation
 
 ---
 
 ## Module 17 — Webhooks
 
+**Status: ✅ Shipped**
+
 **Goal:** User-configured endpoints, delivery logs, replay.
 
 ### Frontend
-- `pages/dashboard/Webhooks.jsx`
+- `pages/dashboard/Webhooks.tsx` — endpoints tab (create, pause, rotate secret, test), delivery logs + replay, event catalog
+- `hooks/useWebhooks.ts`, `lib/api/webhooks.ts`
 
-### Backend — new
+### Backend
 
 | Method | Path |
 |--------|------|
 | GET/POST | `/webhooks` |
-| PATCH/DELETE | `/webhooks/{id}` |
-| GET | `/webhooks/{id}/deliveries` |
+| GET/PATCH/DELETE | `/webhooks/{id}` |
+| POST | `/webhooks/{id}/rotate-secret`, `/webhooks/{id}/test` |
+| GET | `/webhooks/{id}/deliveries`, `/webhooks/deliveries` |
 | POST | `/webhooks/deliveries/{id}/replay` |
 
-### Schema — new tables
-```
-webhook_endpoints   id, workspace_id, url, secret, events JSON, status
-webhook_deliveries  id, endpoint_id, event, payload, status_code, attempts
-```
-Extend existing `webhook_logs` or migrate to new structure.
-
-Dispatch events from send lifecycle (Module 11 events).
+### Schema — `webhook_endpoints`, `webhook_deliveries`
+- Workspace-scoped endpoints; secret stored encrypted, `whsec_*` shown once on create/rotate
+- `DeliverWebhookJob` — HTTP POST with `Mailvoidr-Signature` HMAC header
+- Dispatched from `EmailSendEventService::record()` when an `email_send_events` row is created (email lifecycle only)
+- **Open/click tracking v1:** pixel + link wrapper injected at send time; public `GET /t/o/{token}`, `GET /t/c/{token}` record events and fire webhooks (API/dashboard HTML sends only; SMTP direct path not yet wrapped)
+- Legacy admin `webhook_logs` table left unchanged
 
 ### Done when
-- [ ] Create endpoint with event subscriptions
-- [ ] Delivery log + replay works for test events
+- [x] Create endpoint with event subscriptions
+- [x] Delivery log + replay works for test events
 
 ---
 
 ## Module 18 — Analytics
 
 **Goal:** Opens, clicks, geo, device, provider breakdowns.
+
+### Tracking v1 (shipped — backend only)
+- `EmailTrackingService` injects open pixel + wrapped links into HTML at queue time
+- Public routes: `GET /t/o/{token}` (1×1 gif), `GET /t/c/{token}` (302 redirect)
+- Events saved to `email_send_events` (`opened`, `clicked`) → webhooks `email.opened`, `email.clicked`
+- Send flags: `track_opens`, `track_clicks` (default `true` when HTML present)
+- Config: `MAILVOIDR_TRACKING_URL` (default `{APP_URL}/t`; production: `https://track.mailvoidr.com/t`)
+- **Gap:** Live SMTP submissions through Node relay are not rewritten yet; analytics dashboards still stubbed
 
 ### Frontend
 - `pages/dashboard/Analytics.jsx`
@@ -825,17 +953,15 @@ Dispatch events from send lifecycle (Module 11 events).
 | GET | `/analytics/domains` |
 | GET | `/analytics/templates` |
 
-### Schema — new
-```
-email_tracking_events  send_id, type (open|click), ip, user_agent, country, ...
-```
-Implement tracking pixel + link wrapper in outbound HTML (`smtp/` relay or Laravel job).
-
-Until tracking live: overview tab shows volume/delivery from `email_sends` only; engagement tabs show honest empty states.
+### Schema — engagement data
+- v1 uses existing `email_send_events` (payload: ip, user_agent, url for clicks)
+- Optional later: `email_tracking_events` for geo/device rollups
 
 ### Done when
 - [ ] Volume + delivery charts use real data
-- [ ] Open/click/geo populate after tracking pixel ships
+- [x] Open/click events recorded + webhook dispatch (tracking v1)
+- [ ] Analytics UI charts populate from engagement data
+- [ ] Geo/device breakdowns (needs enrichment)
 
 ---
 
@@ -929,7 +1055,8 @@ ui/routes/api.php
 ├── v1/health
 ├── v1/auth/*              Module 1
 ├── v1/onboarding/*        Module 2
-├── v1/workspaces/*        Module 3
+├── v1/workspaces/*        Module 3, 14 (members, invitations, activity)
+├── v1/invitations/*       Module 3, 14 (accept, token preview, pending)
 ├── v1/virtual-emails/*    Module 4–5
 ├── v1/sandbox/*           Module 6
 ├── v1/domains/*           Module 7
@@ -937,7 +1064,10 @@ ui/routes/api.php
 ├── v1/smtp-credentials/*  Module 9
 ├── v1/send/*              Module 10
 ├── v1/sends/*             Module 11
-├── v1/dashboard/*         Module 12
+├── v1/settings/*          Module 13
+├── v1/live-sending/*      Module 15
+├── v1/credits/*           Module 15
+├── v1/dashboard/*         Module 12 (not started)
 ├── v1/templates/*         Module 16
 ├── v1/webhooks/*          Module 17
 ├── v1/analytics/*         Module 18
@@ -973,6 +1103,9 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 | Silent JWT refresh on 401 | Module 1 — `lib/api.ts` | ⏳ Deferred |
 | OAuth → JWT in SPA | Module 1 — auth pages | ⏳ Deferred |
 | Region selectors in onboarding/domains/settings | Hide/stub — Modules 2, 7, 13 | Partial (onboarding hides region) |
+| Billing page full redesign | Module 19 — `Billing.tsx` has interim credits UI | ⏳ Deferred |
+| Team invitation resend | Module 14 — `Teams.tsx` | ⏳ Stub disabled |
+| Workspace settings policies not enforced | Module 13 — saved only | ⏳ Pending |
 | Analytics tabs all show same content | Module 18 — split tab components | ⏳ Pending |
 | `SCHEDULED_EMAILS`, `CAMPAIGNS` unused in dummyData | Wire in Modules 10/16 or leave for later | ⏳ Pending |
 
@@ -1001,14 +1134,14 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 ## Suggested sprint order (updated)
 
-**Completed (Modules 0–6):** Foundation, auth, onboarding, workspaces, virtual emails, sandbox inbox + realtime WS.
+**Completed (Modules 0–11, 13–17, 16b):** Foundation through outbound stack, settings, teams, live sending + credits, templates + **free marketplace**, **webhooks**.
 
-**Current sprint — Module 7:** Domains (API + wire `Domains.tsx`).
+**Current sprint — pick one:**
+- Module 18 Analytics — volume/delivery charts from `email_sends`; engagement tabs empty until tracking ships
+- Module 12 (scoped) — Dashboard overview — stats, chart, recent logs, top domains; stub activity until ready
 
-**Then:** Modules 8–11 (API keys, SMTP credentials, send, email logs) — outbound sending stack.
-
-**Later:** Module 12 overview (aggregate stats — do last among core dashboard pages), then settings, teams, templates/webhooks/analytics/billing.
+**Deferred / polish:** Paid template marketplace, OAuth JWT exchange, silent refresh, invitation resend, enforce workspace policy toggles, return-path “view in inbox” on email logs.
 
 ---
 
-*Last updated: June 2026 — Modules 0–6 shipped in SPA. Revise when a module ships or scope changes.*
+*Last updated: June 2026 — Module 17 webhooks shipped (signed deliveries, replay, event catalog).*

@@ -1,17 +1,128 @@
-import { DashboardLayout } from "@/components/layouts/DashboardLayout";
-import { PageHeader } from "@/components/PageHeader";
-import { TEMPLATES } from "@/lib/dummyData";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useEffect, useMemo, useState } from 'react';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
+import { StatusBadge } from '@/components/StatusBadge';
+import { useTemplate, useTemplateMutations } from '@/hooks/useTemplates';
+import { toastError, toastSuccess } from '@/lib/toast';
+import type { TemplateCategory, TemplatePreview, TemplateVariable } from '@/types';
+import { ArrowLeft, Eye, Loader2, Save } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+
+function categoryLabel(category: TemplateCategory): string {
+  return category === 'marketing' ? 'Marketing' : 'Transactional';
+}
+
+function variablesToRecord(variables: TemplateVariable[] | null | undefined): Record<string, string> {
+  const record: Record<string, string> = {};
+  for (const variable of variables ?? []) {
+    record[variable.key] = variable.default ?? '';
+  }
+  return record;
+}
 
 export default function TemplateDetail() {
   const { id } = useParams();
-  const template = TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0];
+  const { data, isLoading, isError } = useTemplate(id);
+  const { publishVersion, preview, update } = useTemplateMutations();
+
+  const template = data?.template;
+  const current = template?.current_version;
+
+  const [subject, setSubject] = useState('');
+  const [html, setHtml] = useState('');
+  const [changeNotes, setChangeNotes] = useState('');
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [previewData, setPreviewData] = useState<TemplatePreview | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  useEffect(() => {
+    if (!current) return;
+    setSubject(current.subject);
+    setHtml(current.html_body ?? '');
+    setVariableValues(variablesToRecord(template?.variables));
+  }, [current, template?.variables]);
+
+  const versions = useMemo(() => template?.versions ?? [], [template?.versions]);
+
+  async function handleVisibilityChange(visibility: 'public' | 'private') {
+    if (!id || !template || template.source_template_id) return;
+
+    try {
+      await update.mutateAsync({
+        id,
+        payload: { visibility },
+      });
+      toastSuccess(
+        visibility === 'public'
+          ? 'Template is now public in the marketplace.'
+          : 'Template is now private.',
+      );
+    } catch (error) {
+      toastError(error, 'Could not update visibility.');
+    }
+  }
+
+  async function handlePublish() {
+    if (!id || !subject.trim() || !html.trim()) {
+      toastError('Subject and HTML body are required.');
+      return;
+    }
+
+    try {
+      const result = await publishVersion.mutateAsync({
+        id,
+        payload: {
+          subject: subject.trim(),
+          html,
+          change_notes: changeNotes.trim() || undefined,
+          variables: template?.variables ?? undefined,
+        },
+      });
+      setChangeNotes('');
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not publish template version.');
+    }
+  }
+
+  async function handlePreview() {
+    if (!id) return;
+
+    try {
+      const result = await preview.mutateAsync({
+        id,
+        variables: variableValues,
+      });
+      setPreviewData(result.preview);
+      setPreviewOpen(true);
+    } catch (error) {
+      toastError(error, 'Could not render preview.');
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center border border-border bg-card p-16 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isError || !template) {
+    return (
+      <DashboardLayout>
+        <div className="border border-border bg-card p-8 text-[13px] text-destructive">
+          Template not found.
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="flex items-center gap-3 mb-6">
+      <div className="mb-6 flex items-center gap-3">
         <Link
           to="/dashboard/templates"
           className="text-muted-foreground hover:text-foreground"
@@ -22,21 +133,167 @@ export default function TemplateDetail() {
         <PageHeader
           eyebrow="Templates"
           title={template.name}
-          description={`Version history and preview for ${template.category} template.`}
+          description={`${categoryLabel(template.category)} template · ${template.sends_count ?? 0} sends`}
         />
       </div>
 
-      <div className="border border-border bg-card p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <StatusBadge status="active" label={template.category} />
-          <span className="text-[13px] text-muted-foreground font-mono">
-            {template.versions} versions · {template.sent} sent · {template.open}% open rate
-          </span>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="space-y-6">
+          <div className="border border-border bg-card p-5">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <StatusBadge
+                status={template.is_active ? 'active' : 'inactive'}
+                label={categoryLabel(template.category)}
+              />
+              <span className="text-[13px] text-muted-foreground font-mono">
+                v{current?.version ?? 1} · slug {template.slug}
+              </span>
+              {template.source_template_id ? (
+                <span className="rounded border border-border px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+                  From marketplace
+                </span>
+              ) : (
+                <select
+                  value={template.visibility}
+                  onChange={(event) =>
+                    handleVisibilityChange(event.target.value as 'public' | 'private')
+                  }
+                  disabled={update.isPending}
+                  className="rounded-md border border-border bg-background px-2 py-1 text-[12px]"
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                </select>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <label className="block space-y-1.5">
+                <span className="label-mono">Subject</span>
+                <input
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]"
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="label-mono">HTML body</span>
+                <textarea
+                  value={html}
+                  onChange={(event) => setHtml(event.target.value)}
+                  rows={14}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-[12px]"
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="label-mono">Change notes</span>
+                <input
+                  value={changeNotes}
+                  onChange={(event) => setChangeNotes(event.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]"
+                  placeholder="Optional note for this version"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handlePreview}
+                disabled={preview.isPending}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent"
+              >
+                {preview.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}
+                Preview
+              </button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishVersion.isPending}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                {publishVersion.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                Publish version
+              </button>
+            </div>
+          </div>
+
+          {(template.variables ?? []).length > 0 ? (
+            <div className="border border-border bg-card p-5">
+              <h3 className="text-base font-medium">Preview variables</h3>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                Sample values used when previewing this template.
+              </p>
+              <div className="mt-4 space-y-3">
+                {(template.variables ?? []).map((variable) => (
+                  <label key={variable.key} className="grid grid-cols-[120px_1fr] items-center gap-3">
+                    <span className="font-mono text-[12px] text-muted-foreground">{`{{${variable.key}}}`}</span>
+                    <input
+                      value={variableValues[variable.key] ?? ''}
+                      onChange={(event) =>
+                        setVariableValues((currentValues) => ({
+                          ...currentValues,
+                          [variable.key]: event.target.value,
+                        }))
+                      }
+                      className="rounded-md border border-border bg-background px-3 py-1.5 text-[13px]"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
-        <p className="text-[13px] text-muted-foreground">
-          Template editor and version history will connect in Module 16.
-        </p>
+
+        <aside className="border border-border bg-card">
+          <div className="border-b border-border p-4">
+            <h3 className="text-base font-medium">Version history</h3>
+          </div>
+          <ul className="divide-y divide-border">
+            {versions.map((version) => (
+              <li key={version.id} className="p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[12px]">v{version.version}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {new Date(version.created_at).toLocaleString()}
+                  </span>
+                </div>
+                <div className="mt-1 text-[13px]">{version.subject}</div>
+                {version.change_notes ? (
+                  <div className="mt-1 text-[12px] text-muted-foreground">{version.change_notes}</div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </aside>
       </div>
+
+      {previewOpen && previewData ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-6 backdrop-blur">
+          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <div>
+                <h3 className="text-base font-medium">Template preview</h3>
+                <p className="mt-0.5 text-[11.5px] text-muted-foreground">{previewData.subject}</p>
+              </div>
+              <button
+                type="button"
+                className="rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent"
+                onClick={() => setPreviewOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="overflow-auto p-4">
+              <iframe
+                title="Template preview"
+                className="h-[60vh] w-full border border-border bg-white"
+                srcDoc={previewData.html ?? ''}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </DashboardLayout>
   );
 }

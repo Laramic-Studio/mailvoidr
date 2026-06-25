@@ -6,8 +6,9 @@ import { CodeBlock } from '@/components/CodeBlock';
 import { useDomains } from '@/hooks/useDomains';
 import { useCredits } from '@/hooks/useCredits';
 import { useSendHistory, useSendMutations } from '@/hooks/useSend';
+import { useTemplates } from '@/hooks/useTemplates';
 import { toastError, toastSuccess } from '@/lib/toast';
-import type { EmailPreview } from '@/types';
+import type { EmailPreview, EmailTemplate } from '@/types';
 import { Send, Calendar, Eye, Loader2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -40,14 +41,19 @@ export default function SendEmail() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState<EmailPreview | null>(null);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
 
   const { data: domainsData } = useDomains();
   const { data: creditsData } = useCredits();
   const { data: historyData, isLoading: historyLoading } = useSendHistory();
+  const { data: templatesData } = useTemplates();
   const { send, preview } = useSendMutations();
 
   const verifiedDomains = domainsData?.data.filter((d) => d.status === 'verified') ?? [];
   const history = historyData?.data ?? [];
+  const templates = templatesData?.data ?? [];
+  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
   const credits = creditsData?.credits;
   const liveSendingEnabled = credits?.live_sending_enabled ?? false;
 
@@ -69,6 +75,69 @@ export default function SendEmail() {
       setCreditsRemaining(credits.total_available);
     }
   }, [credits]);
+
+  useEffect(() => {
+    if (!selectedTemplate) {
+      setTemplateVariables({});
+      return;
+    }
+
+    const defaults: Record<string, string> = {};
+    for (const variable of selectedTemplate.variables ?? []) {
+      defaults[variable.key] = variable.default ?? '';
+    }
+    setTemplateVariables(defaults);
+    if (selectedTemplate.subject) {
+      setSubject(selectedTemplate.subject);
+    }
+  }, [selectedTemplate]);
+
+  function selectTemplate(template: EmailTemplate) {
+    setSelectedTemplateId(template.id);
+    setTab('templates');
+  }
+
+  async function handleTemplatePreview() {
+    if (!selectedTemplateId) {
+      toastError('Select a template first.');
+      return;
+    }
+
+    try {
+      const result = await preview.mutateAsync({
+        from: from.trim() || undefined,
+        template_id: selectedTemplateId,
+        variables: templateVariables,
+      });
+      setPreviewData(result.preview);
+      setPreviewOpen(true);
+    } catch (error) {
+      toastError(error, 'Could not render preview.');
+    }
+  }
+
+  async function handleTemplateSend() {
+    const recipients = parseEmails(to);
+    if (!from.trim() || recipients.length === 0 || !selectedTemplateId) {
+      toastError('From, at least one recipient, and a template are required.');
+      return;
+    }
+
+    try {
+      const result = await send.mutateAsync({
+        from: from.trim(),
+        to: recipients,
+        reply_to: replyTo.trim() || undefined,
+        subject: subject.trim() || undefined,
+        template_id: selectedTemplateId,
+        variables: templateVariables,
+      });
+      setCreditsRemaining(result.credits_remaining);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not send email.');
+    }
+  }
 
   async function handlePreview() {
     try {
@@ -354,7 +423,129 @@ export default function SendEmail() {
         </div>
       )}
 
-      {tab !== 'compose' && tab !== 'history' && (
+      {tab === 'templates' && (
+        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <div className="border border-border bg-card">
+            <div className="border-b border-border p-4">
+              <h3 className="text-base font-medium">Templates</h3>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                Send with merged variables from your workspace library.
+              </p>
+            </div>
+            <ul className="max-h-[480px] divide-y divide-border overflow-auto">
+              {templates.length === 0 ? (
+                <li className="p-4 text-[13px] text-muted-foreground">
+                  No templates yet.{' '}
+                  <Link to="/dashboard/templates" className="text-primary hover:underline">
+                    Create one
+                  </Link>
+                </li>
+              ) : (
+                templates.map((template) => (
+                  <li key={template.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectTemplate(template)}
+                      className={`w-full p-4 text-left hover:bg-accent/30 ${
+                        selectedTemplateId === template.id ? 'bg-accent/40' : ''
+                      }`}
+                    >
+                      <div className="text-[13px] font-medium">{template.name}</div>
+                      <div className="mt-1 truncate text-[12px] text-muted-foreground">
+                        {template.subject ?? 'No subject'}
+                      </div>
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+
+          <div className="border border-border bg-card p-5">
+            {selectedTemplate ? (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-base font-medium">{selectedTemplate.name}</h3>
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    {selectedTemplate.current_version?.subject ?? selectedTemplate.subject}
+                  </p>
+                </div>
+
+                <FieldRow label="From" testid="template-send-from">
+                  <input
+                    value={from}
+                    onChange={(event) => setFrom(event.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-1.5 font-mono text-[13px]"
+                  />
+                </FieldRow>
+                <FieldRow label="To" testid="template-send-to">
+                  <input
+                    value={to}
+                    onChange={(event) => setTo(event.target.value)}
+                    placeholder="recipient@example.com"
+                    className="w-full rounded-md border border-border bg-background px-3 py-1.5 font-mono text-[13px]"
+                  />
+                </FieldRow>
+                <FieldRow label="Subject" testid="template-send-subject">
+                  <input
+                    value={subject}
+                    onChange={(event) => setSubject(event.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-[13px]"
+                  />
+                </FieldRow>
+
+                {(selectedTemplate.variables ?? []).length > 0 ? (
+                  <div className="space-y-3 border-t border-border pt-4">
+                    <div className="label-mono">Variables</div>
+                    {(selectedTemplate.variables ?? []).map((variable) => (
+                      <label key={variable.key} className="grid grid-cols-[120px_1fr] items-center gap-3">
+                        <span className="font-mono text-[12px] text-muted-foreground">{`{{${variable.key}}}`}</span>
+                        <input
+                          value={templateVariables[variable.key] ?? ''}
+                          onChange={(event) =>
+                            setTemplateVariables((current) => ({
+                              ...current,
+                              [variable.key]: event.target.value,
+                            }))
+                          }
+                          className="rounded-md border border-border bg-background px-3 py-1.5 text-[13px]"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                  <button
+                    type="button"
+                    onClick={handleTemplatePreview}
+                    disabled={preview.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent"
+                  >
+                    {preview.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleTemplateSend}
+                    disabled={send.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    {send.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                    Send with template
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[280px] items-center justify-center text-[13px] text-muted-foreground">
+                Select a template to configure recipients and variables.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab !== 'compose' && tab !== 'history' && tab !== 'templates' && (
         <div className="border border-dashed border-border bg-card/30 p-16 text-center">
           <h3 className="text-base font-medium">No {tab} emails yet</h3>
           <p className="mt-1 text-sm text-muted-foreground">

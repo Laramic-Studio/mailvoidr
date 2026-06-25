@@ -59,4 +59,17 @@ export const queryKeys = {
     invitations: (workspaceId: string) => ['team', workspaceId, 'invitations'] as const,
     activity: (workspaceId: string) => ['team', workspaceId, 'activity'] as const,
   },
+  templates: {
+    list: (search?: string) => ['templates', 'list', search ?? ''] as const,
+    detail: (id: string) => ['templates', 'detail', id] as const,
+  },
+  templateMarketplace: {
+    list: (search?: string, category?: string) =>
+      ['template-marketplace', 'list', search ?? '', category ?? ''] as const,
+    detail: (id: string) => ['template-marketplace', 'detail', id] as const,
+  },
+  webhooks: {
+    all: ['webhooks'] as const,
+    deliveries: (webhookId?: string) => ['webhooks', 'deliveries', webhookId ?? 'all'] as const,
+  },
 } as const;

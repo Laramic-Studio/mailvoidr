@@ -10,10 +10,13 @@ export interface SendEmailPayload {
   to: string[];
   cc?: string[];
   bcc?: string[];
-  subject: string;
+  subject?: string;
   html?: string;
   text?: string;
   reply_to?: string;
+  template_id?: string;
+  template_version_id?: string;
+  variables?: Record<string, string>;
 }
 
 export interface PreviewEmailPayload {
@@ -21,6 +24,9 @@ export interface PreviewEmailPayload {
   subject?: string;
   html?: string;
   text?: string;
+  template_id?: string;
+  template_version_id?: string;
+  variables?: Record<string, string>;
 }
 
 export async function sendEmail(payload: SendEmailPayload): Promise<{

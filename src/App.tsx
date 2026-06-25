@@ -23,6 +23,7 @@ import Domains from "@/pages/dashboard/Domains";
 import Analytics from "@/pages/dashboard/Analytics";
 import EmailLogs from "@/pages/dashboard/EmailLogs";
 import Templates from "@/pages/dashboard/Templates";
+import TemplateMarketplace from "@/pages/dashboard/TemplateMarketplace";
 import TemplateDetail from "@/pages/dashboard/TemplateDetail";
 import APIKeys from "@/pages/dashboard/APIKeys";
 import SMTP from "@/pages/dashboard/SMTP";
@@ -100,6 +101,7 @@ function App() {
               <Route path="/dashboard/domains" element={<Domains />} />
               <Route path="/dashboard/analytics" element={<Analytics />} />
               <Route path="/dashboard/logs" element={<EmailLogs />} />
+              <Route path="/dashboard/templates/marketplace" element={<TemplateMarketplace />} />
               <Route path="/dashboard/templates" element={<Templates />} />
               <Route path="/dashboard/templates/:id" element={<TemplateDetail />} />
               <Route path="/dashboard/api-keys" element={<APIKeys />} />

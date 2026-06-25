@@ -455,6 +455,148 @@ export interface EmailPreview {
   html: string;
 }
 
+export type TemplateCategory = 'transactional' | 'marketing';
+
+export type TemplateVisibility = 'public' | 'private';
+
+export interface TemplateVariable {
+  key: string;
+  label?: string | null;
+  default?: string | null;
+  required?: boolean;
+}
+
+export interface TemplateVersion {
+  id: string;
+  version: number;
+  subject: string;
+  html_body?: string | null;
+  text_body?: string | null;
+  variables?: TemplateVariable[] | null;
+  change_notes?: string | null;
+  created_by?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  created_at: string;
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  slug: string;
+  category: TemplateCategory;
+  description?: string | null;
+  variables?: TemplateVariable[] | null;
+  is_active: boolean;
+  visibility: TemplateVisibility;
+  source_template_id?: string | null;
+  published_at?: string | null;
+  version_count?: number;
+  sends_count?: number;
+  subject?: string | null;
+  current_version?: TemplateVersion | null;
+  versions?: TemplateVersion[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateListResponse {
+  data: EmailTemplate[];
+}
+
+export interface TemplateMarketplaceItem {
+  id: string;
+  name: string;
+  slug: string;
+  category: TemplateCategory;
+  description?: string | null;
+  variables?: TemplateVariable[] | null;
+  subject?: string | null;
+  installs_count?: number;
+  author?: {
+    id: number;
+    name: string;
+  } | null;
+  published_at?: string | null;
+  current_version?: TemplateVersion | null;
+  in_library: boolean;
+}
+
+export interface TemplateMarketplaceListResponse {
+  data: TemplateMarketplaceItem[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+export interface TemplatePreview {
+  subject: string;
+  html: string | null;
+  text: string | null;
+  variables: Record<string, string>;
+  template_version_id: string;
+}
+
+export type WebhookStatus = 'active' | 'paused';
+
+export interface WebhookEventOption {
+  key: string;
+  label: string;
+  dispatchable: boolean;
+}
+
+export interface WebhookEndpoint {
+  id: string;
+  url: string;
+  secret_prefix: string;
+  events: string[];
+  status: WebhookStatus;
+  description?: string | null;
+  success_rate?: number | null;
+  deliveries_count?: number;
+  last_delivery_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookEndpointListResponse {
+  data: WebhookEndpoint[];
+  meta: {
+    available_events: WebhookEventOption[];
+  };
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_endpoint_id: string;
+  event: string;
+  payload: Record<string, unknown>;
+  status_code: number | null;
+  response?: string | null;
+  attempts: number;
+  duration_ms: number | null;
+  created_at: string;
+  endpoint?: {
+    id: string;
+    url: string;
+  };
+}
+
+export interface WebhookDeliveryListResponse {
+  data: WebhookDelivery[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
 export interface ApiErrorBody {
   message: string;
   errors?: Record<string, string[]>;
