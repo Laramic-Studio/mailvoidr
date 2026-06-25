@@ -1,0 +1,137 @@
+{
+  "project_name": "Mailvoidr",
+  "domain": "Developer Tools, SaaS, Email Infrastructure",
+  "theme": "Dark mode first (supports Light mode)",
+  "archetype": "Archetype 4 (Swiss & High-Contrast - Technical Variant)",
+  "brand_identity": {
+    "vibe": "Premium, Minimal, Modern, Developer-focused, Technical, Enterprise-ready",
+    "inspirations": ["Supabase", "Resend", "Stripe", "Vercel", "Linear", "Mailtrap"],
+    "core_principles": [
+      "No illustrations. Use realistic product UI, charts, and tables for visual interest.",
+      "Strict weight restraint in typography. Rely on size, tracking, and monospace for hierarchy.",
+      "High density, data-rich interfaces built for power users and developers.",
+      "Subtle glowing accents and ultra-crisp 1px borders (Linear/Vercel style)."
+    ]
+  },
+  "color_tokens": {
+    "primary": {
+      "DEFAULT": "#3ECF8E",
+      "hover": "#2FB379",
+      "light": "rgba(62, 207, 142, 0.15)",
+      "border": "rgba(62, 207, 142, 0.3)"
+    },
+    "dark_mode": {
+      "background": "#0A0A0A",
+      "surface": "#121212",
+      "surface_hover": "#1A1A1A",
+      "border": "#222222",
+      "border_hover": "#333333",
+      "text_primary": "#EDEDED",
+      "text_secondary": "#A0A0A0",
+      "text_tertiary": "#707070"
+    },
+    "light_mode": {
+      "background": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "surface_hover": "#F4F4F5",
+      "border": "#EAEAEA",
+      "border_hover": "#D4D4D8",
+      "text_primary": "#09090B",
+      "text_secondary": "#52525B",
+      "text_tertiary": "#A1A1AA"
+    },
+    "status": {
+      "success": "#3ECF8E",
+      "error": "#F87171",
+      "warning": "#FBBF24",
+      "info": "#3B82F6"
+    }
+  },
+  "typography": {
+    "primary_font": "Geist, DM Sans, sans-serif",
+    "mono_font": "Geist Mono, JetBrains Mono, monospace",
+    "rules": {
+      "headings": {
+        "weight": "400",
+        "line_height": "1.0",
+        "letter_spacing": "-0.03em",
+        "color": "text_primary"
+      },
+      "body": {
+        "weight": "400",
+        "line_height": "1.6",
+        "color": "text_secondary"
+      },
+      "technical_labels": {
+        "font": "mono_font",
+        "weight": "400",
+        "text_transform": "uppercase",
+        "letter_spacing": "0.1em",
+        "size": "text-xs"
+      }
+    }
+  },
+  "spacing_and_layout": {
+    "dashboard_shell": {
+      "sidebar_width": "260px",
+      "topbar_height": "64px",
+      "content_padding": "p-8",
+      "navigation": "Collapsible sidebar with workspace switcher dropdown at the top. Use monospace tags for pro features."
+    },
+    "marketing_pages": {
+      "max_width": "max-w-7xl",
+      "hero_spacing": "py-32",
+      "section_spacing": "py-24",
+      "bento_grids": "Use 1px borders with dark surface backgrounds. Insert glowing radial gradients on hover (Aceternity style)."
+    },
+    "docs_portal": {
+      "layout": "Three-column: Left Sidebar (Nav) | Center (Content) | Right Sidebar (On this page)",
+      "code_blocks": "Dark background always (even in light mode) for code blocks. Include Copy/Curl toggle buttons."
+    }
+  },
+  "component_patterns": {
+    "stat_cards": {
+      "style": "Minimalist rectangular. 1px border. No rounded corners larger than 6px.",
+      "content": "Monospace label (e.g., 'EMAILS SENT'), large hero number (Geist 400), and a small green/red trend indicator (+12%). Small sparkline chart on the right."
+    },
+    "tables": {
+      "style": "Full width, border-collapse. Bottom border on rows. Hover effect on rows.",
+      "data": "Highly realistic dummy data (email hashes, real domains, specific timestamps in monospace)."
+    },
+    "inbox_ui": {
+      "layout": "Split view. Left pane: Message list (sender, subject, time). Right pane: Message detail.",
+      "tabs": ["Preview", "HTML", "Raw", "Headers", "Attachments", "Analytics"],
+      "headers": "Display in monospace grid."
+    },
+    "dns_records": {
+      "style": "Code-like blocks displaying Type (TXT/MX), Name, and Value. Include 'Copy' button on hover for the Value."
+    },
+    "buttons": {
+      "primary": "Background #3ECF8E, Text Black, minimal padding, slight hover scale.",
+      "secondary": "Surface background, 1px border, white text, hover background slightly lighter."
+    }
+  },
+  "views_to_build": [
+    "Marketing Website: Home, Features, Pricing, Docs Landing, About, Blog, Contact, Status, Enterprise",
+    "Authentication: Login, Register, Forgot Password, Reset Password, OTP Verification, Invite Accept",
+    "Onboarding: Welcome, Create Workspace, Domain Setup, API Key Generation",
+    "Dashboard Overview: Stat cards, Usage Charts, Recent Activity Feed",
+    "Email Sending: Compose, Templates List, Campaign History",
+    "Email Testing (Sandbox): Spam Checker, Previews, SMTP Testing",
+    "Temporary Email: Inbox List, Split-view Inbox Detail",
+    "Domains: Domain List, Verification DNS Records (SPF/DKIM/DMARC), Reputation",
+    "Logs & Analytics: Advanced filtering table, Deliverability Charts, Engagement metrics",
+    "Developer Settings: API Keys (Create/Revoke), Webhooks (Logs, Replay), SMTP Credentials",
+    "Workspace Settings: Team Management (Roles, Invites), Billing, General Settings",
+    "Documentation Portal: Interactive guides, API reference, Code samples"
+  ],
+  "instructions_to_main_agent": [
+    "Build BOTH Light and Dark mode using Tailwind's 'dark' class methodology. Include a theme toggle.",
+    "Do NOT use arbitrary illustrations. Populate marketing pages and empty states with realistic code snippets, terminal windows, or abstract 1px grid lines.",
+    "Implement the 'Supabase / Linear' typography rhythm: tight headers, monospace technical labels, zero bold text unless absolutely necessary.",
+    "Ensure all components have 'data-testid' attributes for automated testing.",
+    "Seed all tables, charts, and lists with highly realistic dummy data (hashes, real email addresses, exact timestamps, real-looking SMTP logs).",
+    "Use Shadcn UI extensively, but strip away the default 'rounded-md' shadows to favor a sharper, flatter, 1px bordered aesthetic.",
+    "For complex charts, use Recharts with customized minimalist tooltips."
+  ]
+}
