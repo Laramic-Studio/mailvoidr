@@ -1,5 +1,5 @@
 import "@/App.css";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { GuestLayout, OnboardingLayout, ProtectedLayout } from "@/routes/guards";
 
@@ -16,9 +16,9 @@ import InviteAccept from "@/pages/auth/InviteAccept";
 
 import DashboardOverview from "@/pages/dashboard/Overview";
 import SendEmail from "@/pages/dashboard/SendEmail";
-import Testing from "@/pages/dashboard/Testing";
-import Inboxes from "@/pages/dashboard/Inboxes";
-import InboxDetail from "@/pages/dashboard/InboxDetail";
+import Inbox from "@/pages/dashboard/Inbox";
+import VirtualEmails from "@/pages/dashboard/VirtualEmails";
+import VirtualEmailDetail from "@/pages/dashboard/VirtualEmailDetail";
 import Domains from "@/pages/dashboard/Domains";
 import Analytics from "@/pages/dashboard/Analytics";
 import EmailLogs from "@/pages/dashboard/EmailLogs";
@@ -42,6 +42,11 @@ import Blog from "@/pages/marketing/Blog";
 import About from "@/pages/marketing/About";
 import Status from "@/pages/marketing/Status";
 import Contact from "@/pages/marketing/Contact";
+
+function LegacyVirtualEmailDetailRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/dashboard/virtual-emails/${id ?? ""}`} replace />;
+}
 
 function App() {
   return (
@@ -83,9 +88,15 @@ function App() {
 
               <Route path="/dashboard" element={<DashboardOverview />} />
               <Route path="/dashboard/send" element={<SendEmail />} />
-              <Route path="/dashboard/testing" element={<Testing />} />
-              <Route path="/dashboard/inboxes" element={<Inboxes />} />
-              <Route path="/dashboard/inboxes/:id" element={<InboxDetail />} />
+              <Route path="/dashboard/inbox" element={<Inbox />} />
+              <Route path="/dashboard/virtual-emails" element={<VirtualEmails />} />
+              <Route path="/dashboard/virtual-emails/:id" element={<VirtualEmailDetail />} />
+
+              {/* Legacy routes */}
+              <Route path="/dashboard/testing" element={<Navigate to="/dashboard/inbox" replace />} />
+              <Route path="/dashboard/inboxes" element={<Navigate to="/dashboard/virtual-emails" replace />} />
+              <Route path="/dashboard/inboxes/:id" element={<LegacyVirtualEmailDetailRedirect />} />
+
               <Route path="/dashboard/domains" element={<Domains />} />
               <Route path="/dashboard/analytics" element={<Analytics />} />
               <Route path="/dashboard/logs" element={<EmailLogs />} />

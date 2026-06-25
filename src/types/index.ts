@@ -43,13 +43,70 @@ export interface InvitationPreview {
 
 export interface VirtualEmail {
   id: string;
-  address: string;
+  email_address: string;
   label: string | null;
-  messages: number;
-  unread: number;
-  ttl: string;
-  forwarding: string | null;
-  created: string;
+  forward_to: string | null;
+  messages_count: number;
+  unread_count: number;
+  expires_at: string | null;
+  is_expired: boolean;
+  is_active: boolean;
+  created_at: string | null;
+}
+
+export interface VirtualEmailListResponse {
+  data: VirtualEmail[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+export interface EmailAttachment {
+  id: string;
+  filename: string;
+  content_type: string;
+  size: number;
+  formatted_size: string;
+}
+
+export interface EmailHeader {
+  key: string;
+  value: string;
+}
+
+export interface EmailMessageSummary {
+  id: string;
+  subject: string | null;
+  from: string | null;
+  to: string | null;
+  preview: string | null;
+  is_read: boolean;
+  attachments_count: number;
+  created_at: string | null;
+}
+
+export interface EmailMessage extends EmailMessageSummary {
+  cc?: string | null;
+  bcc?: string | null;
+  html_body?: string | null;
+  text_body?: string | null;
+  size?: number;
+  formatted_size?: string;
+  attachments?: EmailAttachment[];
+  headers?: EmailHeader[];
+}
+
+export interface EmailMessageListResponse {
+  data: EmailMessageSummary[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
 export interface SandboxInbox {

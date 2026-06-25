@@ -12,18 +12,18 @@ const PROJECTS = [
   { id: "p3", name: "Staging webhooks", inbox: "staging@inbox.mailvoidr.io", messages: 89, lastSeen: "Yesterday" },
 ];
 
-export default function Testing() {
+export default function Inbox() {
   const [tab, setTab] = useState("sandbox");
   const [device, setDevice] = useState("desktop");
 
   return (
     <DashboardLayout>
       <PageHeader
-        eyebrow="Email testing"
-        title="Sandbox & previews"
-        description="Spam score, multi-client render, HTML lint, and link checks — every email, automated."
+        eyebrow="Workspace"
+        title="Inbox"
+        description="Your sandbox inbox — SMTP credentials, captured messages, spam checks, and render previews."
         actions={
-          <button data-testid="testing-new-project" className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-[13px] font-medium hover:bg-primary/90">
+          <button data-testid="inbox-new-project" className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-[13px] font-medium hover:bg-primary/90">
             <Plus className="h-3 w-3" /> New project
           </button>
         }
@@ -31,7 +31,7 @@ export default function Testing() {
 
       <div className="flex items-center gap-1 border-b border-border mb-6">
         {[["sandbox", "Sandbox"], ["projects", "Projects"], ["spam", "Spam check"], ["preview", "Render preview"], ["headers", "Headers"], ["source", "Source"]].map(([id, l]) => (
-          <button key={id} onClick={() => setTab(id)} data-testid={`testing-tab-${id}`} className={`px-3.5 py-2 text-[13px] transition-colors ${tab === id ? "text-foreground border-b-2 border-primary -mb-px" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
+          <button key={id} onClick={() => setTab(id)} data-testid={`inbox-tab-${id}`} className={`px-3.5 py-2 text-[13px] transition-colors ${tab === id ? "text-foreground border-b-2 border-primary -mb-px" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
         ))}
       </div>
 

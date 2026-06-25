@@ -15,13 +15,13 @@ Two different concepts — do not merge them in the backend:
 
 | Frontend route | UI label | Laravel today | DB table | Count |
 |----------------|----------|---------------|----------|-------|
-| `/dashboard/inboxes` | Inboxes | `test-emails/*` | `virtual_email_addresses` | **Many** per user/workspace |
-| `/dashboard/inboxes/:id` | Inbox detail | `test-emails/show` | `virtual_email_addresses` + `emails` | One virtual address |
-| `/dashboard/testing` | Email Testing | `dashboard.tsx` (Inbox) | `inboxes` | **One** sandbox inbox per user/workspace |
+| `/dashboard/virtual-emails` | Virtual emails | `test-emails/*` | `virtual_email_addresses` | **Many** per user/workspace |
+| `/dashboard/virtual-emails/:id` | Virtual email detail | `test-emails/show` | `virtual_email_addresses` + `emails` | One virtual address |
+| `/dashboard/inbox` | Inbox (sandbox) | `dashboard.tsx` (Inbox) | `inboxes` | **One** sandbox inbox per user/workspace |
 
 **Rules:**
-- Users get **one sandbox inbox** (SMTP creds, captured mail, spam/render tools) → **Email Testing** page.
-- Users create **many virtual emails** (disposable addresses, TTL, forwarding) → **Inboxes** page.
+- Users get **one sandbox inbox** (SMTP creds, captured mail, spam/render tools) → **Inbox** page (`/dashboard/inbox`).
+- Users create **many virtual emails** (disposable addresses, TTL, forwarding) → **Virtual emails** page.
 - The prototype UI is already on the correct pages — no route swap needed.
 
 ---
@@ -386,7 +386,7 @@ Emails link via `emails.virtual_email_address_id` (already exists).
 **Goal:** Read mail captured by a **virtual email address** (not the sandbox inbox).
 
 ### Frontend
-- `pages/dashboard/InboxDetail.jsx` — route stays `/dashboard/inboxes/:id`
+- `pages/dashboard/InboxDetail.jsx` — route stays `/dashboard/virtual-emails/:id`
 
 ### Backend
 
