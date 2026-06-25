@@ -28,4 +28,10 @@ export const queryKeys = {
   domains: {
     all: ['domains'] as const,
   },
+  apiKeys: {
+    all: ['api-keys'] as const,
+  },
+  smtpCredentials: {
+    all: ['smtp-credentials'] as const,
+  },
 } as const;

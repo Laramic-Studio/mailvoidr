@@ -193,6 +193,43 @@ export interface DomainListResponse {
   data: VerifiedDomain[];
 }
 
+export interface ApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  scopes: string[];
+  requests_count: number;
+  last_used_at: string | null;
+  created_at: string | null;
+  revoked_at: string | null;
+  is_revoked: boolean;
+}
+
+export interface ApiKeyListResponse {
+  data: ApiKey[];
+  meta: {
+    available_scopes: string[];
+  };
+}
+
+export interface SmtpCredential {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  encryption: string;
+  username: string;
+  region: string;
+  is_active: boolean;
+  enabled_at: string | null;
+  created_at: string | null;
+}
+
+export interface SmtpCredentialResponse {
+  live_sending_enabled: boolean;
+  credential: SmtpCredential | null;
+}
+
 export interface ApiErrorBody {
   message: string;
   errors?: Record<string, string[]>;
