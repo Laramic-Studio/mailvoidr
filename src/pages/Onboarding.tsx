@@ -1,11 +1,14 @@
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CodeBlock } from "@/components/CodeBlock";
-import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useOnboardingMutations, useOnboardingStatus } from "@/hooks/useOnboarding";
+import { getApiErrorMessage } from "@/lib/api";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, ArrowRight, ArrowLeft, Code2, Building, Users, Rocket, Globe, Copy, Eye, EyeOff } from "lucide-react";
+import { Check, ArrowRight, ArrowLeft, Code2, Building, Users, Rocket, Copy, Eye, EyeOff } from "lucide-react";
 
-const STEPS = ["Welcome", "Workspace", "Usage", "Domain", "API key", "Done"];
+const STEPS = ["Welcome", "Workspace", "Usage", "API key", "Done"];
 
 const USE_CASES = [
   { id: "developer", icon: Code2, title: "Developer", desc: "Side projects and personal work." },
@@ -14,16 +17,126 @@ const USE_CASES = [
   { id: "enterprise", icon: Building, title: "Enterprise", desc: "50+ employees, compliance-heavy." },
 ];
 
-export default function Onboarding() {
-  const [step, setStep] = useState(0);
-  const [workspaceName, setWorkspaceName] = useState("Acme Inc.");
-  const [useCase, setUseCase] = useState("startup");
-  const [domain, setDomain] = useState("mail.acme.com");
-  const [revealed, setRevealed] = useState(false);
-  const nav = useNavigate();
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
-  const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const back = () => setStep((s) => Math.max(s - 1, 0));
+export default function Onboarding() {
+  const nav = useNavigate();
+  const { user } = useAuth();
+  const { data: status, isLoading } = useOnboardingStatus();
+  const { saveStep, createWorkspace, updateWorkspace, createApiKey, complete } = useOnboardingMutations();
+
+  const [step, setStep] = useState(0);
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceSlug, setWorkspaceSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [useCase, setUseCase] = useState("startup");
+  const [plainApiKey, setPlainApiKey] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!status) {
+      return;
+    }
+
+    setStep(status.step ?? 0);
+
+    if (status.workspace) {
+      setWorkspaceName(status.workspace.name);
+      setWorkspaceSlug(status.workspace.slug);
+      if (status.workspace.use_case) {
+        setUseCase(status.workspace.use_case);
+      }
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (!slugTouched) {
+      setWorkspaceSlug(slugify(workspaceName));
+    }
+  }, [workspaceName, slugTouched]);
+
+  const next = async () => {
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const nextStep = Math.min(step + 1, STEPS.length - 1);
+
+      if (step === 1) {
+        await createWorkspace.mutateAsync({
+          name: workspaceName.trim(),
+          slug: workspaceSlug.trim() || undefined,
+        });
+      }
+
+      if (step === 2) {
+        await updateWorkspace.mutateAsync({ use_case: useCase });
+      }
+
+      if (step === 3 && !plainApiKey) {
+        const result = await createApiKey.mutateAsync("web-app");
+        setPlainApiKey(result.plain_key);
+      }
+
+      await saveStep.mutateAsync(nextStep);
+      setStep(nextStep);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Could not save progress"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const skipApiKey = async () => {
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const nextStep = 4;
+      await saveStep.mutateAsync(nextStep);
+      setStep(nextStep);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Could not save progress"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const back = async () => {
+    const prevStep = Math.max(step - 1, 0);
+    setStep(prevStep);
+    try {
+      await saveStep.mutateAsync(prevStep);
+    } catch {
+      // Non-blocking when going back
+    }
+  };
+
+  const finish = async () => {
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await complete.mutateAsync();
+      nav(result.redirect || "/dashboard");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Could not complete onboarding"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground text-sm">
+        Loading onboarding…
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,7 +148,6 @@ export default function Onboarding() {
         </div>
       </header>
 
-      {/* Step rail */}
       <div className="border-b border-border">
         <div className="mx-auto max-w-3xl px-6 py-4 flex items-center gap-2">
           {STEPS.map((s, i) => (
@@ -55,15 +167,18 @@ export default function Onboarding() {
       </div>
 
       <main className="mx-auto max-w-2xl px-6 py-16">
+        {error && (
+          <p className="mb-6 text-sm text-destructive" data-testid="onb-error">{error}</p>
+        )}
+
         {step === 0 && (
           <div data-testid="onb-welcome">
             <span className="label-mono">Welcome</span>
-            <h1 className="mt-2 text-4xl tracking-tight font-medium">Let's get you sending email.</h1>
-            <p className="mt-3 text-muted-foreground">This will take about 4 minutes. We'll create your workspace, set up a domain, and generate your first API key.</p>
+            <h1 className="mt-2 text-4xl tracking-tight font-medium">Let&apos;s get you sending email.</h1>
+            <p className="mt-3 text-muted-foreground">This takes a few minutes. We&apos;ll create your workspace and generate your first API key.</p>
             <ul className="mt-8 space-y-3 text-sm">
               {[
                 "Create a workspace for your team",
-                "Verify a sending domain with SPF, DKIM, and DMARC",
                 "Generate a scoped API key",
                 "Send your first test email",
               ].map((s) => (
@@ -81,23 +196,27 @@ export default function Onboarding() {
             <div className="mt-8 space-y-4">
               <div>
                 <label className="label-mono block mb-1.5">Workspace name</label>
-                <input data-testid="onb-workspace-name" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input
+                  data-testid="onb-workspace-name"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
               </div>
               <div>
                 <label className="label-mono block mb-1.5">Workspace URL</label>
                 <div className="flex items-center border border-border rounded-md bg-card overflow-hidden">
                   <span className="px-3 text-[12.5px] text-muted-foreground font-mono">mailvoidr.io/</span>
-                  <input data-testid="onb-workspace-slug" defaultValue={workspaceName.toLowerCase().replace(/[^a-z]/g, "")} className="flex-1 bg-transparent py-2 pr-3 text-sm focus:outline-none" />
+                  <input
+                    data-testid="onb-workspace-slug"
+                    value={workspaceSlug}
+                    onChange={(e) => {
+                      setSlugTouched(true);
+                      setWorkspaceSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                    }}
+                    className="flex-1 bg-transparent py-2 pr-3 text-sm focus:outline-none"
+                  />
                 </div>
-              </div>
-              <div>
-                <label className="label-mono block mb-1.5">Region</label>
-                <select data-testid="onb-region" className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm">
-                  <option>us-east-1 · N. Virginia</option>
-                  <option>eu-west-1 · Ireland</option>
-                  <option>ap-south-1 · Mumbai</option>
-                </select>
-                <p className="mt-1.5 text-[11.5px] text-muted-foreground">Choose where your data lives. This can't be changed later.</p>
               </div>
             </div>
           </div>
@@ -107,11 +226,12 @@ export default function Onboarding() {
           <div data-testid="onb-usage">
             <span className="label-mono">Step 3</span>
             <h1 className="mt-2 text-3xl tracking-tight font-medium">What best describes you?</h1>
-            <p className="mt-2 text-muted-foreground text-sm">We'll customize your dashboard accordingly.</p>
+            <p className="mt-2 text-muted-foreground text-sm">We&apos;ll customize your dashboard accordingly.</p>
             <div className="mt-8 grid sm:grid-cols-2 gap-3">
               {USE_CASES.map((u) => (
                 <button
                   key={u.id}
+                  type="button"
                   onClick={() => setUseCase(u.id)}
                   data-testid={`onb-usecase-${u.id}`}
                   className={`text-left border rounded-md p-4 transition-colors ${
@@ -128,65 +248,55 @@ export default function Onboarding() {
         )}
 
         {step === 3 && (
-          <div data-testid="onb-domain">
+          <div data-testid="onb-apikey">
             <span className="label-mono">Step 4</span>
-            <h1 className="mt-2 text-3xl tracking-tight font-medium">Connect a sending domain</h1>
-            <p className="mt-2 text-muted-foreground text-sm">We recommend a subdomain like <span className="font-mono text-foreground">mail.yourcompany.com</span>.</p>
-            <div className="mt-8 space-y-4">
-              <div>
-                <label className="label-mono block mb-1.5">Domain</label>
-                <input data-testid="onb-domain-input" value={domain} onChange={(e) => setDomain(e.target.value)} className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary" />
+            <h1 className="mt-2 text-3xl tracking-tight font-medium">Generate your first API key</h1>
+            <p className="mt-2 text-muted-foreground text-sm">Save this somewhere safe. You won&apos;t see it again.</p>
+            <div className="mt-8 border border-border bg-card p-4">
+              <div className="flex items-center justify-between">
+                <span className="label-mono">Production · web-app</span>
+                {plainApiKey && (
+                  <button
+                    type="button"
+                    onClick={() => setRevealed(!revealed)}
+                    className="font-mono text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                  >
+                    {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    {revealed ? "Hide" : "Reveal"}
+                  </button>
+                )}
               </div>
-              <div className="border border-border bg-card p-4">
-                <div className="label-mono">DNS records to add</div>
-                <div className="mt-3 space-y-2 font-mono text-[12px]">
-                  {[
-                    ["TXT", "@", "v=spf1 include:_spf.mailvoidr.io ~all"],
-                    ["TXT", "mvdkim._domainkey", "v=DKIM1; k=rsa; p=MIGfMA0G..."],
-                    ["CNAME", "track", "track.mailvoidr.io"],
-                  ].map(([type, name, value]) => (
-                    <div key={type} className="grid grid-cols-[60px_1fr] gap-3 items-center py-1.5 border-b border-border last:border-0">
-                      <span className="text-primary">{type}</span>
-                      <div className="text-muted-foreground truncate">{name} → <span className="text-foreground">{value}</span></div>
-                    </div>
-                  ))}
+              <div className="mt-2 flex items-center gap-2 font-mono text-[13px] bg-background border border-border rounded px-3 py-2">
+                <span className="flex-1 truncate" data-testid="onb-apikey-value">
+                  {plainApiKey
+                    ? (revealed ? plainApiKey : `${plainApiKey.slice(0, 12)}••••••••••••••••••••••••`)
+                    : "Click Continue to generate your key"}
+                </span>
+                {plainApiKey && (
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => navigator.clipboard.writeText(plainApiKey)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              {plainApiKey && (
+                <div className="mt-4">
+                  <CodeBlock language="bash" code={`export MAILVOIDR_API_KEY="${plainApiKey}"`} />
                 </div>
-                <p className="mt-3 text-[11.5px] text-muted-foreground">DNS changes can take up to 30 minutes to propagate. You can skip and verify later.</p>
-              </div>
+              )}
             </div>
           </div>
         )}
 
         {step === 4 && (
-          <div data-testid="onb-apikey">
-            <span className="label-mono">Step 5</span>
-            <h1 className="mt-2 text-3xl tracking-tight font-medium">Generate your first API key</h1>
-            <p className="mt-2 text-muted-foreground text-sm">Save this somewhere safe. You won't see it again.</p>
-            <div className="mt-8 border border-border bg-card p-4">
-              <div className="flex items-center justify-between">
-                <span className="label-mono">Production · web-app</span>
-                <button onClick={() => setRevealed(!revealed)} className="font-mono text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-                  {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                  {revealed ? "Hide" : "Reveal"}
-                </button>
-              </div>
-              <div className="mt-2 flex items-center gap-2 font-mono text-[13px] bg-background border border-border rounded px-3 py-2">
-                <span className="flex-1 truncate" data-testid="onb-apikey-value">{revealed ? "mv_live_8k3xPa9LmQ2v7N4cT1bR5wY6sX0fE8aD" : "mv_live_8k3x••••••••••••••••••••••••"}</span>
-                <button className="text-muted-foreground hover:text-foreground"><Copy className="h-3 w-3" /></button>
-              </div>
-              <div className="mt-4">
-                <CodeBlock language="bash" code={`export MAILVOIDR_API_KEY="mv_live_8k3xPa9LmQ2v7N4cT1bR5wY6sX0fE8aD"`} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {step === 5 && (
           <div data-testid="onb-done" className="text-center">
             <div className="h-14 w-14 rounded-full bg-primary/15 border border-primary/30 inline-flex items-center justify-center mb-6">
               <Check className="h-6 w-6 text-primary" />
             </div>
-            <h1 className="text-3xl tracking-tight font-medium">You're all set, Riya!</h1>
+            <h1 className="text-3xl tracking-tight font-medium">You&apos;re all set{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!</h1>
             <p className="mt-3 text-muted-foreground">Your workspace is ready. Time to send your first email.</p>
             <div className="mt-8 grid sm:grid-cols-2 gap-3 text-left">
               <Link to="/dashboard/send" className="border border-border bg-card p-4 hover:bg-accent transition-colors">
@@ -201,20 +311,52 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* Footer nav */}
         <div className="mt-12 flex items-center justify-between">
-          <button onClick={back} disabled={step === 0} data-testid="onb-back" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed">
+          <button
+            type="button"
+            onClick={back}
+            disabled={step === 0 || submitting}
+            data-testid="onb-back"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
             <ArrowLeft className="h-3.5 w-3.5" /> Back
           </button>
-          {step < STEPS.length - 1 ? (
-            <button onClick={next} data-testid="onb-next" className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90">
-              Continue <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          ) : (
-            <button onClick={() => nav("/dashboard")} data-testid="onb-finish" className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90">
-              Go to dashboard <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          )}
+
+          <div className="flex items-center gap-3">
+            {step === 3 && (
+              <button
+                type="button"
+                onClick={skipApiKey}
+                disabled={submitting}
+                data-testid="onb-skip-apikey"
+                className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-60"
+              >
+                Skip for now
+              </button>
+            )}
+
+            {step < STEPS.length - 1 ? (
+              <button
+                type="button"
+                onClick={next}
+                disabled={submitting || (step === 1 && !workspaceName.trim())}
+                data-testid="onb-next"
+                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
+              >
+                {submitting ? "Saving…" : "Continue"} <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={finish}
+                disabled={submitting}
+                data-testid="onb-finish"
+                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
+              >
+                {submitting ? "Finishing…" : "Go to dashboard"} <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </main>
     </div>

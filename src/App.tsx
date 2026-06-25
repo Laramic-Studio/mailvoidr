@@ -1,7 +1,7 @@
 import "@/App.css";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { GuestLayout, OnboardingLayout, ProtectedLayout } from "@/routes/guards";
 
 import Onboarding from "@/pages/Onboarding";
 
@@ -43,15 +43,12 @@ import About from "@/pages/marketing/About";
 import Status from "@/pages/marketing/Status";
 import Contact from "@/pages/marketing/Contact";
 
-function Protected({ children }: { children: React.ReactNode }) {
-  return <ProtectedRoute>{children}</ProtectedRoute>;
-}
-
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
         <Routes>
+          {/* Public — no auth required */}
           <Route path="/" element={<MarketingHome />} />
           <Route path="/features" element={<Features />} />
           <Route path="/pricing" element={<Pricing />} />
@@ -61,162 +58,46 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/status" element={<Status />} />
           <Route path="/contact" element={<Contact />} />
-
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/2fa" element={<TwoFA />} />
-          <Route
-            path="/workspaces"
-            element={
-              <Protected>
-                <WorkspaceSelect />
-              </Protected>
-            }
-          />
-          <Route path="/invite" element={<InviteAccept />} />
-          <Route
-            path="/onboarding"
-            element={
-              <Protected>
-                <Onboarding />
-              </Protected>
-            }
-          />
-
           <Route path="/docs" element={<DocsLanding />} />
           <Route path="/docs/:slug" element={<DocsArticle />} />
+          <Route path="/invite" element={<InviteAccept />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <Protected>
-                <DashboardOverview />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/send"
-            element={
-              <Protected>
-                <SendEmail />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/testing"
-            element={
-              <Protected>
-                <Testing />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/inboxes"
-            element={
-              <Protected>
-                <Inboxes />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/inboxes/:id"
-            element={
-              <Protected>
-                <InboxDetail />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/domains"
-            element={
-              <Protected>
-                <Domains />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/analytics"
-            element={
-              <Protected>
-                <Analytics />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/logs"
-            element={
-              <Protected>
-                <EmailLogs />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/templates"
-            element={
-              <Protected>
-                <Templates />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/templates/:id"
-            element={
-              <Protected>
-                <TemplateDetail />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/api-keys"
-            element={
-              <Protected>
-                <APIKeys />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/smtp"
-            element={
-              <Protected>
-                <SMTP />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/webhooks"
-            element={
-              <Protected>
-                <Webhooks />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/teams"
-            element={
-              <Protected>
-                <Teams />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/billing"
-            element={
-              <Protected>
-                <Billing />
-              </Protected>
-            }
-          />
-          <Route
-            path="/dashboard/settings"
-            element={
-              <Protected>
-                <Settings />
-              </Protected>
-            }
-          />
+          {/* Guest-only — signed-in users are redirected */}
+          <Route element={<GuestLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Route>
+
+          {/* Mid-login 2FA — no session yet */}
+          <Route path="/2fa" element={<TwoFA />} />
+
+          {/* Authenticated app */}
+          <Route element={<ProtectedLayout />}>
+            <Route element={<OnboardingLayout />}>
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/workspaces" element={<WorkspaceSelect />} />
+
+              <Route path="/dashboard" element={<DashboardOverview />} />
+              <Route path="/dashboard/send" element={<SendEmail />} />
+              <Route path="/dashboard/testing" element={<Testing />} />
+              <Route path="/dashboard/inboxes" element={<Inboxes />} />
+              <Route path="/dashboard/inboxes/:id" element={<InboxDetail />} />
+              <Route path="/dashboard/domains" element={<Domains />} />
+              <Route path="/dashboard/analytics" element={<Analytics />} />
+              <Route path="/dashboard/logs" element={<EmailLogs />} />
+              <Route path="/dashboard/templates" element={<Templates />} />
+              <Route path="/dashboard/templates/:id" element={<TemplateDetail />} />
+              <Route path="/dashboard/api-keys" element={<APIKeys />} />
+              <Route path="/dashboard/smtp" element={<SMTP />} />
+              <Route path="/dashboard/webhooks" element={<Webhooks />} />
+              <Route path="/dashboard/teams" element={<Teams />} />
+              <Route path="/dashboard/billing" element={<Billing />} />
+              <Route path="/dashboard/settings" element={<Settings />} />
+            </Route>
+          </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

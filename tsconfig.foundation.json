@@ -4,8 +4,9 @@
     "src/vite-env.d.ts",
     "src/lib/**/*",
     "src/types/**/*",
-    "src/contexts/**/*",
+    "src/stores/**/*",
+    "src/hooks/useAuth.ts",
     "src/hooks/useHealth.ts",
-    "src/components/ProtectedRoute.tsx"
+    "src/routes/guards.tsx",
   ]
 }

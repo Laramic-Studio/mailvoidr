@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import type { ApiErrorBody } from "@/types";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://ui.test/api/v1";
 
 export const TOKEN_STORAGE_KEY = "mailvoidr_access_token";
 export const REFRESH_TOKEN_STORAGE_KEY = "mailvoidr_refresh_token";
@@ -32,7 +32,11 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorBody>) => {
-    if (error.response?.status === 401) {
+    const isAuthRoute = error.config?.url?.includes("/auth/login")
+      || error.config?.url?.includes("/auth/register")
+      || error.config?.url?.includes("/auth/two-factor");
+
+    if (error.response?.status === 401 && !isAuthRoute) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
 

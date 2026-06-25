@@ -90,7 +90,7 @@ Do **not** migrate mid-rollout (e.g. during Module 4) — finish TS in Module 0 
 | Verify email OTP | `POST /api/v1/auth/email/verify-otp` | Reuse existing OTP notification |
 | Forgot / reset | `POST /api/v1/auth/forgot-password`, `POST /api/v1/auth/reset-password` | Reuse Fortify actions |
 
-**Package:** `tymon/jwt-auth` or `php-open-source-saver/jwt-auth` (maintained fork).  
+**Package:** [`tymon/jwt-auth`](https://jwt-auth.readthedocs.io/en/develop/laravel-installation/) `^2.3` (Laravel 12 compatible).  
 **OAuth (GitHub/Google):** redirect to Laravel Socialite → callback issues JWT → redirect to SPA with token in query/hash (one-time exchange).
 
 ### Frontend foundation (do once, Module 0)
@@ -112,14 +112,32 @@ Do **not** migrate mid-rollout (e.g. during Module 4) — finish TS in Module 0 
 
 ---
 
-## Module order (important → least)
+## Post-auth user journey
+
+Laravel today has **no onboarding** — signup goes straight to dashboard. The SPA wizard at `/onboarding` is new product flow; we build it in **Module 2**.
+
+```
+Register → Verify email → 2FA (if on) → Onboarding (creates workspace here) → Dashboard
+Login    → 2FA (if on) → Onboarding (if incomplete) → Dashboard
+Invite accept → Dashboard (skip onboarding — joined existing workspace)
+```
+
+| Module | What it delivers for this journey |
+|--------|-----------------------------------|
+| **1 — Auth** | JWT login/register/verify/2FA. `GET /auth/me` returns `onboarding_completed`. `OnboardingGate` redirects incomplete users to `/onboarding`. |
+| **2 — Onboarding** | Wire `/onboarding` wizard. **Workspace is created inside onboarding** (step 1), not a separate pre-step. Sets `onboarding_completed_at`, provisions sandbox inbox. |
+| **3 — Workspaces + invites** | **After onboarding:** switch workspace, `/workspaces` picker, invite accept. Dashboard switcher. Not part of first-time signup flow. |
+
+Module 1 does **not** implement the wizard — only the gate that sends new users there after auth succeeds.
+
+---
 
 | # | Module | Priority | Depends on |
 |---|--------|----------|------------|
 | 0 | Foundation + marketing (static) | — | — |
 | 1 | Authentication | Critical | 0 |
-| 2 | Workspaces + invites | Critical | 1 |
-| 3 | Onboarding | High | 2 |
+| 2 | **Onboarding wizard** (incl. workspace create) | Critical | 1 |
+| 3 | Workspaces + invites (post-onboarding) | High | 2 |
 | 4 | Inboxes (virtual emails, many) | Critical | 2 |
 | 5 | Virtual email detail + messages | Critical | 4 |
 | 6 | Email testing (sandbox inbox, one) | High | 2 |
@@ -129,8 +147,8 @@ Do **not** migrate mid-rollout (e.g. during Module 4) — finish TS in Module 0 
 | 10 | Send email (dashboard) | High | 7, 8 |
 | 11 | Email logs (outbound) | High | 10 |
 | 12 | Dashboard overview | Medium | 4, 10, 11 |
-| 13 | Settings | Medium | 1, 2 |
-| 14 | Teams | Medium | 2 |
+| 13 | Settings | Medium | 1, 3 |
+| 14 | Teams | Medium | 3 |
 | 15 | Live sending + credits | Medium | 10 |
 | 16 | Templates | Medium | 10 |
 | 17 | Webhooks | Medium | 10, 11 |
@@ -166,17 +184,22 @@ Do **not** migrate mid-rollout (e.g. during Module 4) — finish TS in Module 0 
 
 ## Module 1 — Authentication
 
-**Goal:** Real login/register/reset/verify/2FA. Unauthenticated users cannot reach `/dashboard/*`.
+**Goal:** Real login/register/reset/verify/2FA. Unauthenticated users cannot reach `/dashboard/*` or `/onboarding`.
+
+**Onboarding note:** Module 1 sets up redirect plumbing only (`onboarding_completed` on `/auth/me` + `OnboardingGate`). The wizard (including workspace create) is **Module 2**.
 
 ### Frontend pages
 | Route | File |
 |-------|------|
-| `/login` | `pages/auth/Login.jsx` |
-| `/register` | `pages/auth/Register.jsx` |
-| `/forgot-password` | `pages/auth/ForgotPassword.jsx` |
-| `/reset-password` | `pages/auth/ResetPassword.jsx` |
-| `/verify-email` | `pages/auth/VerifyEmail.jsx` |
-| `/2fa` | `pages/auth/TwoFA.jsx` |
+| `/login` | `pages/auth/Login.tsx` |
+| `/register` | `pages/auth/Register.tsx` |
+| `/forgot-password` | `pages/auth/ForgotPassword.tsx` |
+| `/reset-password` | `pages/auth/ResetPassword.tsx` |
+| `/verify-email` | `pages/auth/VerifyEmail.tsx` |
+| `/2fa` | `pages/auth/TwoFA.tsx` |
+
+New shared component:
+- `components/OnboardingGate.tsx` — if authenticated but `!onboarding_completed`, redirect `/onboarding` (except when already on `/onboarding`)
 
 ### Backend — new `routes/api/v1/auth.php`
 
@@ -196,12 +219,19 @@ New:
 Middleware: `auth:api` (JWT guard) on protected routes.
 
 ### Schema changes
-None required (users table already has 2FA + OTP columns).
+```sql
+-- users table
+onboarding_completed_at  TIMESTAMP nullable
+onboarding_step          TINYINT nullable  -- resume wizard (0–5), optional v1
+```
+
+New users: `onboarding_completed_at = null`. Invited users who join a workspace: set on accept (skip wizard).
 
 ### Auth redirect flow
 ```
-Register → VerifyEmail → (2FA setup optional) → Workspaces or Onboarding
-Login → (2FA if enabled) → Workspaces (if >1 or none selected) → Dashboard
+Register → VerifyEmail → (2FA if enabled) → /onboarding
+Login    → (2FA if enabled) → /onboarding if !onboarding_completed else /dashboard
+/onboarding → /dashboard when complete
 ```
 
 ### Done when
@@ -209,72 +239,107 @@ Login → (2FA if enabled) → Workspaces (if >1 or none selected) → Dashboard
 - [ ] Email OTP verification blocks dashboard until verified
 - [ ] 2FA challenge works end-to-end
 - [ ] OAuth buttons redirect and return with valid JWT
-- [ ] `ProtectedRoute` guards all `/dashboard/*`, `/onboarding`, `/workspaces`
+- [ ] `ProtectedRoute` guards `/dashboard/*`, `/onboarding`, `/workspaces`
+- [ ] `GET /auth/me` returns `onboarding_completed: boolean`
+- [ ] `OnboardingGate` sends incomplete users to `/onboarding` after login
 
 ---
 
-## Module 2 — Workspaces + invites
+## Module 2 — Onboarding wizard
 
-**Goal:** User picks/creates workspace. All dashboard data scoped to workspace.
+**Goal:** Wire `/onboarding` end-to-end. **Workspace creation lives here** — not a separate module before this.
+
+New users never hit `/workspaces` first; they go Register → Verify → **Onboarding** → Dashboard.
+
+### Frontend — `pages/Onboarding.tsx`
+
+| Step | UI | API call |
+|------|-----|----------|
+| 0 Welcome | intro | — |
+| 1 Workspace | name, slug | `POST /onboarding/workspace` (creates workspace + sets `selected_workspace_id`) |
+| 2 Usage | use case picker | `PATCH /onboarding/workspace` `{ use_case }` |
+| 3 API key | reveal first key | `POST /onboarding/api-key` (or skip — “create later”) |
+| 4 Done | CTA to dashboard | `POST /onboarding/complete` |
+
+**No domain step** — domains live under `/dashboard/domains` (Module 7).  
+Hide region picker (single default). API key step skippable.
+
+### Backend — `routes/api/v1/onboarding.php`
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/onboarding/status` | `{ completed, step, workspace }` |
+| PATCH | `/onboarding/step` | Save wizard progress (resume) |
+| POST | `/onboarding/workspace` | Create workspace during step 1 |
+| PATCH | `/onboarding/workspace` | Update name, slug, `use_case` |
+| POST | `/onboarding/api-key` | Optional first API key during step 3 |
+| POST | `/onboarding/complete` | Finish onboarding + side effects |
+
+Reuse internally: `Workspace` model, `WorkspaceController@store` logic (extract to `WorkspaceService`).
+
+### On `POST /onboarding/complete`
+1. Set `users.onboarding_completed_at = now()`
+2. Ensure workspace exists + `selected_workspace_id` set
+3. Create **sandbox inbox** if missing (stub until Module 6)
+4. Return `{ redirect: "/dashboard" }`
+
+### Schema changes
+```sql
+-- workspaces
+use_case  VARCHAR nullable   -- developer | startup | agency | enterprise
+
+-- users (from Module 1)
+onboarding_completed_at  TIMESTAMP nullable
+onboarding_step          TINYINT nullable
+```
+
+### Done when
+- [ ] New user lands on `/onboarding` after verify (never completed)
+- [ ] Step 1 creates a real workspace (not dummy state)
+- [ ] Each step persists to backend
+- [ ] Complete → `/dashboard`; returning user skips wizard
+- [ ] Invited user skips onboarding on invite accept (Module 3)
+
+---
+
+## Module 3 — Workspaces + invites
+
+**Goal:** **Post-onboarding** workspace management — switching, multi-workspace picker, invite accept. **Not** the first-time signup path.
+
+### When users see this
+| Route | When |
+|-------|------|
+| `/onboarding` | First signup only (Module 2) |
+| `/workspaces` | User has 2+ workspaces or taps “Switch workspace” |
+| `/invite` | Accepting a team invite link |
 
 ### Frontend pages
 | Route | File |
 |-------|------|
-| `/workspaces` | `pages/auth/WorkspaceSelect.jsx` |
-| `/invite` | `pages/auth/InviteAccept.jsx` |
+| `/workspaces` | `pages/auth/WorkspaceSelect.tsx` |
+| `/invite` | `pages/auth/InviteAccept.tsx` |
 
-Also wire workspace switcher in `components/layouts/DashboardLayout.jsx`.
+Also wire workspace switcher in `components/layouts/DashboardLayout.tsx`.
 
 ### Backend — `routes/api/v1/workspaces.php`
 
 | Method | Path | Reuse |
 |--------|------|-------|
-| GET | `/workspaces` | `WorkspaceController@index` |
-| POST | `/workspaces` | `WorkspaceController@store` |
-| GET | `/workspaces/{id}` | `WorkspaceController@show` |
-| PATCH | `/workspaces/{id}` | update name, slug, description |
+| GET | `/workspaces` | List owned + member workspaces |
+| POST | `/workspaces` | Create **additional** workspace (post-onboarding) |
+| GET | `/workspaces/{id}` | Show |
+| PATCH | `/workspaces/{id}` | Update name, slug, description |
 | POST | `/workspaces/{id}/switch` | `WorkspaceSwitchController` |
-| GET | `/workspaces/{id}/members` | new |
-| POST | `/workspaces/invitations` | `WorkspaceInvitationController@store` |
-| POST | `/invitations/{token}/accept` | accept |
-| POST | `/invitations/{token}/decline` | decline |
+| POST | `/invitations/{token}/accept` | Accept invite → skip onboarding, set `onboarding_completed_at` |
+| POST | `/invitations/{token}/decline` | Decline |
 
-### Schema changes
-- Add `use_case` (nullable string) to `workspaces` — onboarding step 3
-- Add `onboarding_completed_at` to `workspaces` or `users`
-- **Remove/enforce** `canCreateWorkspace()` single-workspace limit — frontend expects multiple workspaces
+Team invites (send invite, manage members) → **Module 14 Teams**.
 
 ### Done when
-- [ ] User sees all owned + member workspaces on `/workspaces`
-- [ ] Switching workspace updates `selected_workspace_id` and reloads context
-- [ ] Invite accept/decline works from `/invite?token=…`
-- [ ] Dashboard layout switcher shows real workspaces
-
----
-
-## Module 3 — Onboarding
-
-**Goal:** First-run wizard creates workspace, optional domain, first API key.
-
-### Frontend
-- `pages/Onboarding.jsx` (6 steps)
-
-### Backend
-
-| Step | API |
-|------|-----|
-| 2 Workspace | `POST /workspaces` (if none) or `PATCH /workspaces/{id}` |
-| 3 Usage | `PATCH /workspaces/{id}` `{ use_case }` |
-| 4 Domain | `POST /domains` (Module 7 — can stub DNS preview with static records) |
-| 5 API key | `POST /api-keys` (Module 8 — or defer key to post-onboarding) |
-| 6 Done | `POST /workspaces/{id}/complete-onboarding` |
-
-Skip region picker values — show `us-east-1` only or hide EU/AP options in UI until multi-region exists.
-
-### Done when
-- [ ] New user lands on onboarding after first login (no completed workspace)
-- [ ] Completing onboarding sets flag and redirects to `/dashboard`
-- [ ] Returning user skips onboarding
+- [ ] Dashboard switcher lists real workspaces
+- [ ] Switching updates `selected_workspace_id` + `X-Workspace-Id` header
+- [ ] `/workspaces` works for multi-workspace users
+- [ ] Invite accept lands on dashboard (onboarding skipped)
 
 ---
 
@@ -599,7 +664,7 @@ Extend `workspace_user.role` enum: `owner`, `admin`, `developer`, `billing_manag
 
 ### Done when
 - [ ] All four tabs use real data
-- [ ] Invite flow matches Module 2 accept page
+- [ ] Invite flow matches Module 3 accept page
 
 ---
 
@@ -810,7 +875,8 @@ Enterprise page stays marketing-only until SAML, audit exports, and dedicated IP
 ui/routes/api.php
 ├── v1/health
 ├── v1/auth/*              Module 1
-├── v1/workspaces/*        Module 2
+├── v1/onboarding/*        Module 2
+├── v1/workspaces/*        Module 3
 ├── v1/virtual-emails/*    Module 4–5
 ├── v1/sandbox/*           Module 6
 ├── v1/domains/*           Module 7
@@ -848,9 +914,9 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 | Issue | Fix in |
 |-------|--------|
 | `/dashboard/templates/:id` not routed | Module 16 — `App.jsx` |
-| `/workspace/select` wrong link | Module 2 — `DashboardLayout.jsx` |
+| `/workspace/select` wrong link | Module 3 — `DashboardLayout.tsx` |
 | `ThemeProvider` not mounted | Module 0 — `index.jsx` |
-| Region selectors in onboarding/domains/settings | Hide/stub — Modules 3, 7, 13 |
+| Region selectors in onboarding/domains/settings | Hide/stub — Modules 2, 7, 13 |
 | Analytics tabs all show same content | Module 18 — split tab components |
 | `SCHEDULED_EMAILS`, `CAMPAIGNS` unused in dummyData | Wire in Modules 10/16 or leave for later |
 
@@ -878,13 +944,15 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 ## Suggested first sprint (Modules 0–2)
 
-1. Install JWT in Laravel, CORS, health route
-2. Frontend API client + auth context + protected routes
-3. Login, register, verify OTP, 2FA
-4. Workspace list, create, switch, invite accept
-5. Deploy SPA to staging — marketing + auth only
+**Goal:** User can register, verify, complete onboarding (with workspace), land on dashboard.
 
-**Second sprint:** Modules 3–6 (onboarding + inboxes — core product shift).  
+1. Install JWT in Laravel, CORS, health route ✅ (Module 0)
+2. Frontend API client + auth context + protected routes ✅ (Module 0)
+3. **Module 1** — Auth ✅ (login, register, verify OTP, 2FA, `OnboardingGate`)
+4. **Module 2** — Wire `/onboarding` (workspace create inside wizard + complete)
+5. Deploy SPA to staging — full signup → onboarding → dashboard
+
+**Next sprint:** Module 3 (workspace switch + invites), then Modules 4–6 (virtual emails + sandbox).  
 **Third sprint:** Modules 7–11 (outbound sending stack).  
 **Fourth+:** Overview, settings, teams, then templates/webhooks/analytics/billing.
 

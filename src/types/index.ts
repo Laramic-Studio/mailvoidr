@@ -2,9 +2,13 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  email_verified_at: string | null;
+  username?: string;
+  email_verified: boolean;
   two_factor_enabled?: boolean;
+  onboarding_completed: boolean;
+  onboarding_step?: number | null;
   selected_workspace_id: string | null;
+  created_at?: string;
 }
 
 export interface Workspace {
@@ -13,6 +17,7 @@ export interface Workspace {
   slug: string;
   plan?: string;
   region?: string;
+  use_case?: string | null;
   role?: string;
 }
 
