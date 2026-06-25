@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   username?: string;
+  timezone?: string | null;
   email_verified: boolean;
   two_factor_enabled?: boolean;
   onboarding_completed: boolean;
@@ -21,6 +22,40 @@ export interface Workspace {
   role?: string;
   description?: string | null;
   is_active?: boolean;
+  settings?: WorkspaceSettings;
+}
+
+export interface WorkspaceSettings {
+  require_two_factor: boolean;
+  allow_public_invites: boolean;
+  default_member_role: string;
+}
+
+export interface NotificationPreferences {
+  deliverability_alerts: boolean;
+  new_invitations: boolean;
+  weekly_digest: boolean;
+  product_updates: boolean;
+  billing_alerts: boolean;
+}
+
+export interface SettingsSnapshot {
+  profile: {
+    name: string;
+    email: string;
+    timezone: string | null;
+    email_verified: boolean;
+    two_factor_enabled: boolean;
+  };
+  notifications: NotificationPreferences;
+  workspace: Workspace | null;
+  workspace_settings: WorkspaceSettings;
+}
+
+export interface TwoFactorSetup {
+  qr_svg: string;
+  otpauth_url: string;
+  secret_key: string;
 }
 
 export interface WorkspaceListResponse {
@@ -298,6 +333,46 @@ export interface SendLogFilters {
   search?: string;
   domain?: string;
   period?: '24h' | '7d' | '30d';
+}
+
+export interface CreditPack {
+  size: number;
+  price_cents: number;
+  price_label: string;
+}
+
+export interface CreditsSummary {
+  live_sending_enabled: boolean;
+  free_allowance: number;
+  free_remaining: number;
+  free_used: number;
+  purchased_balance: number;
+  total_available: number;
+  billing_enabled: boolean;
+  credit_packs: CreditPack[];
+}
+
+export interface CreditTransaction {
+  id: string;
+  amount: number;
+  type: string;
+  description: string | null;
+  reference_id: string | null;
+  created_at: string | null;
+}
+
+export interface CreditsResponse {
+  credits: CreditsSummary;
+}
+
+export interface CreditTransactionsResponse {
+  data: CreditTransaction[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
 export interface EmailPreview {

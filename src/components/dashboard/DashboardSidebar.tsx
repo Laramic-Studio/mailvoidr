@@ -25,6 +25,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { CreditsUsageWidget } from '@/components/dashboard/CreditsUsageWidget';
 import { useUiStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 
@@ -207,23 +208,7 @@ export function DashboardSidebar({
               <BookOpen className="h-3.5 w-3.5" />
               Documentation
             </Link>
-            <div className="rounded-lg border border-border bg-background p-3">
-              <div className="label-mono mb-1">Plan usage</div>
-              <div className="flex items-center justify-between text-[12px]">
-                <span>1.2M / 5M</span>
-                <span className="font-mono text-muted-foreground">24%</span>
-              </div>
-              <div className="mt-1.5 h-1 overflow-hidden bg-muted">
-                <div className="h-full bg-primary" style={{ width: '24%' }} />
-              </div>
-              <Link
-                to="/dashboard/billing"
-                onClick={onNavigate}
-                className="mt-3 inline-flex items-center text-[11.5px] text-primary hover:underline"
-              >
-                Upgrade plan →
-              </Link>
-            </div>
+            <CreditsUsageWidget onNavigate={onNavigate} />
           </>
         )}
       </div>

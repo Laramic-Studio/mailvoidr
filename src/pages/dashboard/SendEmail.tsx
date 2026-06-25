@@ -4,10 +4,12 @@ import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CodeBlock } from '@/components/CodeBlock';
 import { useDomains } from '@/hooks/useDomains';
+import { useCredits } from '@/hooks/useCredits';
 import { useSendHistory, useSendMutations } from '@/hooks/useSend';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailPreview } from '@/types';
 import { Send, Calendar, Eye, Loader2, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const TABS = [
   { id: 'compose', label: 'Compose' },
@@ -40,11 +42,14 @@ export default function SendEmail() {
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
 
   const { data: domainsData } = useDomains();
+  const { data: creditsData } = useCredits();
   const { data: historyData, isLoading: historyLoading } = useSendHistory();
   const { send, preview } = useSendMutations();
 
   const verifiedDomains = domainsData?.data.filter((d) => d.status === 'verified') ?? [];
   const history = historyData?.data ?? [];
+  const credits = creditsData?.credits;
+  const liveSendingEnabled = credits?.live_sending_enabled ?? false;
 
   const suggestedFrom = useMemo(() => {
     if (verifiedDomains[0]) {
@@ -58,6 +63,12 @@ export default function SendEmail() {
       setFrom(suggestedFrom);
     }
   }, [from, suggestedFrom]);
+
+  useEffect(() => {
+    if (credits) {
+      setCreditsRemaining(credits.total_available);
+    }
+  }, [credits]);
 
   async function handlePreview() {
     try {
@@ -123,6 +134,19 @@ export default function SendEmail() {
           </button>
         ))}
       </div>
+
+      {!liveSendingEnabled ? (
+        <div
+          data-testid="send-live-sending-banner"
+          className="mb-4 border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px]"
+        >
+          Live sending is not enabled.{' '}
+          <Link to="/dashboard/smtp" className="font-medium text-primary hover:underline">
+            Enable on the SMTP page
+          </Link>{' '}
+          before queuing outbound mail.
+        </div>
+      ) : null}
 
       {tab === 'compose' && (
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -228,7 +252,7 @@ export default function SendEmail() {
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={send.isPending}
+                disabled={send.isPending || !liveSendingEnabled}
                 data-testid="send-now-btn"
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >

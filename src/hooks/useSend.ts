@@ -22,8 +22,10 @@ export function useSendHistory() {
 export function useSendMutations() {
   const queryClient = useQueryClient();
 
-  const invalidateHistory = () =>
+  const invalidateHistory = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.send.history });
+    queryClient.invalidateQueries({ queryKey: queryKeys.credits.summary });
+  };
 
   const send = useMutation({
     mutationFn: (payload: SendEmailPayload) => sendEmail(payload),

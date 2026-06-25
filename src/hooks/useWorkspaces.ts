@@ -61,6 +61,7 @@ export function useWorkspaceMutations() {
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all });
+    await queryClient.invalidateQueries({ queryKey: ['settings'] });
     await refreshUser();
   };
 

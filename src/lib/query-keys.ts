@@ -37,6 +37,14 @@ export const queryKeys = {
   send: {
     history: ['send', 'history'] as const,
   },
+  credits: {
+    summary: ['credits', 'summary'] as const,
+    transactions: ['credits', 'transactions'] as const,
+  },
+  settings: {
+    all: (workspaceId?: string) => ['settings', workspaceId ?? ''] as const,
+    twoFactor: ['settings', 'two-factor'] as const,
+  },
   sends: {
     list: (filters: Record<string, string | undefined>) =>
       ['sends', 'list', filters.status ?? 'all', filters.search ?? '', filters.domain ?? 'all', filters.period ?? ''] as const,

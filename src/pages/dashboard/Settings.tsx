@@ -1,15 +1,42 @@
-import { DashboardLayout } from "@/components/layouts/DashboardLayout";
-import { PageHeader } from "@/components/PageHeader";
-import { USER, WORKSPACES } from "@/lib/dummyData";
-import { useState } from "react";
-import { ShieldCheck, AlertTriangle } from "lucide-react";
+import { useEffect, useState, type ReactNode } from 'react';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { FormSelect } from '@/components/form/FormSelect';
+import { useSettings, useSettingsMutations } from '@/hooks/useSettings';
+import { toastError, toastSuccess } from '@/lib/toast';
+import type { NotificationPreferences, WorkspaceSettings } from '@/types';
+import { AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
 
 const SECTIONS = [
-  "General", "Profile", "Security", "Notifications", "API", "Workspace", "Domains", "SMTP", "Branding", "Danger zone"
+  'General',
+  'Profile',
+  'Security',
+  'Notifications',
+  'Workspace',
+  'Danger zone',
+] as const;
+
+type SectionId = (typeof SECTIONS)[number];
+
+const TIMEZONE_OPTIONS = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'America/New_York' },
+  { value: 'America/Los_Angeles', label: 'America/Los_Angeles' },
+  { value: 'Europe/London', label: 'Europe/London' },
+  { value: 'Asia/Kolkata', label: 'Asia/Kolkata' },
+];
+
+const MEMBER_ROLE_OPTIONS = [
+  { value: 'developer', label: 'Developer' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'viewer', label: 'Viewer' },
 ];
 
 export default function Settings() {
-  const [active, setActive] = useState("General");
+  const [active, setActive] = useState<SectionId>('General');
+  const { data, isLoading } = useSettings();
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -18,128 +45,468 @@ export default function Settings() {
         description="Profile, workspace, security, and integrations."
       />
 
-      <div className="grid lg:grid-cols-[220px_1fr] gap-8">
+      <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
         <aside>
           <ul className="space-y-0.5">
-            {SECTIONS.map((s) => (
-              <li key={s}>
+            {SECTIONS.map((section) => (
+              <li key={section}>
                 <button
-                  data-testid={`settings-nav-${s.toLowerCase().replace(/\s+/g, "-")}`}
-                  onClick={() => setActive(s)}
-                  className={`w-full text-left px-3 py-1.5 text-[13px] rounded-md transition-colors ${
-                    active === s ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  } ${s === "Danger zone" ? "text-destructive hover:text-destructive" : ""}`}
+                  type="button"
+                  data-testid={`settings-nav-${section.toLowerCase().replace(/\s+/g, '-')}`}
+                  onClick={() => setActive(section)}
+                  className={`w-full rounded-md px-3 py-1.5 text-left text-[13px] transition-colors ${
+                    active === section
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                  } ${section === 'Danger zone' ? 'text-destructive hover:text-destructive' : ''}`}
                 >
-                  {s}
+                  {section}
                 </button>
               </li>
             ))}
           </ul>
         </aside>
 
-        <div className="space-y-6 max-w-2xl">
-          {active === "General" && (
-            <Section title="General" desc="Workspace-wide preferences">
-              <Field label="Workspace name" defaultValue="Acme Inc." />
-              <Field label="Workspace URL" defaultValue="mailvoidr.io/acme" mono />
-              <Field label="Default region" defaultValue="us-east-1" mono />
-              <Field label="Default sender email" defaultValue="hello@mail.acme.com" mono />
-            </Section>
-          )}
-          {active === "Profile" && (
-            <Section title="Profile" desc="Your personal info">
-              <Field label="Full name" defaultValue={USER.name} />
-              <Field label="Email" defaultValue={USER.email} mono />
-              <Field label="Timezone" defaultValue="UTC+05:30 · Asia/Kolkata" />
-              <Field label="Avatar" custom={
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-primary/15 border border-primary/30 inline-flex items-center justify-center font-mono">RM</div>
-                  <button className="text-[12.5px] border border-border rounded-md px-3 py-1.5 hover:bg-accent">Upload new</button>
-                </div>
-              } />
-            </Section>
-          )}
-          {active === "Security" && (
-            <Section title="Security" desc="Password, 2FA, sessions">
-              <div className="border border-border bg-card p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-sm font-medium inline-flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> Two-factor authentication</div>
-                    <p className="text-[12.5px] text-muted-foreground mt-1">Authenticator app · enabled · last verified 2 hr ago</p>
-                  </div>
-                  <button className="text-[12.5px] border border-border rounded-md px-3 py-1.5 hover:bg-accent">Manage</button>
-                </div>
-              </div>
-              <Field label="Current password" type="password" />
-              <Field label="New password" type="password" />
-            </Section>
-          )}
-          {active === "Notifications" && (
-            <Section title="Notifications" desc="Pick what you want to hear about">
-              {[
-                ["Deliverability alerts", "Drops below 95% for any domain", true],
-                ["New invitations", "When someone accepts an invite", true],
-                ["Weekly digest", "Email volume summary every Monday", true],
-                ["Product updates", "New features and changelog", false],
-                ["Billing alerts", "Plan limits, payment failures", true],
-              ].map(([l, d, on]) => (
-                <Toggle key={String(l)} label={String(l)} desc={String(d)} defaultOn={Boolean(on)} />
-              ))}
-            </Section>
-          )}
-          {active === "API" && (
-            <Section title="API" desc="Default API behaviour">
-              <Field label="Default region" defaultValue="us-east-1" mono />
-              <Field label="Idempotency window" defaultValue="24 hours" />
-              <Field label="Rate limit policy" defaultValue="Per-key (10k req/s burst)" />
-            </Section>
-          )}
-          {active === "Workspace" && (
-            <Section title="Workspace" desc="Settings that affect everyone">
-              <Field label="Allowed email domains" defaultValue="acme.com" mono />
-              <Field label="Default member role" defaultValue="Developer" />
-              <Toggle label="Require 2FA for all members" desc="Enforce two-factor across the workspace" defaultOn={true} />
-              <Toggle label="Allow public invites" desc="Members can invite without admin approval" defaultOn={false} />
-            </Section>
-          )}
-          {active === "Domains" && <Section title="Domains" desc="Manage from the Domains page">
-            <p className="text-[13px] text-muted-foreground">Domain configuration lives under <a href="/dashboard/domains" className="text-primary hover:underline">Domains</a>.</p>
-          </Section>}
-          {active === "SMTP" && <Section title="SMTP" desc="Manage from the SMTP page">
-            <p className="text-[13px] text-muted-foreground">SMTP credentials live under <a href="/dashboard/smtp" className="text-primary hover:underline">SMTP</a>.</p>
-          </Section>}
-          {active === "Branding" && (
-            <Section title="Branding" desc="Customize tracking links and dashboard">
-              <Field label="Custom tracking domain" defaultValue="track.acme.com" mono />
-              <Field label="Workspace logo" custom={<div className="text-[12.5px] text-muted-foreground">Drop SVG/PNG · 2MB max</div>} />
-              <Field label="Primary color" custom={<div className="flex items-center gap-2"><div className="h-6 w-6 rounded border border-border bg-primary" /><span className="font-mono text-[12.5px]">#3ECF8E</span></div>} />
-            </Section>
-          )}
-          {active === "Danger zone" && (
-            <Section title="Danger zone" desc="Irreversible actions" danger>
-              <div className="border border-destructive/30 bg-destructive/5 p-4 rounded-md">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-medium inline-flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Transfer workspace</div>
-                    <p className="text-[12.5px] text-muted-foreground mt-1">Hand over ownership to another admin.</p>
-                  </div>
-                  <button className="border border-destructive/30 text-destructive rounded-md px-3 py-1.5 text-[13px]">Transfer</button>
-                </div>
-              </div>
-              <div className="border border-destructive/30 bg-destructive/5 p-4 rounded-md">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-medium inline-flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Delete workspace</div>
-                    <p className="text-[12.5px] text-muted-foreground mt-1">All data — domains, inboxes, keys — will be permanently destroyed.</p>
-                  </div>
-                  <button data-testid="settings-delete-workspace" className="border border-destructive bg-destructive text-destructive-foreground rounded-md px-3 py-1.5 text-[13px]">Delete</button>
-                </div>
-              </div>
-            </Section>
+        <div className="max-w-2xl space-y-6">
+          {isLoading || !data ? (
+            <div className="flex justify-center p-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {active === 'General' && <GeneralSection snapshot={data} />}
+              {active === 'Profile' && <ProfileSection snapshot={data} />}
+              {active === 'Security' && <SecuritySection snapshot={data} />}
+              {active === 'Notifications' && <NotificationsSection snapshot={data} />}
+              {active === 'Workspace' && <WorkspaceSection snapshot={data} />}
+              {active === 'Danger zone' && <DangerZoneSection snapshot={data} />}
+            </>
           )}
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+function GeneralSection({ snapshot }: { snapshot: import('@/types').SettingsSnapshot }) {
+  const workspace = snapshot.workspace;
+  const [name, setName] = useState(workspace?.name ?? '');
+  const [slug, setSlug] = useState(workspace?.slug ?? '');
+  const { updateWorkspace } = useSettingsMutations();
+
+  useEffect(() => {
+    setName(workspace?.name ?? '');
+    setSlug(workspace?.slug ?? '');
+  }, [workspace?.name, workspace?.slug]);
+
+  async function handleSave() {
+    if (!workspace) return;
+
+    try {
+      await updateWorkspace.mutateAsync({ workspaceId: workspace.id, name, slug });
+      toastSuccess('Workspace updated.');
+    } catch (error) {
+      toastError(error, 'Could not save workspace.');
+    }
+  }
+
+  if (!workspace) {
+    return <EmptyState message="No workspace selected." />;
+  }
+
+  return (
+    <Section title="General" desc="Workspace-wide preferences">
+      <Field label="Workspace name" value={name} onChange={setName} />
+      <Field label="Workspace slug" value={slug} onChange={setSlug} mono />
+      <p className="text-[12px] text-muted-foreground">
+        Default region is fixed to a single Mailvoidr region in v1.
+      </p>
+      <SaveButton onClick={handleSave} pending={updateWorkspace.isPending} />
+    </Section>
+  );
+}
+
+function ProfileSection({ snapshot }: { snapshot: import('@/types').SettingsSnapshot }) {
+  const [name, setName] = useState(snapshot.profile.name);
+  const [email, setEmail] = useState(snapshot.profile.email);
+  const [timezone, setTimezone] = useState(snapshot.profile.timezone ?? 'UTC');
+  const { updateProfile } = useSettingsMutations();
+
+  useEffect(() => {
+    setName(snapshot.profile.name);
+    setEmail(snapshot.profile.email);
+    setTimezone(snapshot.profile.timezone ?? 'UTC');
+  }, [snapshot.profile]);
+
+  async function handleSave() {
+    try {
+      const result = await updateProfile.mutateAsync({ name, email, timezone });
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not save profile.');
+    }
+  }
+
+  return (
+    <Section title="Profile" desc="Your personal info">
+      <Field label="Full name" value={name} onChange={setName} />
+      <Field label="Email" value={email} onChange={setEmail} mono />
+      {!snapshot.profile.email_verified ? (
+        <p className="text-[12px] text-amber-500">Email changed — verify your new address.</p>
+      ) : null}
+      <div className="border border-border bg-card p-4">
+        <label className="label-mono mb-2 block">Timezone</label>
+        <FormSelect value={timezone} onValueChange={setTimezone} options={TIMEZONE_OPTIONS} />
+      </div>
+      <p className="text-[12px] text-muted-foreground">Avatar upload ships in a later release.</p>
+      <SaveButton onClick={handleSave} pending={updateProfile.isPending} />
+    </Section>
+  );
+}
+
+function SecuritySection({ snapshot }: { snapshot: import('@/types').SettingsSnapshot }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [twoFactorOpen, setTwoFactorOpen] = useState(false);
+  const [setupCode, setSetupCode] = useState('');
+  const [disablePassword, setDisablePassword] = useState('');
+  const [setup, setSetup] = useState<import('@/types').TwoFactorSetup | null>(null);
+
+  const {
+    updatePassword,
+    enableTwoFactor,
+    confirmTwoFactor,
+    disableTwoFactor,
+    recoveryCodes,
+  } = useSettingsMutations();
+
+  async function handlePasswordSave() {
+    try {
+      const result = await updatePassword.mutateAsync({
+        current_password: currentPassword,
+        password,
+        password_confirmation: passwordConfirmation,
+      });
+      setCurrentPassword('');
+      setPassword('');
+      setPasswordConfirmation('');
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not update password.');
+    }
+  }
+
+  async function handleEnableTwoFactor() {
+    try {
+      const result = await enableTwoFactor.mutateAsync();
+      setSetup(result.setup);
+      setTwoFactorOpen(true);
+    } catch (error) {
+      toastError(error, 'Could not start 2FA setup.');
+    }
+  }
+
+  async function handleConfirmTwoFactor() {
+    try {
+      const result = await confirmTwoFactor.mutateAsync(setupCode);
+      setSetup(null);
+      setSetupCode('');
+      setTwoFactorOpen(false);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Invalid authentication code.');
+    }
+  }
+
+  async function handleDisableTwoFactor() {
+    try {
+      const result = await disableTwoFactor.mutateAsync(disablePassword);
+      setDisablePassword('');
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not disable 2FA.');
+    }
+  }
+
+  async function handleShowRecoveryCodes() {
+    try {
+      const result = await recoveryCodes.mutateAsync();
+      if (result.recovery_codes.length === 0) {
+        toastError('No recovery codes available.');
+        return;
+      }
+      await navigator.clipboard.writeText(result.recovery_codes.join('\n'));
+      toastSuccess('Recovery codes copied to clipboard.');
+    } catch (error) {
+      toastError(error, 'Could not load recovery codes.');
+    }
+  }
+
+  return (
+    <Section title="Security" desc="Password, 2FA, sessions">
+      <div className="border border-border bg-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-2 text-sm font-medium">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              Two-factor authentication
+            </div>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              {snapshot.profile.two_factor_enabled
+                ? 'Authenticator app · enabled'
+                : 'Add an extra layer of security to your account.'}
+            </p>
+          </div>
+          {snapshot.profile.two_factor_enabled ? (
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleShowRecoveryCodes}
+                className="rounded-md border border-border px-3 py-1.5 text-[12.5px] hover:bg-accent"
+              >
+                Copy recovery codes
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleEnableTwoFactor}
+              disabled={enableTwoFactor.isPending}
+              className="rounded-md border border-border px-3 py-1.5 text-[12.5px] hover:bg-accent disabled:opacity-50"
+            >
+              Enable
+            </button>
+          )}
+        </div>
+        {snapshot.profile.two_factor_enabled ? (
+          <div className="mt-4 space-y-2">
+            <Field
+              label="Password to disable 2FA"
+              value={disablePassword}
+              onChange={setDisablePassword}
+              type="password"
+            />
+            <button
+              type="button"
+              onClick={handleDisableTwoFactor}
+              disabled={disableTwoFactor.isPending || !disablePassword}
+              className="rounded-md border border-destructive/30 px-3 py-1.5 text-[12.5px] text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            >
+              Disable 2FA
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {twoFactorOpen && setup ? (
+        <div className="border border-border bg-card p-4 space-y-3">
+          <p className="text-[13px]">Scan this QR code with your authenticator app.</p>
+          <div
+            className="inline-block rounded-md border border-border bg-white p-2"
+            dangerouslySetInnerHTML={{ __html: setup.qr_svg }}
+          />
+          <p className="font-mono text-[11px] text-muted-foreground break-all">{setup.secret_key}</p>
+          <Field label="Confirmation code" value={setupCode} onChange={setSetupCode} mono />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleConfirmTwoFactor}
+              disabled={confirmTwoFactor.isPending || setupCode.length < 6}
+              className="rounded-md bg-primary px-3 py-1.5 text-[13px] text-primary-foreground disabled:opacity-50"
+            >
+              Confirm 2FA
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTwoFactorOpen(false);
+                setSetup(null);
+              }}
+              className="rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <Field
+        label="Current password"
+        value={currentPassword}
+        onChange={setCurrentPassword}
+        type="password"
+      />
+      <Field label="New password" value={password} onChange={setPassword} type="password" />
+      <Field
+        label="Confirm new password"
+        value={passwordConfirmation}
+        onChange={setPasswordConfirmation}
+        type="password"
+      />
+      <SaveButton onClick={handlePasswordSave} pending={updatePassword.isPending} label="Update password" />
+    </Section>
+  );
+}
+
+function NotificationsSection({ snapshot }: { snapshot: import('@/types').SettingsSnapshot }) {
+  const [prefs, setPrefs] = useState(snapshot.notifications);
+  const { updateNotifications } = useSettingsMutations();
+
+  useEffect(() => {
+    setPrefs(snapshot.notifications);
+  }, [snapshot.notifications]);
+
+  async function handleSave() {
+    try {
+      const result = await updateNotifications.mutateAsync(prefs);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not save notification preferences.');
+    }
+  }
+
+  const items: Array<[keyof NotificationPreferences, string, string]> = [
+    ['deliverability_alerts', 'Deliverability alerts', 'Drops below 95% for any domain'],
+    ['new_invitations', 'New invitations', 'When someone accepts an invite'],
+    ['weekly_digest', 'Weekly digest', 'Email volume summary every Monday'],
+    ['product_updates', 'Product updates', 'New features and changelog'],
+    ['billing_alerts', 'Billing alerts', 'Plan limits, payment failures'],
+  ];
+
+  return (
+    <Section title="Notifications" desc="Pick what you want to hear about">
+      {items.map(([key, label, desc]) => (
+        <Toggle
+          key={key}
+          label={label}
+          desc={desc}
+          on={prefs[key]}
+          onChange={(value) => setPrefs((current) => ({ ...current, [key]: value }))}
+        />
+      ))}
+      <SaveButton onClick={handleSave} pending={updateNotifications.isPending} />
+    </Section>
+  );
+}
+
+function WorkspaceSection({ snapshot }: { snapshot: import('@/types').SettingsSnapshot }) {
+  const workspace = snapshot.workspace;
+  const [settings, setSettings] = useState(snapshot.workspace_settings);
+  const { updateWorkspaceSettings } = useSettingsMutations();
+
+  useEffect(() => {
+    setSettings(snapshot.workspace_settings);
+  }, [snapshot.workspace_settings]);
+
+  async function handleSave() {
+    if (!workspace) return;
+
+    try {
+      const result = await updateWorkspaceSettings.mutateAsync({
+        workspaceId: workspace.id,
+        ...settings,
+      });
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not save workspace settings.');
+    }
+  }
+
+  if (!workspace) {
+    return <EmptyState message="No workspace selected." />;
+  }
+
+  return (
+    <Section title="Workspace" desc="Settings that affect everyone">
+      <div className="border border-border bg-card p-4">
+        <label className="label-mono mb-2 block">Default member role</label>
+        <FormSelect
+          value={settings.default_member_role}
+          onValueChange={(value) =>
+            setSettings((current) => ({ ...current, default_member_role: value }))
+          }
+          options={MEMBER_ROLE_OPTIONS}
+        />
+      </div>
+      <Toggle
+        label="Require 2FA for all members"
+        desc="Enforce two-factor across the workspace"
+        on={settings.require_two_factor}
+        onChange={(value) => setSettings((current) => ({ ...current, require_two_factor: value }))}
+      />
+      <Toggle
+        label="Allow public invites"
+        desc="Members can invite without admin approval"
+        on={settings.allow_public_invites}
+        onChange={(value) => setSettings((current) => ({ ...current, allow_public_invites: value }))}
+      />
+      <SaveButton onClick={handleSave} pending={updateWorkspaceSettings.isPending} />
+    </Section>
+  );
+}
+
+function DangerZoneSection({ snapshot }: { snapshot: import('@/types').SettingsSnapshot }) {
+  const workspace = snapshot.workspace;
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { deleteWorkspace } = useSettingsMutations();
+
+  async function handleDelete() {
+    if (!workspace) return;
+
+    try {
+      const result = await deleteWorkspace.mutateAsync({
+        workspaceId: workspace.id,
+        confirmationName: workspace.name,
+      });
+      setDeleteOpen(false);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not delete workspace.');
+    }
+  }
+
+  if (!workspace) {
+    return <EmptyState message="No workspace selected." />;
+  }
+
+  return (
+    <Section title="Danger zone" desc="Irreversible actions" danger>
+      <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 text-sm font-medium">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+              Delete workspace
+            </div>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              All data — domains, inboxes, keys — will be permanently destroyed.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="settings-delete-workspace"
+            onClick={() => setDeleteOpen(true)}
+            className="rounded-md border border-destructive bg-destructive px-3 py-1.5 text-[13px] text-destructive-foreground"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        resourceName={workspace.name}
+        resourceLabel="workspace name"
+        title="Delete workspace"
+        description="This cannot be undone. Type the workspace name below to confirm."
+        confirmLabel="Delete workspace"
+        onConfirm={handleDelete}
+        isPending={deleteWorkspace.isPending}
+        testId="settings-delete-dialog"
+      />
+    </Section>
   );
 }
 
@@ -151,13 +518,15 @@ function Section({
 }: {
   title: string;
   desc: string;
-  children: React.ReactNode;
+  children: ReactNode;
   danger?: boolean;
 }) {
   return (
     <div>
-      <h2 className={`text-lg font-medium tracking-tight ${danger ? "text-destructive" : ""}`}>{title}</h2>
-      <p className="text-[13px] text-muted-foreground mt-0.5">{desc}</p>
+      <h2 className={`text-lg font-medium tracking-tight ${danger ? 'text-destructive' : ''}`}>
+        {title}
+      </h2>
+      <p className="mt-0.5 text-[13px] text-muted-foreground">{desc}</p>
       <div className="mt-5 space-y-4">{children}</div>
     </div>
   );
@@ -165,46 +534,89 @@ function Section({
 
 function Field({
   label,
-  defaultValue = "",
-  type = "text",
+  value,
+  onChange,
+  type = 'text',
   mono = false,
-  custom,
 }: {
   label: string;
-  defaultValue?: string;
+  value: string;
+  onChange: (value: string) => void;
   type?: string;
   mono?: boolean;
-  custom?: React.ReactNode;
 }) {
   return (
     <div className="border border-border bg-card p-4">
-      <label className="label-mono block mb-2">{label}</label>
-      {custom ? custom : (
-        <input
-          type={type}
-          defaultValue={defaultValue}
-          className={`w-full bg-background border border-border rounded-md px-3 py-2 text-sm ${mono ? "font-mono" : ""} focus:outline-none focus:ring-1 focus:ring-primary`}
-        />
-      )}
+      <label className="label-mono mb-2 block">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary ${
+          mono ? 'font-mono' : ''
+        }`}
+      />
     </div>
   );
 }
 
-function Toggle({ label, desc, defaultOn }) {
-  const [on, setOn] = useState(defaultOn);
+function Toggle({
+  label,
+  desc,
+  on,
+  onChange,
+}: {
+  label: string;
+  desc: string;
+  on: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
-    <div className="border border-border bg-card p-4 flex items-start justify-between gap-4">
+    <div className="flex items-start justify-between gap-4 border border-border bg-card p-4">
       <div>
         <div className="text-[14px]">{label}</div>
-        <div className="text-[12px] text-muted-foreground mt-0.5">{desc}</div>
+        <div className="mt-0.5 text-[12px] text-muted-foreground">{desc}</div>
       </div>
       <button
-        onClick={() => setOn(!on)}
-        data-testid={`toggle-${label.toLowerCase().replace(/\s+/g, "-")}`}
-        className={`relative inline-flex h-5 w-9 rounded-full border transition-colors ${on ? "bg-primary border-primary" : "bg-muted border-border"}`}
+        type="button"
+        onClick={() => onChange(!on)}
+        data-testid={`toggle-${label.toLowerCase().replace(/\s+/g, '-')}`}
+        className={`relative inline-flex h-5 w-9 rounded-full border transition-colors ${
+          on ? 'border-primary bg-primary' : 'border-border bg-muted'
+        }`}
       >
-        <span className={`absolute top-0.5 ${on ? "right-0.5" : "left-0.5"} h-3.5 w-3.5 rounded-full bg-white transition-all`} />
+        <span
+          className={`absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition-all ${
+            on ? 'right-0.5' : 'left-0.5'
+          }`}
+        />
       </button>
     </div>
   );
+}
+
+function SaveButton({
+  onClick,
+  pending,
+  label = 'Save changes',
+}: {
+  onClick: () => void;
+  pending: boolean;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={pending}
+      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+    >
+      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+      {label}
+    </button>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return <p className="text-[13px] text-muted-foreground">{message}</p>;
 }
