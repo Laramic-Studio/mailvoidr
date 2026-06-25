@@ -1,5 +1,10 @@
-import { create } from "zustand";
-import { REFRESH_TOKEN_STORAGE_KEY, TOKEN_STORAGE_KEY } from "@/lib/api";
+import { create } from 'zustand';
+import {
+  clearAuthStorage,
+  readAccessToken,
+  TOKEN_STORAGE_KEY,
+  writeAccessToken,
+} from '@/lib/auth-storage';
 
 interface AuthStore {
   accessToken: string | null;
@@ -14,21 +19,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
   hydrated: false,
   hydrate: () => {
     set({
-      accessToken: localStorage.getItem(TOKEN_STORAGE_KEY),
+      accessToken: readAccessToken(),
       hydrated: true,
     });
   },
   setAccessToken: (token) => {
     if (token) {
-      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      writeAccessToken(token);
     } else {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
     set({ accessToken: token });
   },
   clearSession: () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    clearAuthStorage();
     set({ accessToken: null });
   },
 }));

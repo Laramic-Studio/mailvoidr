@@ -200,9 +200,9 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 **Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
 
-**Next up:** Module 19 Billing (full) when ready, or polish deferred items (OAuth JWT, silent refresh, lifecycle webhooks).
+**Next up:** Landing/marketing pages (Home, Features, Pricing still on dummyData).
 
-**Deferred / polish:** Paid template marketplace, OAuth JWT exchange, silent refresh, SMTP path tracking, lifecycle webhooks (sent/delivered/bounced), geo IP enrichment, CSV export, Module 23 CMS, Module 24 enterprise backend.
+**Polish backlog:** Paid template marketplace, OAuth JWT exchange, SMTP path tracking, geo IP enrichment, CSV export, Module 23 CMS, Module 24 enterprise backend.
 
 ---
 
@@ -230,7 +230,7 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 ## Module 1 — Authentication
 
-**Status: ✅ Shipped** (OAuth SPA + silent refresh deferred)
+**Status: ✅ Shipped** (OAuth SPA + silent refresh deferred → **silent refresh ✅ shipped**)
 
 **Goal:** Real login/register/reset/verify/2FA. Unauthenticated users cannot reach `/dashboard/*` or `/onboarding`.
 
@@ -284,7 +284,7 @@ Login    → (2FA if enabled) → /onboarding if !onboarding_completed else /das
 
 ### Done when
 - [x] JWT login + register works; 401 clears session and redirects to login
-- [ ] Silent token refresh on 401 (`POST /auth/refresh` exists in API; not wired in axios interceptor)
+- [x] Silent token refresh on 401 (`POST /auth/refresh` in axios interceptor; deduped refresh queue)
 - [x] Email OTP verification blocks dashboard until verified
 - [x] 2FA challenge works end-to-end (login → `/2fa` → dashboard)
 - [ ] OAuth buttons redirect and return with valid JWT (buttons present; Laravel Socialite is web-only today)
@@ -1130,7 +1130,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 | `/dashboard/templates/:id` not routed | Module 16 — `App.tsx` | ✅ Routed (page still dummy data) |
 | `/workspace/select` wrong link | Module 3 — `DashboardLayout.tsx` | ✅ Fixed → `/workspaces` |
 | `ThemeProvider` not mounted | Module 0 — `index.tsx` | ✅ Fixed |
-| Silent JWT refresh on 401 | Module 1 — `lib/api.ts` | ⏳ Deferred |
+| Silent JWT refresh on 401 | Module 1 — `lib/api.ts` | ✅ Shipped |
 | OAuth → JWT in SPA | Module 1 — auth pages | ⏳ Deferred |
 | Region selectors in onboarding/domains/settings | Hide/stub — Modules 2, 7, 13 | Partial (onboarding hides region) |
 | Billing page full redesign | Module 19 — `Billing.tsx` has interim credits UI | ⏳ Deferred |
@@ -1168,7 +1168,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 **Deferred:** Module 19 Billing (full), Module 23 Docs CMS, Module 24 Enterprise backend.
 
-**Polish backlog:** Paid template marketplace, OAuth JWT exchange, silent refresh, SMTP path tracking, lifecycle webhooks (sent/delivered/bounced), geo IP enrichment, CSV export.
+**Polish backlog:** Paid template marketplace, OAuth JWT exchange, silent refresh, SMTP path tracking, ~~lifecycle webhooks (sent/delivered/bounced)~~ ✅, geo IP enrichment, CSV export.
 
 ---
 

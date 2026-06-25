@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchMe,
   login as loginRequest,
@@ -10,11 +10,12 @@ import {
   type LoginPayload,
   type RegisterPayload,
   type TwoFactorPayload,
-} from "@/lib/api/auth";
-import { queryKeys } from "@/lib/query-keys";
-import { useAuthStore } from "@/stores/auth-store";
-import { useWorkspaceStore } from "@/stores/workspace-store";
-import type { User } from "@/types";
+} from '@/lib/api/auth';
+import { registerTokenRefreshListener } from '@/lib/api';
+import { queryKeys } from '@/lib/query-keys';
+import { useAuthStore } from '@/stores/auth-store';
+import { useWorkspaceStore } from '@/stores/workspace-store';
+import type { User } from '@/types';
 
 function applyAuthResponse(
   response: AuthResponse,
@@ -125,6 +126,7 @@ export function useAuth() {
 export function useAuthBootstrap() {
   const hydrateAuth = useAuthStore((s) => s.hydrate);
   const hydrateWorkspace = useWorkspaceStore((s) => s.hydrate);
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
   const accessToken = useAuthStore((s) => s.accessToken);
   const clearSession = useAuthStore((s) => s.clearSession);
   const meQuery = useMe();
@@ -135,8 +137,16 @@ export function useAuthBootstrap() {
   }, [hydrateAuth, hydrateWorkspace]);
 
   useEffect(() => {
-    if (meQuery.isError) {
+    registerTokenRefreshListener(setAccessToken);
+
+    return () => {
+      registerTokenRefreshListener(null);
+    };
+  }, [setAccessToken]);
+
+  useEffect(() => {
+    if (meQuery.isError && accessToken) {
       clearSession();
     }
-  }, [meQuery.isError, clearSession]);
+  }, [meQuery.isError, accessToken, clearSession]);
 }
