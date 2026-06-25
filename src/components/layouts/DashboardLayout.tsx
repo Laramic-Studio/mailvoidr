@@ -18,7 +18,13 @@ import { workspaceInitials } from '@/hooks/useWorkspaces';
 import { useUiStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 
-export function DashboardLayout({ children }: { children: ReactNode }) {
+export function DashboardLayout({
+  children,
+  flush = false,
+}: {
+  children: ReactNode;
+  flush?: boolean;
+}) {
   const nav = useNavigate();
   const { user, logout } = useAuth();
   const hydrated = useUiStore((s) => s.hydrated);
@@ -138,7 +144,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 px-4 py-6 lg:px-8 lg:py-8" data-testid="dashboard-main">
+          <main
+            className={cn(
+              'min-w-0 flex-1',
+              flush ? 'flex flex-col overflow-hidden p-0' : 'px-4 py-6 lg:px-8 lg:py-8',
+            )}
+            data-testid="dashboard-main"
+          >
             {children}
           </main>
         </div>

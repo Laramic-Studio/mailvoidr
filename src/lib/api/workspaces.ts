@@ -48,7 +48,16 @@ export async function declineInvitation(workspaceId: string): Promise<{
 }
 
 export function flattenWorkspaces(lists: WorkspaceListResponse): Workspace[] {
-  const memberIds = new Set(lists.member.map((w) => w.id));
-  const owned = lists.owned.filter((w) => !memberIds.has(w.id) || w.role === "owner");
-  return [...owned, ...lists.member];
+  const seen = new Set<string>();
+  const result: Workspace[] = [];
+
+  for (const workspace of [...lists.owned, ...lists.member]) {
+    if (seen.has(workspace.id)) {
+      continue;
+    }
+    seen.add(workspace.id);
+    result.push(workspace);
+  }
+
+  return result;
 }

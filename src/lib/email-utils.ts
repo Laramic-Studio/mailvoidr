@@ -17,6 +17,21 @@ export function parseEmailAddress(value: string | null | undefined): {
   return { name: value, email: value };
 }
 
+export function formatRelativeInboxTime(iso: string | null): string {
+  if (!iso) return '—';
+
+  const date = new Date(iso);
+  const diffHours = (Date.now() - date.getTime()) / 3_600_000;
+
+  if (diffHours < 24) {
+    return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  if (diffHours < 48) return 'Yesterday';
+  if (diffHours < 168) return `${Math.floor(diffHours / 24)}d ago`;
+
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export function formatMessageTime(iso: string | null): string {
   if (!iso) return '—';
 

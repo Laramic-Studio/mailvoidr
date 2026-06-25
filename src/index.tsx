@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import axios from "axios";
 import "@/index.css";
 import App from "@/App";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -12,6 +13,15 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 60_000,
       refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        if (axios.isAxiosError(error)) {
+          const status = error.response?.status;
+          if (status === 429 || status === 401 || status === 403 || status === 404) {
+            return false;
+          }
+        }
+        return failureCount < 2;
+      },
     },
   },
 });

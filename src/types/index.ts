@@ -77,6 +77,33 @@ export interface EmailHeader {
   value: string;
 }
 
+export interface EmailAnalysis {
+  status: 'pending' | 'completed' | 'failed';
+  spam_score: number | null;
+  spam_rating: 'pass' | 'warning' | 'fail' | null;
+  spam_rules: Array<{
+    id: string;
+    description: string;
+    points: number;
+    status: 'pass' | 'warn' | 'fail';
+  }>;
+  html_support_score: number | null;
+  html_issues_count: number;
+  html_checks: Array<{
+    client: string;
+    platform: 'desktop' | 'mobile' | 'web';
+    support_score: number;
+    status: 'pass' | 'warn' | 'fail';
+  }>;
+  html_issues: Array<{
+    element: string;
+    client: string;
+    message: string;
+    status: 'warn' | 'fail';
+  }>;
+  analyzed_at: string | null;
+}
+
 export interface EmailMessageSummary {
   id: string;
   subject: string | null;
@@ -86,6 +113,8 @@ export interface EmailMessageSummary {
   is_read: boolean;
   attachments_count: number;
   created_at: string | null;
+  spam_score?: number | null;
+  html_support_score?: number | null;
 }
 
 export interface EmailMessage extends EmailMessageSummary {
@@ -97,6 +126,7 @@ export interface EmailMessage extends EmailMessageSummary {
   formatted_size?: string;
   attachments?: EmailAttachment[];
   headers?: EmailHeader[];
+  analysis?: EmailAnalysis | null;
 }
 
 export interface EmailMessageListResponse {
@@ -111,9 +141,24 @@ export interface EmailMessageListResponse {
 
 export interface SandboxInbox {
   id: string;
+  name: string;
   username: string;
+  password: string;
   smtp_host: string;
   smtp_port: number;
+  messages_count: number;
+  unread_count: number;
+  is_active: boolean;
+  created_at: string | null;
+}
+
+export interface SandboxStats {
+  messages_last_24h: number;
+}
+
+export interface SandboxResponse {
+  inbox: SandboxInbox | null;
+  stats: SandboxStats | null;
 }
 
 export interface ApiErrorBody {

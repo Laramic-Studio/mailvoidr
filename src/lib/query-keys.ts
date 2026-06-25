@@ -18,4 +18,11 @@ export const queryKeys = {
     messageRaw: (inboxId: string, messageId: string) =>
       ["virtual-emails", inboxId, "messages", messageId, "raw"] as const,
   },
+  sandbox: {
+    all: ['sandbox'] as const,
+    messages: (search?: string, unreadOnly?: boolean) =>
+      ['sandbox', 'messages', search ?? '', unreadOnly ? 'unread' : 'all'] as const,
+    message: (messageId: string) => ['sandbox', 'message', messageId] as const,
+    messageRaw: (messageId: string) => ['sandbox', 'message', messageId, 'raw'] as const,
+  },
 } as const;
