@@ -187,7 +187,7 @@ export function DashboardLayout({ children }) {
                 <DropdownMenuItem asChild><Link to="/dashboard/billing">Billing</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/dashboard/teams">Team</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link to="/workspace/select">Switch workspace</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/workspaces">Switch workspace</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/login">Sign out</Link></DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

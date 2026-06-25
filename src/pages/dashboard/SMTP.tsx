@@ -71,7 +71,17 @@ await transporter.sendMail({
   );
 }
 
-function KV({ k, v, mono, action }) {
+function KV({
+  k,
+  v,
+  mono = false,
+  action,
+}: {
+  k: string;
+  v: string | number;
+  mono?: boolean;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="bg-card p-3">
       <div className="label-mono">{k}</div>

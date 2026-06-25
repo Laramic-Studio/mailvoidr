@@ -17,12 +17,14 @@ export default function Contact() {
               Migrating from SendGrid, Mailgun, or Postmark? Send us a note — we'll help you plan the cutover.
             </p>
             <div className="mt-10 space-y-5 text-[13.5px]">
-              {[
-                [Mail, "sales@mailvoidr.io", "Sales & migrations"],
-                [MessageSquare, "support@mailvoidr.io", "Customer support"],
-                [Phone, "+1 (415) 555-0142", "Mon–Fri · 9–6 PT"],
-                [MapPin, "548 Market St · San Francisco · CA 94104", "HQ"],
-              ].map(([Icon, val, sub]) => (
+              {(
+                [
+                  [Mail, "sales@mailvoidr.io", "Sales & migrations"],
+                  [MessageSquare, "support@mailvoidr.io", "Customer support"],
+                  [Phone, "+1 (415) 555-0142", "Mon–Fri · 9–6 PT"],
+                  [MapPin, "548 Market St · San Francisco · CA 94104", "HQ"],
+                ] as const
+              ).map(([Icon, val, sub]) => (
                 <div key={val} className="flex items-start gap-3">
                   <Icon className="h-4 w-4 text-primary mt-0.5" />
                   <div>

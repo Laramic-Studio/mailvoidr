@@ -13,7 +13,17 @@ const MAP = {
   bounced: "error", complained: "error", failed: "error", fail: "error", paused: "error", down: "error", revoked: "error",
 };
 
-export function StatusBadge({ status, label, tone, withDot = true, className = "" }) {
+type ToneKey = keyof typeof TONE;
+
+interface StatusBadgeProps {
+  status: string;
+  label?: string;
+  tone?: ToneKey;
+  withDot?: boolean;
+  className?: string;
+}
+
+export function StatusBadge({ status, label, tone, withDot = true, className = "" }: StatusBadgeProps) {
   const computedTone = tone || MAP[String(status).toLowerCase()] || "neutral";
   return (
     <span

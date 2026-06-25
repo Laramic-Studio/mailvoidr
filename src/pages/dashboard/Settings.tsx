@@ -83,7 +83,7 @@ export default function Settings() {
                 ["Product updates", "New features and changelog", false],
                 ["Billing alerts", "Plan limits, payment failures", true],
               ].map(([l, d, on]) => (
-                <Toggle key={l} label={l} desc={d} defaultOn={on} />
+                <Toggle key={String(l)} label={String(l)} desc={String(d)} defaultOn={Boolean(on)} />
               ))}
             </Section>
           )}
@@ -143,7 +143,17 @@ export default function Settings() {
   );
 }
 
-function Section({ title, desc, children, danger }) {
+function Section({
+  title,
+  desc,
+  children,
+  danger = false,
+}: {
+  title: string;
+  desc: string;
+  children: React.ReactNode;
+  danger?: boolean;
+}) {
   return (
     <div>
       <h2 className={`text-lg font-medium tracking-tight ${danger ? "text-destructive" : ""}`}>{title}</h2>
@@ -153,7 +163,19 @@ function Section({ title, desc, children, danger }) {
   );
 }
 
-function Field({ label, defaultValue, type = "text", mono, custom }) {
+function Field({
+  label,
+  defaultValue = "",
+  type = "text",
+  mono = false,
+  custom,
+}: {
+  label: string;
+  defaultValue?: string;
+  type?: string;
+  mono?: boolean;
+  custom?: React.ReactNode;
+}) {
   return (
     <div className="border border-border bg-card p-4">
       <label className="label-mono block mb-2">{label}</label>

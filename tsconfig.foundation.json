@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/vite-env.d.ts",
+    "src/lib/**/*",
+    "src/types/**/*",
+    "src/contexts/**/*",
+    "src/hooks/useHealth.ts",
+    "src/components/ProtectedRoute.tsx"
+  ]
+}

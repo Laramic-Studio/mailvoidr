@@ -4,7 +4,15 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { DOCS_NAV } from "@/lib/dummyData";
 import { Search, Github, ChevronRight } from "lucide-react";
 
-export function DocsLayout({ children, toc = [], title }) {
+import type { ReactNode } from "react";
+
+interface DocsLayoutProps {
+  children: ReactNode;
+  toc?: Array<{ id: string; label?: string; title?: string }>;
+  title?: string;
+}
+
+export function DocsLayout({ children, toc = [], title }: DocsLayoutProps) {
   const { pathname } = useLocation();
   const current = pathname.split("/").pop();
 

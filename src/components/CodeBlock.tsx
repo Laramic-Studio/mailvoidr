@@ -1,7 +1,21 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
-export function CodeBlock({ code, language = "bash", filename, className = "", showLineNumbers = false }) {
+interface CodeBlockProps {
+  code: string;
+  language?: string;
+  filename?: string;
+  className?: string;
+  showLineNumbers?: boolean;
+}
+
+export function CodeBlock({
+  code,
+  language = "bash",
+  filename,
+  className = "",
+  showLineNumbers = false,
+}: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   const onCopy = () => {
     navigator.clipboard?.writeText(code);

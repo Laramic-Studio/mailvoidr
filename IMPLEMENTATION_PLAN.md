@@ -9,6 +9,43 @@ The SPA is the **only user-facing product**. The Inertia app stays for admin/int
 
 ---
 
+## Product model (important)
+
+Two different concepts — do not merge them in the backend:
+
+| Frontend route | UI label | Laravel today | DB table | Count |
+|----------------|----------|---------------|----------|-------|
+| `/dashboard/inboxes` | Inboxes | `test-emails/*` | `virtual_email_addresses` | **Many** per user/workspace |
+| `/dashboard/inboxes/:id` | Inbox detail | `test-emails/show` | `virtual_email_addresses` + `emails` | One virtual address |
+| `/dashboard/testing` | Email Testing | `dashboard.tsx` (Inbox) | `inboxes` | **One** sandbox inbox per user/workspace |
+
+**Rules:**
+- Users get **one sandbox inbox** (SMTP creds, captured mail, spam/render tools) → **Email Testing** page.
+- Users create **many virtual emails** (disposable addresses, TTL, forwarding) → **Inboxes** page.
+- The prototype UI is already on the correct pages — no route swap needed.
+
+---
+
+## TypeScript (decide before Module 1)
+
+**Recommendation: migrate to TypeScript now**, before wiring any API.
+
+| | Stay JS | Switch to TS |
+|---|---------|--------------|
+| When | Never planning shared types with Laravel | **Now** — still dummy data, no API contracts yet |
+| Pros | Zero migration cost | Typed API responses, fewer wiring bugs, matches `ui/resources/js/` |
+| Cons | API shapes drift silently | ~1–2 days upfront (`tsconfig`, rename files, shared `types/`) |
+
+**Migration scope (Module 0):**
+1. Add `typescript`, `@types/react`, `@types/react-dom`
+2. `tsconfig.json` + rename `src/**/*.{jsx,js}` → `.tsx` / `.ts`
+3. Create `src/types/` — `User`, `Workspace`, `VirtualEmail`, `SandboxInbox`, `Email`, API envelopes
+4. Type the axios client and React Query hooks as modules ship
+
+Do **not** migrate mid-rollout (e.g. during Module 4) — finish TS in Module 0 or stay JS for the whole project.
+
+---
+
 ## Principles
 
 1. **Backend-first per module** — ship API + tests, then connect the page.
@@ -83,9 +120,9 @@ The SPA is the **only user-facing product**. The Inertia app stays for admin/int
 | 1 | Authentication | Critical | 0 |
 | 2 | Workspaces + invites | Critical | 1 |
 | 3 | Onboarding | High | 2 |
-| 4 | Inboxes (multi) | Critical | 2 |
-| 5 | Inbox detail + messages | Critical | 4 |
-| 6 | Email testing / sandbox | High | 4, 5 |
+| 4 | Inboxes (virtual emails, many) | Critical | 2 |
+| 5 | Virtual email detail + messages | Critical | 4 |
+| 6 | Email testing (sandbox inbox, one) | High | 2 |
 | 7 | Domains | High | 2 |
 | 8 | API keys | High | 2, 7 (for send) |
 | 9 | SMTP credentials | High | 2 |
@@ -241,107 +278,102 @@ Skip region picker values — show `us-east-1` only or hide EU/AP options in UI 
 
 ---
 
-## Module 4 — Inboxes (multi)
+## Module 4 — Inboxes (virtual emails)
 
-**Goal:** Users create **multiple** disposable inboxes per workspace. This replaces the old "one inbox per user" model.
+**Goal:** Users create **multiple virtual email addresses** per workspace. Maps to `virtual_email_addresses` — same as `ui/resources/js/pages/test-emails/*`.
 
 ### Frontend
-- `pages/dashboard/Inboxes.jsx`
+- `pages/dashboard/Inboxes.jsx` — list + create modal
 
-### Backend — `routes/api/v1/inboxes.php`
+### Backend — `routes/api/v1/virtual-emails.php`
 
-| Method | Path | Action |
-|--------|------|--------|
-| GET | `/inboxes` | List workspace inboxes (search, paginate) |
-| POST | `/inboxes` | Create inbox |
-| GET | `/inboxes/{id}` | Show metadata |
-| PATCH | `/inboxes/{id}` | Update label, TTL, forwarding |
-| DELETE | `/inboxes/{id}` | Soft-delete / deactivate |
+| Method | Path | Reuse |
+|--------|------|-------|
+| GET | `/virtual-emails` | `TestEmailController@index` logic |
+| POST | `/virtual-emails` | create address |
+| GET | `/virtual-emails/{id}` | show metadata |
+| PATCH | `/virtual-emails/{id}` | label, TTL (`expires_at`), forwarding |
+| DELETE | `/virtual-emails/{id}` | soft-delete |
 
-Reuse: `Inbox` model, `InboxPolicy`, SMTP inbound routing by address.
+Reuse: `VirtualEmailAddress` model, inbound SMTP routing by `email_address`.
 
-### Schema changes — `inboxes` table
+### Schema changes — `virtual_email_addresses`
+
+Extend existing table (most columns already exist):
 
 ```sql
--- New columns
-label           VARCHAR nullable   -- UI "Label"
-email_address   VARCHAR unique     -- full address e.g. qa-abc@inboxes.mailvoidr.com
-expires_at      TIMESTAMP nullable -- TTL (24h, 7d, 30d, null = never)
-forward_to      VARCHAR nullable   -- forwarding address
-messages_count  INT default 0      -- denormalized counter (optional)
+forward_to   VARCHAR nullable   -- UI "Forward to"
+label        VARCHAR nullable   -- maps to `name` or new column
 ```
 
-Migration strategy:
-- Generate `email_address` from `username` + platform domain for existing rows
-- Drop implicit "one inbox per user" in `User` model helpers — use `workspace->inboxes()`
-- Unify or bridge `virtual_email_addresses` → may merge into `inboxes` long-term (document decision in Module 4 PR)
+Emails link via `emails.virtual_email_address_id` (already exists).
 
 ### Done when
-- [ ] Create modal persists inbox with label, TTL, optional forward
+- [ ] Create modal persists virtual email with label, TTL, optional forward
 - [ ] Table shows address, message/unread counts, TTL, forwarding
 - [ ] Copy address button works
-- [ ] Plan limits enforced (when billing module lands; stub unlimited for now)
+- [ ] Plan limits enforced when billing module lands
 
 ---
 
-## Module 5 — Inbox detail + messages
+## Module 5 — Virtual email detail + messages
 
-**Goal:** Read captured inbound mail with headers, raw source, attachments.
+**Goal:** Read mail captured by a **virtual email address** (not the sandbox inbox).
 
 ### Frontend
-- `pages/dashboard/InboxDetail.jsx`
+- `pages/dashboard/InboxDetail.jsx` — route stays `/dashboard/inboxes/:id`
 
 ### Backend
 
 | Method | Path | Reuse |
 |--------|------|-------|
-| GET | `/inboxes/{id}/messages` | paginate `Email` model |
-| GET | `/inboxes/{id}/messages/{emailId}` | show + headers + attachments |
-| PATCH | `/inboxes/{id}/messages/{emailId}/read` | mark read |
-| DELETE | `/inboxes/{id}/messages/{emailId}` | delete message |
-| GET | `/inboxes/{id}/messages/{emailId}/raw` | raw MIME |
+| GET | `/virtual-emails/{id}/messages` | paginate `Email` where `virtual_email_address_id` |
+| GET | `/virtual-emails/{id}/messages/{emailId}` | show + headers + attachments |
+| PATCH | `/virtual-emails/{id}/messages/{emailId}/read` | mark read |
+| DELETE | `/virtual-emails/{id}/messages/{emailId}` | delete message |
+| GET | `/virtual-emails/{id}/messages/{emailId}/raw` | raw MIME |
 | GET | `/attachments/{id}/download` | file stream |
 
-Reuse: `Api/EmailController` logic — extract to `InboxMessageController`.
+Reuse: `Api/EmailController`, `test-emails` APIs — scope by virtual email id.
 
 ### Schema changes
-- Ensure `emails.inbox_id` required for new inbox type (already nullable for virtual — clarify in migration)
 - Optional: `spam_score` on `emails` (nullable) for UI badge — populate later
 
 ### Done when
-- [ ] Message list + detail split view works
+- [ ] Message list + detail split view works per virtual email
 - [ ] Tabs: Preview, HTML, Raw, Headers, Attachments render real data
-- [ ] Delete inbox + refresh works
+- [ ] Delete virtual email + refresh works
 
 ---
 
-## Module 6 — Email testing / sandbox
+## Module 6 — Email testing (sandbox inbox)
 
-**Goal:** Testing page shows sandbox project stats, captured messages, spam preview.
+**Goal:** **One sandbox inbox** per user/workspace — SMTP credentials, captured messages, spam/render tools. Maps to `inboxes` table + `ui/resources/js/pages/dashboard.tsx`.
 
 ### Frontend
-- `pages/dashboard/Testing.jsx`
+- `pages/dashboard/Testing.jsx` — sandbox tab, SMTP panel, spam/preview/headers/source tabs
 
-### Backend
+### Backend — `routes/api/v1/sandbox.php`
 
-Option A (recommended v1): **Testing page reads from same inbox APIs** — sandbox = dedicated inbox flagged `is_sandbox=true`.
+| Method | Path | Reuse |
+|--------|------|-------|
+| GET | `/sandbox` | User/workspace **single** `Inbox` + SMTP creds |
+| GET | `/sandbox/messages` | `Email` where `inbox_id` = sandbox inbox |
+| GET | `/sandbox/messages/{id}` | message detail |
+| POST | `/sandbox/enable` | Create inbox if missing (on signup or first visit) |
 
-| Method | Path |
-|--------|------|
-| GET | `/sandbox` | Sandbox inbox + SMTP credentials for workspace |
-| GET | `/sandbox/messages` | Alias of inbox messages |
-| POST | `/sandbox/projects` | Optional — defer "projects" to v2 |
+Reuse: `Inbox` model (one per user/workspace), `Api/EmailController` inbox resolution, existing SMTP inbound on `:2525`.
 
-Option B: Keep `virtual_email_addresses` for anonymous; authenticated sandbox uses `inboxes`.
+**Do not** allow multiple sandbox inboxes. "Projects" tab in UI — defer to v2 or map to virtual emails.
 
 ### Schema changes
-- `inboxes.is_sandbox` boolean default false
-- Spam report: stub with static rules until analysis engine exists; or basic DNS/header checks only
+- Keep `inboxes` as-is (one row per user or per workspace — decide and enforce unique constraint)
+- Spam report: stub until analysis engine exists
 
 ### Done when
-- [ ] Sandbox tab shows real captured messages
-- [ ] SMTP credential snippet uses real sandbox inbox creds
-- [ ] Spam/render tabs show best-effort data (real or honest "coming soon" — do not remove tabs)
+- [ ] Sandbox tab shows real messages from the user's single inbox
+- [ ] SMTP credential snippet uses real `inboxes.username` / `password`
+- [ ] Spam/render tabs show best-effort data (do not remove tabs)
 
 ---
 
@@ -779,7 +811,8 @@ ui/routes/api.php
 ├── v1/health
 ├── v1/auth/*              Module 1
 ├── v1/workspaces/*        Module 2
-├── v1/inboxes/*           Module 4–6
+├── v1/virtual-emails/*    Module 4–5
+├── v1/sandbox/*           Module 6
 ├── v1/domains/*           Module 7
 ├── v1/api-keys/*          Module 8
 ├── v1/smtp-credentials/*  Module 9

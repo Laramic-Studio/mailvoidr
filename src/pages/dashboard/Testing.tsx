@@ -141,7 +141,7 @@ SMTP_PASS=$SANDBOX_PASS`} className="mt-3" />
           <div className="border-b border-border p-3 flex items-center justify-between">
             <h3 className="text-sm font-medium">Render preview · welcome-v3</h3>
             <div className="flex border border-border text-[12px] rounded-md">
-              {[["desktop", Monitor], ["mobile", Smartphone]].map(([d, Icon]) => (
+              {([["desktop", Monitor], ["mobile", Smartphone]] as const).map(([d, Icon]) => (
                 <button key={d} onClick={() => setDevice(d)} className={`px-3 py-1 inline-flex items-center gap-1 ${device === d ? "bg-accent" : ""}`}>
                   <Icon className="h-3 w-3" /> {d}
                 </button>
