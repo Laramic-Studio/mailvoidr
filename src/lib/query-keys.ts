@@ -34,4 +34,7 @@ export const queryKeys = {
   smtpCredentials: {
     all: ['smtp-credentials'] as const,
   },
+  send: {
+    history: ['send', 'history'] as const,
+  },
 } as const;

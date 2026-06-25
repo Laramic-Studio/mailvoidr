@@ -230,6 +230,35 @@ export interface SmtpCredentialResponse {
   credential: SmtpCredential | null;
 }
 
+export interface EmailSendSummary {
+  id: string;
+  from: string;
+  recipient: string | null;
+  recipients_count: number;
+  subject: string | null;
+  status: string;
+  source: string;
+  queued_at: string | null;
+  sent_at: string | null;
+  created_at: string | null;
+}
+
+export interface EmailSendHistoryResponse {
+  data: EmailSendSummary[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+export interface EmailPreview {
+  subject: string;
+  from: string | null;
+  html: string;
+}
+
 export interface ApiErrorBody {
   message: string;
   errors?: Record<string, string[]>;
