@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useHealth } from "@/hooks/useHealth";
 import { ArrowRight, Github, Twitter } from "lucide-react";
 
 const NAV = [
@@ -15,6 +16,14 @@ const NAV = [
 
 export function MarketingLayout({ children }) {
   const { pathname } = useLocation();
+  const { data: apiHealthy, isLoading: healthLoading } = useHealth();
+  const statusLabel = healthLoading
+    ? "Checking API…"
+    : apiHealthy
+      ? "API operational"
+      : "API unreachable";
+  const statusClass = apiHealthy ? "bg-primary" : healthLoading ? "bg-muted-foreground" : "bg-destructive";
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/70 backdrop-blur-md">
@@ -86,12 +95,10 @@ export function MarketingLayout({ children }) {
           <div className="mx-auto max-w-7xl px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12.5px] text-muted-foreground">
             <span>© 2026 Mailvoidr, Inc. — Made with restraint in San Francisco & Bengaluru.</span>
             <div className="flex items-center gap-5 font-mono text-[11px]">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                All systems operational
-              </span>
-              <a href="#" className="hover:text-foreground">SOC 2</a>
-              <a href="#" className="hover:text-foreground">GDPR</a>
+              <Link to="/status" className="inline-flex items-center gap-1.5 hover:text-foreground">
+                <span className={`h-1.5 w-1.5 rounded-full ${statusClass} ${apiHealthy ? "animate-pulse" : ""}`} />
+                {statusLabel}
+              </Link>
               <a href="#" className="hover:text-foreground">Privacy</a>
               <a href="#" className="hover:text-foreground">Terms</a>
             </div>

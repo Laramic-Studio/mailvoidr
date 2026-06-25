@@ -200,7 +200,7 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 **Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
 
-**Next up:** Landing/marketing pages (Home, Features, Pricing still on dummyData).
+**Next up:** Marketing — Features page, then Pricing (wire to plans/credits API).
 
 **Polish backlog:** Paid template marketplace, OAuth JWT exchange, SMTP path tracking, geo IP enrichment, CSV export, Module 23 CMS, Module 24 enterprise backend.
 
@@ -208,12 +208,13 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 ## Module 0 — Foundation + static marketing
 
-**Status: ✅ Shipped**
+**Status: ✅ Shipped** (Home landing wired — honest copy + real API samples; Features/Pricing still on dummyData)
 
 **Goal:** SPA deploys, talks to Laravel health check, marketing pages live without auth.
 
 ### Frontend files
-- All `pages/marketing/*`
+- `pages/marketing/Home.tsx` — **wired** (`content/marketing/home.ts`, health in footer)
+- Other `pages/marketing/*` — still static / dummyData
 - `pages/docs/DocsLanding.tsx`, `pages/docs/DocsArticle.tsx` (static for now)
 - Layouts: `MarketingLayout`, `DocsLayout`
 
