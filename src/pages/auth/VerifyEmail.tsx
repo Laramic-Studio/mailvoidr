@@ -1,54 +1,47 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
+import { OtpInput } from "@/components/auth/OtpInput";
+import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { resendEmailOtp, verifyEmailOtp } from "@/lib/api/auth";
-import { getApiErrorMessage } from "@/lib/api";
+import { toastError, toastSuccess } from "@/lib/toast";
 import { Mail } from "lucide-react";
+
+const OTP_LENGTH = 6;
 
 export default function VerifyEmail() {
   const nav = useNavigate();
   const { user, refreshUser } = useAuth();
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const setDigit = (index: number, value: string) => {
-    const next = [...code];
-    next[index] = value.slice(-1);
-    setCode(next);
-    if (value && index < 5) {
-      document.getElementById(`verify-otp-${index + 1}`)?.focus();
-    }
-  };
+  const { loading, run } = useAsyncAction();
+  const [resending, setResending] = useState(false);
+  const [code, setCode] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
 
-    try {
-      await verifyEmailOtp(code.join(""));
+    await run(async () => {
+      await verifyEmailOtp(code);
       await refreshUser();
       nav("/onboarding");
-    } catch (err) {
-      setError(getApiErrorMessage(err, "Invalid verification code"));
-    } finally {
-      setLoading(false);
-    }
+    }, { fallbackMessage: "Invalid verification code" });
   }
 
   async function handleResend() {
-    setError(null);
-    setMessage(null);
+    setResending(true);
+    setCode("");
     try {
       await resendEmailOtp();
-      setMessage("A new verification code was sent.");
+      toastSuccess("A new verification code was sent.");
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not resend code"));
+      toastError(err, "Could not resend code");
+    } finally {
+      setResending(false);
     }
   }
+
+  const inputsDisabled = loading || resending;
 
   return (
     <AuthLayout>
@@ -59,41 +52,35 @@ export default function VerifyEmail() {
       <p className="mt-2 text-sm text-muted-foreground">
         We sent a 6-digit code to{" "}
         <span className="font-mono text-foreground">{user?.email ?? "your email"}</span>.
+        You can paste the full code into the first box.
       </p>
-      {error && <p className="mt-4 text-sm text-destructive" data-testid="verify-error">{error}</p>}
-      {message && <p className="mt-4 text-sm text-primary" data-testid="verify-message">{message}</p>}
       <form data-testid="verify-form" onSubmit={handleSubmit} className="mt-8 space-y-6">
-        <div className="grid grid-cols-6 gap-2">
-          {code.map((digit, index) => (
-            <input
-              key={index}
-              id={`verify-otp-${index}`}
-              data-testid={`verify-otp-${index}`}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => setDigit(index, e.target.value)}
-              className="aspect-square text-center bg-card border border-border rounded-md text-xl font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          ))}
-        </div>
-        <button
-          data-testid="verify-continue"
-          type="submit"
-          disabled={loading || code.some((d) => !d)}
-          className="w-full bg-primary text-primary-foreground rounded-md px-4 py-2.5 text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
-        >
-          {loading ? "Verifying…" : "Verify email"}
-        </button>
+        <fieldset disabled={inputsDisabled} className="space-y-6 border-0 p-0 m-0 min-w-0">
+          <OtpInput
+            data-testid="verify-otp"
+            value={code}
+            onChange={setCode}
+            disabled={inputsDisabled}
+            length={OTP_LENGTH}
+          />
+          <SubmitButton
+            data-testid="verify-continue"
+            loading={loading}
+            loadingText="Verifying…"
+            disabled={code.length !== OTP_LENGTH}
+          >
+            Verify email
+          </SubmitButton>
+        </fieldset>
       </form>
       <button
         type="button"
         onClick={handleResend}
+        disabled={inputsDisabled}
         data-testid="verify-resend"
-        className="mt-4 w-full border border-border bg-card rounded-md px-4 py-2.5 text-sm hover:bg-accent"
+        className="mt-4 w-full border border-border bg-card rounded-md px-4 py-2.5 text-sm hover:bg-accent transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Resend code
+        {resending ? "Sending…" : "Resend code"}
       </button>
       <p className="mt-6 text-center text-[12.5px] text-muted-foreground">
         Wrong email? <Link to="/register" className="text-foreground hover:underline">Change it</Link>

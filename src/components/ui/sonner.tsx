@@ -1,14 +1,17 @@
-import { useTheme } from "next-themes"
-import { Toaster as Sonner, toast } from "sonner"
+import { useTheme } from "next-themes";
+import { Toaster as Sonner } from "sonner";
 
-const Toaster = ({
-  ...props
-}) => {
-  const { theme = "system" } = useTheme()
+export function Toaster() {
+  const { theme = "system" } = useTheme();
 
   return (
     <Sonner
-      theme={theme}
+      theme={theme as "light" | "dark" | "system"}
+      position="top-center"
+      richColors
+      closeButton
+      expand={false}
+      duration={4500}
       className="toaster group"
       toastOptions={{
         classNames: {
@@ -21,8 +24,8 @@ const Toaster = ({
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
-      {...props} />
+    />
   );
 }
 
-export { Toaster, toast }
+export { toast } from "sonner";

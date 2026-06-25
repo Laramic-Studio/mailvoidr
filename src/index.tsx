@@ -5,6 +5,7 @@ import "@/index.css";
 import App from "@/App";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppProviders } from "@/components/AppProviders";
+import { Toaster } from "@/components/ui/sonner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,7 @@ root.render(
       <ThemeProvider>
         <AppProviders>
           <App />
+          <Toaster />
         </AppProviders>
       </ThemeProvider>
     </QueryClientProvider>

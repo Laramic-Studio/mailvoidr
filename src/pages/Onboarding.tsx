@@ -3,10 +3,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { CodeBlock } from "@/components/CodeBlock";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboardingMutations, useOnboardingStatus } from "@/hooks/useOnboarding";
-import { getApiErrorMessage } from "@/lib/api";
+import { toastError } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, ArrowRight, ArrowLeft, Code2, Building, Users, Rocket, Copy, Eye, EyeOff } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, ArrowRight, ArrowLeft, Code2, Building, Users, Rocket, Copy, Eye, EyeOff, Loader2 } from "lucide-react";
 
 const STEPS = ["Welcome", "Workspace", "Usage", "API key", "Done"];
 
@@ -17,9 +18,15 @@ const USE_CASES = [
   { id: "enterprise", icon: Building, title: "Enterprise", desc: "50+ employees, compliance-heavy." },
 ];
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
+const REFERRAL_SOURCES = [
+  { id: "search", label: "Search engine (Google, etc.)" },
+  { id: "social", label: "Social media" },
+  { id: "friend", label: "Friend or colleague" },
+  { id: "blog", label: "Blog or newsletter" },
+  { id: "youtube", label: "YouTube or podcast" },
+  { id: "conference", label: "Conference or event" },
+  { id: "other", label: "Other" },
+];
 
 export default function Onboarding() {
   const nav = useNavigate();
@@ -29,12 +36,10 @@ export default function Onboarding() {
 
   const [step, setStep] = useState(0);
   const [workspaceName, setWorkspaceName] = useState("");
-  const [workspaceSlug, setWorkspaceSlug] = useState("");
-  const [slugTouched, setSlugTouched] = useState(false);
+  const [referralSource, setReferralSource] = useState("");
   const [useCase, setUseCase] = useState("startup");
   const [plainApiKey, setPlainApiKey] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -46,21 +51,17 @@ export default function Onboarding() {
 
     if (status.workspace) {
       setWorkspaceName(status.workspace.name);
-      setWorkspaceSlug(status.workspace.slug);
       if (status.workspace.use_case) {
         setUseCase(status.workspace.use_case);
       }
     }
+
+    if (status.referral_source) {
+      setReferralSource(status.referral_source);
+    }
   }, [status]);
 
-  useEffect(() => {
-    if (!slugTouched) {
-      setWorkspaceSlug(slugify(workspaceName));
-    }
-  }, [workspaceName, slugTouched]);
-
   const next = async () => {
-    setError(null);
     setSubmitting(true);
 
     try {
@@ -69,7 +70,7 @@ export default function Onboarding() {
       if (step === 1) {
         await createWorkspace.mutateAsync({
           name: workspaceName.trim(),
-          slug: workspaceSlug.trim() || undefined,
+          referral_source: referralSource,
         });
       }
 
@@ -85,14 +86,13 @@ export default function Onboarding() {
       await saveStep.mutateAsync(nextStep);
       setStep(nextStep);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not save progress"));
+      toastError(err, "Could not save progress");
     } finally {
       setSubmitting(false);
     }
   };
 
   const skipApiKey = async () => {
-    setError(null);
     setSubmitting(true);
 
     try {
@@ -100,7 +100,7 @@ export default function Onboarding() {
       await saveStep.mutateAsync(nextStep);
       setStep(nextStep);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not save progress"));
+      toastError(err, "Could not save progress");
     } finally {
       setSubmitting(false);
     }
@@ -117,14 +117,13 @@ export default function Onboarding() {
   };
 
   const finish = async () => {
-    setError(null);
     setSubmitting(true);
 
     try {
       const result = await complete.mutateAsync();
       nav(result.redirect || "/dashboard");
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not complete onboarding"));
+      toastError(err, "Could not complete onboarding");
     } finally {
       setSubmitting(false);
     }
@@ -167,10 +166,15 @@ export default function Onboarding() {
       </div>
 
       <main className="mx-auto max-w-2xl px-6 py-16">
-        {error && (
-          <p className="mb-6 text-sm text-destructive" data-testid="onb-error">{error}</p>
-        )}
-
+        <fieldset disabled={submitting} className="border-0 p-0 m-0 min-w-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+          >
         {step === 0 && (
           <div data-testid="onb-welcome">
             <span className="label-mono">Welcome</span>
@@ -199,24 +203,28 @@ export default function Onboarding() {
                 <input
                   data-testid="onb-workspace-name"
                   value={workspaceName}
+                  disabled={submitting}
                   onChange={(e) => setWorkspaceName(e.target.value)}
-                  className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="label-mono block mb-1.5">Workspace URL</label>
-                <div className="flex items-center border border-border rounded-md bg-card overflow-hidden">
-                  <span className="px-3 text-[12.5px] text-muted-foreground font-mono">mailvoidr.io/</span>
-                  <input
-                    data-testid="onb-workspace-slug"
-                    value={workspaceSlug}
-                    onChange={(e) => {
-                      setSlugTouched(true);
-                      setWorkspaceSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
-                    }}
-                    className="flex-1 bg-transparent py-2 pr-3 text-sm focus:outline-none"
-                  />
-                </div>
+                <label className="label-mono block mb-1.5">How did you hear about us?</label>
+                <select
+                  data-testid="onb-referral-source"
+                  value={referralSource}
+                  disabled={submitting}
+                  onChange={(e) => setReferralSource(e.target.value)}
+                  className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select one…</option>
+                  {REFERRAL_SOURCES.map((source) => (
+                    <option key={source.id} value={source.id}>
+                      {source.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">Helps us understand what&apos;s working.</p>
               </div>
             </div>
           </div>
@@ -232,9 +240,10 @@ export default function Onboarding() {
                 <button
                   key={u.id}
                   type="button"
+                  disabled={submitting}
                   onClick={() => setUseCase(u.id)}
                   data-testid={`onb-usecase-${u.id}`}
-                  className={`text-left border rounded-md p-4 transition-colors ${
+                  className={`text-left border rounded-md p-4 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                     useCase === u.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-accent/50"
                   }`}
                 >
@@ -311,6 +320,9 @@ export default function Onboarding() {
           </div>
         )}
 
+          </motion.div>
+        </AnimatePresence>
+
         <div className="mt-12 flex items-center justify-between">
           <button
             type="button"
@@ -339,11 +351,20 @@ export default function Onboarding() {
               <button
                 type="button"
                 onClick={next}
-                disabled={submitting || (step === 1 && !workspaceName.trim())}
+                disabled={submitting || (step === 1 && (!workspaceName.trim() || !referralSource))}
                 data-testid="onb-next"
-                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submitting ? "Saving…" : "Continue"} <ArrowRight className="h-3.5 w-3.5" />
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    Continue <ArrowRight className="h-3.5 w-3.5" />
+                  </>
+                )}
               </button>
             ) : (
               <button
@@ -351,13 +372,23 @@ export default function Onboarding() {
                 onClick={finish}
                 disabled={submitting}
                 data-testid="onb-finish"
-                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submitting ? "Finishing…" : "Go to dashboard"} <ArrowRight className="h-3.5 w-3.5" />
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Finishing…
+                  </>
+                ) : (
+                  <>
+                    Go to dashboard <ArrowRight className="h-3.5 w-3.5" />
+                  </>
+                )}
               </button>
             )}
           </div>
         </div>
+        </fieldset>
       </main>
     </div>
   );

@@ -1,8 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export function AuthLayout({ children, side = "right" }) {
+interface AuthLayoutProps {
+  children: React.ReactNode;
+  side?: "left" | "right";
+}
+
+export function AuthLayout({ children, side = "right" }: AuthLayoutProps) {
+  const location = useLocation();
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <div className={`flex flex-col px-6 py-8 lg:px-12 ${side === "right" ? "" : "order-2"}`}>
@@ -11,7 +19,18 @@ export function AuthLayout({ children, side = "right" }) {
           <ThemeToggle />
         </div>
         <div className="flex-1 flex items-center">
-          <div className="w-full max-w-sm mx-auto">{children}</div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="w-full max-w-sm mx-auto"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </div>
         <div className="text-[12px] text-muted-foreground flex items-center justify-between">
           <span>© 2026 Mailvoidr</span>
@@ -33,7 +52,7 @@ export function AuthLayout({ children, side = "right" }) {
           </div>
           <div className="space-y-6">
             <blockquote className="text-2xl tracking-tight font-medium text-balance leading-snug">
-              "We replaced three tools — SendGrid, Mailtrap, and Postmark — with Mailvoidr in a weekend. Our p99 send latency dropped from 1.8s to 240ms."
+              &quot;We replaced three tools — SendGrid, Mailtrap, and Postmark — with Mailvoidr in a weekend. Our p99 send latency dropped from 1.8s to 240ms.&quot;
             </blockquote>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/30 inline-flex items-center justify-center font-mono text-sm">JK</div>

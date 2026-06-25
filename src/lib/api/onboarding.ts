@@ -5,6 +5,7 @@ export interface OnboardingStatus {
   completed: boolean;
   step: number;
   workspace: Workspace | null;
+  referral_source?: string | null;
 }
 
 export interface OnboardingApiKeyResult {
@@ -28,7 +29,7 @@ export async function saveOnboardingStep(step: number): Promise<{ step: number }
 
 export async function createOnboardingWorkspace(payload: {
   name: string;
-  slug?: string;
+  referral_source: string;
 }): Promise<{ workspace: Workspace }> {
   const { data } = await api.post<{ workspace: Workspace }>("/onboarding/workspace", payload);
   return data;
