@@ -608,6 +608,196 @@ export interface HealthResponse {
   timestamp: string;
 }
 
+export type DashboardPeriod = '24h' | '7d' | '30d' | '90d';
+
+export interface DashboardStat {
+  key: string;
+  label: string;
+  value: string;
+  delta: string | null;
+  trend: 'up' | 'down';
+  series: number[] | null;
+}
+
+export interface DashboardChartPoint {
+  date: string;
+  sent: number;
+  delivered: number;
+  bounced: number;
+  failed: number;
+  delivery_rate: number;
+  bounce_rate: number;
+}
+
+export interface DashboardDeliveryBreakdownItem {
+  key: string;
+  label: string;
+  percent: number;
+  tone: 'primary' | 'error' | 'info';
+}
+
+export interface DashboardRecentSend {
+  id: string;
+  recipient: string | null;
+  subject: string | null;
+  template: string | null;
+  status: string;
+  created_at: string | null;
+}
+
+export interface DashboardTopDomain {
+  domain: string;
+  sent: number;
+  delivered: number;
+}
+
+export interface DashboardTopTemplate {
+  id: string;
+  name: string;
+  sent: number;
+  open: number | null;
+}
+
+export interface DashboardActivityItem {
+  id: string;
+  type: string;
+  summary: string;
+  actor: string;
+  occurred_at: string | null;
+}
+
+export interface DashboardOverviewResponse {
+  period: DashboardPeriod;
+  stats: DashboardStat[];
+  chart: {
+    summary: {
+      total_sent: number;
+      delivery_rate: number;
+    };
+    series: DashboardChartPoint[];
+  };
+  delivery_breakdown: DashboardDeliveryBreakdownItem[];
+  recent_sends: DashboardRecentSend[];
+  top_domains: DashboardTopDomain[];
+  top_templates: DashboardTopTemplate[];
+  activity: DashboardActivityItem[];
+  credits: CreditsSummary;
+}
+
+export interface AnalyticsSummary {
+  total_sent: number;
+  delivery_rate: number;
+  open_rate: number | null;
+  click_rate: number | null;
+  bounce_rate: number;
+  complaint_rate: number | null;
+}
+
+export interface AnalyticsVolumePoint {
+  date: string;
+  sent: number;
+  delivered: number;
+  bounced: number;
+  failed: number;
+}
+
+export interface AnalyticsOverviewResponse {
+  period: DashboardPeriod;
+  summary: AnalyticsSummary;
+  volume_chart: AnalyticsVolumePoint[];
+  bounce_chart: Array<{ date: string; bounced: number; failed: number }>;
+}
+
+export interface AnalyticsEngagementResponse {
+  period: DashboardPeriod;
+  available: boolean;
+  summary: {
+    open_rate: number | null;
+    click_rate: number | null;
+    opens: number;
+    clicks: number;
+    total_open_events: number;
+    total_click_events: number;
+  };
+  engagement_chart: Array<{ date: string; opens: number; clicks: number }>;
+  providers: Array<{ name: string; value: number }>;
+  devices: Array<{ name: string; value: number }>;
+  geography: {
+    available: boolean;
+    data: Array<{ code: string; country: string; pct: number }>;
+  };
+}
+
+export interface AnalyticsDomainRow {
+  domain: string;
+  sent: number;
+  delivered: number;
+  delivered_rate: number;
+  bounced: number;
+  bounce_rate: number;
+}
+
+export interface AnalyticsTemplateRow {
+  id: string;
+  name: string;
+  sent: number;
+  open_rate: number | null;
+  click_rate: number | null;
+}
+
+export interface AnalyticsDomainsResponse {
+  period: DashboardPeriod;
+  data: AnalyticsDomainRow[];
+}
+
+export interface AnalyticsTemplatesResponse {
+  period: DashboardPeriod;
+  data: AnalyticsTemplateRow[];
+}
+
+export type SearchGroupType = 'sends' | 'templates' | 'domains' | 'virtual_emails';
+
+export interface SearchResultItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  meta: string;
+  href: string;
+}
+
+export interface SearchGroup {
+  type: SearchGroupType;
+  label: string;
+  items: SearchResultItem[];
+}
+
+export interface SearchResponse {
+  query: string;
+  groups: SearchGroup[];
+}
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  href: string | null;
+  read_at: string | null;
+  created_at: string | null;
+  data: Record<string, unknown>;
+}
+
+export interface NotificationsListResponse {
+  data: AppNotification[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    unread_count: number;
+  };
+}
+
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;

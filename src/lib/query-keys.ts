@@ -72,4 +72,21 @@ export const queryKeys = {
     all: ['webhooks'] as const,
     deliveries: (webhookId?: string) => ['webhooks', 'deliveries', webhookId ?? 'all'] as const,
   },
+  dashboard: {
+    overview: (period: string) => ['dashboard', 'overview', period] as const,
+    activity: ['dashboard', 'activity'] as const,
+  },
+  analytics: {
+    overview: (period: string) => ['analytics', 'overview', period] as const,
+    engagement: (period: string) => ['analytics', 'engagement', period] as const,
+    domains: (period: string) => ['analytics', 'domains', period] as const,
+    templates: (period: string) => ['analytics', 'templates', period] as const,
+  },
+  notifications: {
+    list: ['notifications', 'list'] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
+  },
+  search: {
+    global: (query: string) => ['search', query] as const,
+  },
 } as const;

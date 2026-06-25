@@ -1,8 +1,14 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
-import { Send, Search, Command, Bell, Menu } from 'lucide-react';
+import {
+  GlobalSearchDialog,
+  GlobalSearchTrigger,
+  useGlobalSearchShortcut,
+} from '@/components/dashboard/GlobalSearchDialog';
+import { NotificationBell } from '@/components/dashboard/NotificationBell';
+import { Send, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -31,10 +37,14 @@ export function DashboardLayout({
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const hydrate = useUiStore((s) => s.hydrate);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const openSearch = useCallback(() => setSearchOpen(true), []);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useGlobalSearchShortcut(openSearch);
 
   async function handleLogout() {
     await logout();
@@ -78,19 +88,7 @@ export function DashboardLayout({
                 </SheetContent>
               </Sheet>
 
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  data-testid="global-search"
-                  type="text"
-                  placeholder="Search logs, virtual emails, domains…"
-                  className="w-full rounded-md border border-border bg-card py-1.5 pl-8 pr-16 text-[13px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                <kbd className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:inline-flex">
-                  <Command className="h-2.5 w-2.5" />
-                  K
-                </kbd>
-              </div>
+              <GlobalSearchTrigger onOpen={openSearch} />
             </div>
 
             <div className="flex items-center gap-2">
@@ -102,14 +100,7 @@ export function DashboardLayout({
                 <Send className="h-3.5 w-3.5" />
                 Send email
               </Link>
-              <button
-                type="button"
-                data-testid="topbar-notifications"
-                className="relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-border transition-colors hover:bg-accent"
-              >
-                <Bell className="h-3.5 w-3.5" />
-                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
-              </button>
+              <NotificationBell />
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger data-testid="user-menu-trigger">
@@ -155,6 +146,7 @@ export function DashboardLayout({
           </main>
         </div>
       </div>
+      <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </TooltipProvider>
   );
 }

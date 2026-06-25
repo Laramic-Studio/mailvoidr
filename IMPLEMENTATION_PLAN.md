@@ -182,11 +182,17 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | 13 | Settings | ✅ Shipped | `tests/Unit/Api/V1/Settings/` |
 | 14 | Teams | ✅ Shipped | `tests/Unit/Api/V1/Team/` |
 | 15 | Live sending + credits | ✅ Shipped† | `tests/Unit/Api/V1/Credit/` |
-| 12 | Dashboard overview | ⏳ Not started | — |
+| 12 | Dashboard overview | ✅ Shipped | `tests/Unit/Api/V1/Dashboard/DashboardTest.php` |
 | 16 | Templates (workspace library) | ✅ Shipped | `tests/Unit/Api/V1/Template/` |
 | 16b | Template marketplace (free) | ✅ Shipped | `tests/Unit/Api/V1/Template/TemplateMarketplaceTest.php` |
 | 17 | Webhooks | ✅ Shipped | `tests/Unit/Api/V1/Webhook/WebhookTest.php` |
-| 18+ | Analytics, billing (full), … | ⏳ Not started | — |
+| 18 | Analytics | ✅ Shipped | `tests/Unit/Api/V1/Analytics/AnalyticsTest.php` |
+| 19 | Billing (full) | ⏸️ Deferred | Stripe subscriptions, invoices — credits UI exists (Module 15) |
+| 20 | Notifications | ✅ Shipped | `tests/Unit/Api/V1/Notification/NotificationTest.php` |
+| 21 | Global search | ✅ Shipped | `tests/Unit/Api/V1/Search/SearchTest.php` |
+| 22 | Contact form | ✅ Shipped | `tests/Unit/Api/V1/Contact/ContactTest.php` |
+| 23 | Docs | ⏸️ Static | MDX in repo for v1 |
+| 24 | Enterprise | ⏸️ Marketing-only | No backend until SAML/audit exports |
 
 \*Module 1 gaps: OAuth buttons in SPA are UI-only (no JWT exchange yet); 401 clears session instead of silent `POST /auth/refresh`.
 
@@ -194,9 +200,9 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 **Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
 
-**Next up:** Module 18 — Analytics (or Module 12 Dashboard overview scoped).
+**Next up:** Module 19 Billing (full) when ready, or polish deferred items (OAuth JWT, silent refresh, lifecycle webhooks).
 
-**Then:** Module 19 Billing (full) → remaining lower-priority modules.
+**Deferred / polish:** Paid template marketplace, OAuth JWT exchange, silent refresh, SMTP path tracking, lifecycle webhooks (sent/delivered/bounced), geo IP enrichment, CSV export, Module 23 CMS, Module 24 enterprise backend.
 
 ---
 
@@ -656,31 +662,29 @@ Live-sending gate + credit check surfaced in compose UI (Module 15).
 
 ## Module 12 — Dashboard overview
 
-**Status: ⏳ Not started** (UI prototype at `pages/dashboard/Overview.tsx` — still dummy data)
+**Status: ✅ Shipped**
 
 **Goal:** Aggregate stats, charts, recent activity.
 
 ### Frontend
-- `pages/dashboard/Overview.jsx`
-- Wire stat widgets in `DashboardLayout.jsx` (plan usage bar)
+- `pages/dashboard/Overview.tsx` — `hooks/useDashboard.ts`, `lib/api/dashboard.ts`
+- Sidebar credits widget already uses real `/credits` data
 
 ### Backend
 
 | Method | Path |
 |--------|------|
-| GET | `/dashboard/overview` | stats, chart series, recent sends, top domains/templates |
-| GET | `/dashboard/activity` | activity feed |
+| GET | `/dashboard/overview` | stats, chart series, recent sends, top domains/templates, activity, credits |
+| GET | `/dashboard/activity` | workspace activity feed |
 
-### Schema changes
-- `workspace_activity` table (new) — audit events for feed
-- Or derive activity from existing tables initially (domain verified, send completed, member invited)
+Activity derived from existing `workspace_activity` (team invites, joins, etc.) — no new table.
 
-Open/click rates on overview: show only after Module 18 tracking exists; use sent/delivered/bounced until then.
+Open/click in delivery breakdown appear when tracking events exist; otherwise volume/delivery/bounce only.
 
 ### Done when
-- [ ] Stat cards + chart use real aggregates
-- [ ] Recent logs table matches Module 11 data
-- [ ] Plan usage bar reads real credits/plan limits
+- [x] Stat cards + chart use real aggregates
+- [x] Recent logs table matches Module 11 data
+- [x] Plan usage via credits summary in overview + sidebar widget
 
 ---
 
@@ -931,20 +935,21 @@ Index: `(visibility, created_at)` for marketplace listing. Workspace library que
 
 ## Module 18 — Analytics
 
+**Status: ✅ Shipped**
+
 **Goal:** Opens, clicks, geo, device, provider breakdowns.
 
-### Tracking v1 (shipped — backend only)
-- `EmailTrackingService` injects open pixel + wrapped links into HTML at queue time
-- Public routes: `GET /t/o/{token}` (1×1 gif), `GET /t/c/{token}` (302 redirect)
-- Events saved to `email_send_events` (`opened`, `clicked`) → webhooks `email.opened`, `email.clicked`
-- Send flags: `track_opens`, `track_clicks` (default `true` when HTML present)
-- Config: `MAILVOIDR_TRACKING_URL` (default `{APP_URL}/t`; production: `https://track.mailvoidr.com/t`)
-- **Gap:** Live SMTP submissions through Node relay are not rewritten yet; analytics dashboards still stubbed
+### Tracking v1 (shipped)
+- Open/click events in `email_send_events` from tracking pixel + link wrapper
+- Webhooks `email.opened`, `email.clicked` dispatch when events recorded
 
 ### Frontend
-- `pages/dashboard/Analytics.jsx`
+- `pages/dashboard/Analytics.tsx` — `hooks/useAnalytics.ts`, `lib/api/analytics.ts`
+- Period selector (24h / 7d / 30d / 90d), tabbed views
+- Geo: honest empty state (IP enrichment deferred)
+- Reports tab: deferred
 
-### Backend — requires tracking infrastructure
+### Backend
 
 | Method | Path |
 |--------|------|
@@ -953,25 +958,30 @@ Index: `(visibility, created_at)` for marketplace listing. Workspace library que
 | GET | `/analytics/domains` |
 | GET | `/analytics/templates` |
 
-### Schema — engagement data
-- v1 uses existing `email_send_events` (payload: ip, user_agent, url for clicks)
-- Optional later: `email_tracking_events` for geo/device rollups
+### Data sources
+- Volume/delivery/bounce from `email_sends`
+- Opens/clicks from `email_send_events`
+- Recipient providers from `to_addresses` domain mapping
+- Devices from open-event `user_agent` payload
 
 ### Done when
-- [ ] Volume + delivery charts use real data
-- [x] Open/click events recorded + webhook dispatch (tracking v1)
-- [ ] Analytics UI charts populate from engagement data
-- [ ] Geo/device breakdowns (needs enrichment)
+- [x] Volume + delivery charts use real data
+- [x] Open/click populate from tracking events
+- [x] Analytics UI wired to API
+- [ ] Geo breakdown (needs IP enrichment)
+- [ ] CSV export / scheduled reports
 
 ---
 
 ## Module 19 — Billing (full)
 
+**Status: ⏸️ Deferred (user request — skip for now)**
+
 **Goal:** Plans, invoices, payment methods, usage meters.
 
 ### Frontend
-- `pages/dashboard/Billing.jsx`
-- `pages/marketing/Pricing.jsx` (plan cards from API)
+- `pages/dashboard/Billing.tsx` (credits overview exists from Module 15)
+- `pages/marketing/Pricing.tsx` (plan cards from API)
 
 ### Backend
 - Stripe Customer + Subscription (upgrade from credit-packs-only)
@@ -988,53 +998,70 @@ Reuse: `plans` table, partial Stripe integration.
 
 ## Module 20 — Notifications
 
-**Goal:** Bell icon in dashboard header.
+**Status: ✅ Shipped**
+
+**Goal:** Bell icon in dashboard header with unread count and mark-read.
 
 ### Frontend
-- `DashboardLayout.jsx` notification dropdown
+- `NotificationBell.tsx` in `DashboardLayout.tsx`
+- `hooks/useNotifications.ts`, `lib/api/notifications.ts`
 
 ### Backend
 ```
-notifications  Laravel database notifications or custom table
+GET  /notifications
+GET  /notifications/unread-count
+POST /notifications/{id}/read
+POST /notifications/read-all
 ```
-Trigger on: deliverability alerts, invites, billing, webhook failures.
+Laravel `notifications` table. Triggers: `team_member_joined` on invite accept; workspace invitation emails also persist to DB.
 
 ### Done when
-- [ ] Unread count + mark read works
+- [x] Unread count + mark read works
+- [x] Bell dropdown lists recent notifications
 
 ---
 
 ## Module 21 — Global search
 
-**Goal:** ⌘K search across inboxes, logs, templates, domains.
+**Status: ✅ Shipped**
+
+**Goal:** ⌘K search across sends, templates, domains, virtual emails.
 
 ### Frontend
-- Command palette in `DashboardLayout.jsx`
+- `GlobalSearchDialog.tsx` command palette in `DashboardLayout.tsx`
+- `hooks/useSearch.ts`, `lib/api/search.ts`
 
 ### Backend
 ```
-GET /search?q=...&types[]=inboxes&types[]=sends
+GET /search?q=...&types[]=sends&types[]=templates&types[]=domains&types[]=virtual_emails
 ```
-Use MySQL fulltext where indexes exist (`emails` sidebar index).
 
 ### Done when
-- [ ] Search returns grouped results with navigation
+- [x] Search returns grouped results with navigation
 
 ---
 
-## Module 22 — Marketing backend (lowest product priority)
+## Module 22 — Marketing backend (contact form)
 
-| Page | Backend need |
-|------|--------------|
-| `Contact.jsx` | `POST /contact` → email or `feedback` table |
-| `Pricing.jsx` | `GET /plans` (exists) |
-| `Blog.jsx` | CMS or MD files — defer |
-| `Status.jsx` | External status API or manual JSON — defer |
-| `Enterprise.jsx` | Static + contact form |
+**Status: ✅ Shipped (contact only)**
+
+| Page | Backend need | Status |
+|------|--------------|--------|
+| `Contact.tsx` | `POST /contact` → `contact_inquiries` table | ✅ Shipped |
+| `Pricing.tsx` | `GET /plans` (exists) | ✅ Static / existing |
+| `Blog.tsx` | CMS or MD files — defer | ⏸️ Deferred |
+| `Status.tsx` | External status API or manual JSON — defer | ⏸️ Deferred |
+| `Enterprise.tsx` | Static + contact form | ✅ Marketing-only |
+
+### Done when
+- [x] Contact form persists inquiry (throttled public route)
+- [x] Success/error states in SPA
 
 ---
 
 ## Module 23 — Docs
+
+**Status: ⏸️ Static for v1**
 
 Keep static MDX/Markdown in repo for v1. Optional later: `GET /docs/:slug` from CMS.
 
@@ -1043,6 +1070,8 @@ Files: `pages/docs/*`, `DOCS_NAV` in dummyData → move to `content/docs/`.
 ---
 
 ## Module 24 — Enterprise / compliance UI
+
+**Status: ⏸️ Marketing-only**
 
 Enterprise page stays marketing-only until SAML, audit exports, and dedicated IPs exist. Do not remove enterprise claims from marketing — backend catches up later.
 
@@ -1067,13 +1096,14 @@ ui/routes/api.php
 ├── v1/settings/*          Module 13
 ├── v1/live-sending/*      Module 15
 ├── v1/credits/*           Module 15
-├── v1/dashboard/*         Module 12 (not started)
+├── v1/dashboard/*         Module 12
 ├── v1/templates/*         Module 16
 ├── v1/webhooks/*          Module 17
 ├── v1/analytics/*         Module 18
-├── v1/billing/*           Module 19
+├── v1/billing/*           Module 19 (deferred)
 ├── v1/notifications/*     Module 20
 ├── v1/search              Module 21
+├── v1/contact             Module 22 (public, throttled)
 └── v1/mail/send           (existing — API key auth, unchanged)
 ```
 
@@ -1134,14 +1164,12 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 ## Suggested sprint order (updated)
 
-**Completed (Modules 0–11, 13–17, 16b):** Foundation through outbound stack, settings, teams, live sending + credits, templates + **free marketplace**, **webhooks**.
+**Completed (Modules 0–18, 12, 16b, 20–22):** Full outbound stack, webhooks, tracking, dashboard, analytics, notifications, search, contact form.
 
-**Current sprint — pick one:**
-- Module 18 Analytics — volume/delivery charts from `email_sends`; engagement tabs empty until tracking ships
-- Module 12 (scoped) — Dashboard overview — stats, chart, recent logs, top domains; stub activity until ready
+**Deferred:** Module 19 Billing (full), Module 23 Docs CMS, Module 24 Enterprise backend.
 
-**Deferred / polish:** Paid template marketplace, OAuth JWT exchange, silent refresh, invitation resend, enforce workspace policy toggles, return-path “view in inbox” on email logs.
+**Polish backlog:** Paid template marketplace, OAuth JWT exchange, silent refresh, SMTP path tracking, lifecycle webhooks (sent/delivered/bounced), geo IP enrichment, CSV export.
 
 ---
 
-*Last updated: June 2026 — Module 17 webhooks shipped (signed deliveries, replay, event catalog).*
+*Last updated: June 2026 — Modules 20–22 shipped (notifications, global search, contact form). Module 19 billing deferred.*

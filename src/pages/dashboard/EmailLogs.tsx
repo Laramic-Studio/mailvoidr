@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -20,12 +21,38 @@ const PERIOD_OPTIONS = [
 ];
 
 export default function EmailLogs() {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeId, setActiveId] = useState<string | null>(() => searchParams.get('send'));
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [domain, setDomain] = useState('all');
   const [period, setPeriod] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
+
+  useEffect(() => {
+    const sendId = searchParams.get('send');
+    if (sendId) {
+      setActiveId(sendId);
+    }
+  }, [searchParams]);
+
+  function openSend(id: string) {
+    setActiveId(id);
+    setSearchParams((params) => {
+      const next = new URLSearchParams(params);
+      next.set('send', id);
+      return next;
+    });
+  }
+
+  function closeSend() {
+    setActiveId(null);
+    setSearchParams((params) => {
+      const next = new URLSearchParams(params);
+      next.delete('send');
+      return next;
+    });
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
@@ -168,7 +195,7 @@ export default function EmailLogs() {
                 <tr
                   key={e.id}
                   data-testid={`log-row-${e.id}`}
-                  onClick={() => setActiveId(e.id)}
+                  onClick={() => openSend(e.id)}
                   className="border-b border-border last:border-0 hover:bg-accent/30 cursor-pointer"
                 >
                   <td className="p-3 font-mono text-muted-foreground whitespace-nowrap">
@@ -194,7 +221,7 @@ export default function EmailLogs() {
         </table>
       </div>
 
-      {activeId && <LogDrawer id={activeId} onClose={() => setActiveId(null)} />}
+      {activeId && <LogDrawer id={activeId} onClose={closeSend} />}
     </DashboardLayout>
   );
 }
