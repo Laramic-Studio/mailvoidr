@@ -4,4 +4,8 @@ export const queryKeys = {
   onboarding: {
     status: ["onboarding", "status"] as const,
   },
+  workspaces: {
+    all: ["workspaces"] as const,
+    invitation: (workspaceId: string) => ["invitations", workspaceId] as const,
+  },
 } as const;

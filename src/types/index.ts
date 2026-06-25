@@ -19,6 +19,26 @@ export interface Workspace {
   region?: string;
   use_case?: string | null;
   role?: string;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface WorkspaceListResponse {
+  owned: Workspace[];
+  member: Workspace[];
+}
+
+export interface UserSummary {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface InvitationPreview {
+  workspace: Workspace;
+  role: string;
+  invited_by: UserSummary | null;
+  invited_at: string | null;
 }
 
 export interface VirtualEmail {

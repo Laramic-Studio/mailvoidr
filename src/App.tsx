@@ -60,7 +60,6 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/docs" element={<DocsLanding />} />
           <Route path="/docs/:slug" element={<DocsArticle />} />
-          <Route path="/invite" element={<InviteAccept />} />
 
           {/* Guest-only — signed-in users are redirected */}
           <Route element={<GuestLayout />}>
@@ -75,6 +74,8 @@ function App() {
 
           {/* Authenticated app */}
           <Route element={<ProtectedLayout />}>
+            <Route path="/invite" element={<InviteAccept />} />
+
             <Route element={<OnboardingLayout />}>
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/onboarding" element={<Onboarding />} />

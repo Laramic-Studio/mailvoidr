@@ -1,5 +1,5 @@
 import { type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -9,6 +9,8 @@ import { Github, Mail } from "lucide-react";
 
 export default function Login() {
   const nav = useNavigate();
+  const location = useLocation();
+  const redirectTo = (location.state as { from?: string } | null)?.from;
   const { login } = useAuth();
   const { loading, run } = useAsyncAction();
 
@@ -27,7 +29,7 @@ export default function Login() {
         return;
       }
 
-      nav("/dashboard");
+      nav(redirectTo || "/dashboard");
     }, { fallbackMessage: "Sign in failed" });
   }
 

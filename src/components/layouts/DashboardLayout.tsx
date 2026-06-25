@@ -1,17 +1,24 @@
-import { NavLink, Link, useLocation } from "react-router-dom";
+import { type ReactNode } from "react";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   LayoutDashboard, Send, FlaskConical, Inbox, Globe, BarChart3, ListChecks,
   FileCode2, KeyRound, Server, Webhook, Users, CreditCard, Settings, Search,
-  Command, ChevronDown, Bell, BookOpen, Plus, ChevronsUpDown
+  Command, Bell, BookOpen, Plus, ChevronsUpDown
 } from "lucide-react";
-import { WORKSPACES, USER } from "@/lib/dummyData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  useWorkspaceMutations,
+  useWorkspaces,
+  workspaceInitials,
+} from "@/hooks/useWorkspaces";
+import { toastError } from "@/lib/toast";
 
 const NAV_GROUPS = [
   {
@@ -50,9 +57,31 @@ const NAV_GROUPS = [
   },
 ];
 
-export function DashboardLayout({ children }) {
-  const { pathname } = useLocation();
-  const ws = WORKSPACES[0];
+function userInitials(name: string) {
+  return workspaceInitials(name);
+}
+
+export function DashboardLayout({ children }: { children: ReactNode }) {
+  const nav = useNavigate();
+  const { user, logout } = useAuth();
+  const { workspaces, currentWorkspace } = useWorkspaces();
+  const { switchWorkspace } = useWorkspaceMutations();
+  const ws = currentWorkspace;
+
+  async function handleSwitch(workspaceId: string) {
+    if (workspaceId === ws?.id) return;
+
+    try {
+      await switchWorkspace.mutateAsync(workspaceId);
+    } catch (err) {
+      toastError(err, "Could not switch workspace");
+    }
+  }
+
+  async function handleLogout() {
+    await logout();
+    nav("/login");
+  }
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -64,11 +93,14 @@ export function DashboardLayout({ children }) {
               <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 hover:bg-accent transition-colors">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="h-6 w-6 rounded-md bg-primary text-primary-foreground inline-flex items-center justify-center text-[10px] font-mono">
-                    {ws.name.slice(0, 2).toUpperCase()}
+                    {ws ? workspaceInitials(ws.name) : "—"}
                   </div>
                   <div className="min-w-0 text-left">
-                    <div className="text-[13px] truncate">{ws.name}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono uppercase">{ws.plan} · {ws.region}</div>
+                    <div className="text-[13px] truncate">{ws?.name ?? "Workspace"}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase">
+                      {ws?.plan ?? "—"}
+                      {ws?.region ? ` · ${ws.region}` : ""}
+                    </div>
                   </div>
                 </div>
                 <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -76,17 +108,26 @@ export function DashboardLayout({ children }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[244px]" align="start">
               <DropdownMenuLabel className="label-mono">Workspaces</DropdownMenuLabel>
-              {WORKSPACES.map((w) => (
-                <DropdownMenuItem key={w.id} className="flex items-center gap-2" data-testid={`workspace-option-${w.slug}`}>
-                  <div className="h-5 w-5 rounded bg-muted inline-flex items-center justify-center text-[10px] font-mono">{w.name.slice(0,2).toUpperCase()}</div>
+              {workspaces.map((w) => (
+                <DropdownMenuItem
+                  key={w.id}
+                  className="flex items-center gap-2"
+                  data-testid={`workspace-option-${w.slug}`}
+                  onClick={() => handleSwitch(w.id)}
+                >
+                  <div className="h-5 w-5 rounded bg-muted inline-flex items-center justify-center text-[10px] font-mono">
+                    {workspaceInitials(w.name)}
+                  </div>
                   <div className="flex-1">
                     <div className="text-[13px]">{w.name}</div>
-                    <div className="text-[10.5px] text-muted-foreground font-mono">{w.plan}</div>
+                    <div className="text-[10.5px] text-muted-foreground font-mono">{w.plan ?? w.role}</div>
                   </div>
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem><Plus className="h-3.5 w-3.5 mr-2" />New workspace</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => nav("/workspaces")}>
+                <Plus className="h-3.5 w-3.5 mr-2" />New workspace
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -149,6 +190,9 @@ export function DashboardLayout({ children }) {
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-14 flex items-center justify-between gap-4 border-b border-border bg-background/80 backdrop-blur px-4 lg:px-8 sticky top-0 z-30">
           <div className="flex items-center gap-3 flex-1 max-w-md">
+            <div className="lg:hidden">
+              <Logo />
+            </div>
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <input
@@ -174,13 +218,15 @@ export function DashboardLayout({ children }) {
             <DropdownMenu>
               <DropdownMenuTrigger data-testid="user-menu-trigger">
                 <Avatar className="h-8 w-8 border border-border">
-                  <AvatarFallback className="text-[11px] font-mono bg-card">{USER.avatar}</AvatarFallback>
+                  <AvatarFallback className="text-[11px] font-mono bg-card">
+                    {user ? userInitials(user.name) : "—"}
+                  </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5">
-                  <div className="text-[13px]">{USER.name}</div>
-                  <div className="text-[11px] text-muted-foreground font-mono">{USER.email}</div>
+                  <div className="text-[13px]">{user?.name ?? "Account"}</div>
+                  <div className="text-[11px] text-muted-foreground font-mono">{user?.email}</div>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link to="/dashboard/settings">Profile settings</Link></DropdownMenuItem>
@@ -188,7 +234,7 @@ export function DashboardLayout({ children }) {
                 <DropdownMenuItem asChild><Link to="/dashboard/teams">Team</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link to="/workspaces">Switch workspace</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/login">Sign out</Link></DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

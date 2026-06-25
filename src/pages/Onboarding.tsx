@@ -1,6 +1,7 @@
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CodeBlock } from "@/components/CodeBlock";
+import { ReferralSourceSelect } from "@/components/onboarding/ReferralSourceSelect";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboardingMutations, useOnboardingStatus } from "@/hooks/useOnboarding";
 import { toastError } from "@/lib/toast";
@@ -16,16 +17,6 @@ const USE_CASES = [
   { id: "startup", icon: Rocket, title: "Startup", desc: "1–50 people, shipping fast." },
   { id: "agency", icon: Users, title: "Agency", desc: "Multiple clients in one workspace." },
   { id: "enterprise", icon: Building, title: "Enterprise", desc: "50+ employees, compliance-heavy." },
-];
-
-const REFERRAL_SOURCES = [
-  { id: "search", label: "Search engine (Google, etc.)" },
-  { id: "social", label: "Social media" },
-  { id: "friend", label: "Friend or colleague" },
-  { id: "blog", label: "Blog or newsletter" },
-  { id: "youtube", label: "YouTube or podcast" },
-  { id: "conference", label: "Conference or event" },
-  { id: "other", label: "Other" },
 ];
 
 export default function Onboarding() {
@@ -208,24 +199,11 @@ export default function Onboarding() {
                   className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
-              <div>
-                <label className="label-mono block mb-1.5">How did you hear about us?</label>
-                <select
-                  data-testid="onb-referral-source"
-                  value={referralSource}
-                  disabled={submitting}
-                  onChange={(e) => setReferralSource(e.target.value)}
-                  className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select one…</option>
-                  {REFERRAL_SOURCES.map((source) => (
-                    <option key={source.id} value={source.id}>
-                      {source.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1.5 text-[11.5px] text-muted-foreground">Helps us understand what&apos;s working.</p>
-              </div>
+              <ReferralSourceSelect
+                value={referralSource}
+                onValueChange={setReferralSource}
+                disabled={submitting}
+              />
             </div>
           </div>
         )}
