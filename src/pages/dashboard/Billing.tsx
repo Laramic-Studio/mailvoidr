@@ -117,6 +117,16 @@ export default function Billing() {
 
   const currentPlan = billing?.plan;
   const isLoading = billingLoading || plansLoading;
+  const subscription = billing?.subscription;
+  const needsRenewal = subscription?.needs_renewal ?? false;
+  const subscriptionExpired = Boolean(subscription && subscription.is_active === false);
+  const subscribeLabel = quotedPlan?.slug === 'enterprise'
+    ? 'Contact sales'
+    : needsRenewal || subscriptionExpired
+      ? 'Renew plan'
+      : currentPlan?.slug === 'free'
+        ? 'Subscribe'
+        : 'Change plan';
 
   return (
     <DashboardLayout>
@@ -158,6 +168,29 @@ export default function Billing() {
       {tab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
+            {needsRenewal && (
+              <div
+                className={`border p-5 ${
+                  subscriptionExpired
+                    ? 'border-destructive/40 bg-destructive/5'
+                    : 'border-amber-500/40 bg-amber-500/5'
+                }`}
+              >
+                <h3 className="text-sm font-medium">
+                  {subscriptionExpired ? 'Subscription expired' : 'Renewal due soon'}
+                </h3>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {subscriptionExpired
+                    ? 'Your paid plan has ended. Renew below to restore your volume and features. Auto-renew is not enabled yet — checkout again each billing period.'
+                    : `Your plan ends on ${
+                        subscription?.current_period_end
+                          ? new Date(subscription.current_period_end).toLocaleDateString()
+                          : 'soon'
+                      }. Renew now to avoid dropping back to the free tier.`}
+                </p>
+              </div>
+            )}
+
             {!liveSendingEnabled && (
               <div className="border border-dashed border-border bg-card p-6">
                 <h3 className="text-base font-medium">Enable live sending</h3>
@@ -187,8 +220,14 @@ export default function Billing() {
                     {currentPlan?.description ?? 'Upgrade for higher volume and team features.'}
                   </p>
                 </div>
-                {billing?.subscription && (
-                  <StatusBadge status={billing.subscription.status} />
+                {subscription && (
+                  <StatusBadge
+                    status={
+                      subscription.is_active === false
+                        ? 'expired'
+                        : subscription.status
+                    }
+                  />
                 )}
               </div>
 
@@ -200,7 +239,7 @@ export default function Billing() {
                   />
                   <Row k="Provider" v={billing.subscription.provider ?? '—'} />
                   <Row
-                    k="Renews"
+                    k={subscriptionExpired ? 'Expired' : 'Renews'}
                     v={
                       billing.subscription.current_period_end
                         ? new Date(billing.subscription.current_period_end).toLocaleDateString()
@@ -318,7 +357,7 @@ export default function Billing() {
                 ) : (
                   <ArrowUpRight className="h-4 w-4" />
                 )}
-                {quotedPlan?.slug === 'enterprise' ? 'Contact sales' : 'Subscribe'}
+                {quotedPlan?.slug === 'enterprise' ? 'Contact sales' : subscribeLabel}
               </button>
             </div>
           </div>
@@ -345,7 +384,7 @@ export default function Billing() {
               )}
             </div>
             <p className="mt-5 text-[12px] text-muted-foreground">
-              Invoices and saved payment methods ship in a later update.
+              Payments via Paystack. Plans renew manually each period until auto-renew ships.
             </p>
           </div>
         </div>

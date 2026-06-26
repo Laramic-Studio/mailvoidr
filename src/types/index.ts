@@ -864,6 +864,8 @@ export interface BillingCheckoutResponse {
 export interface BillingSubscription {
   id: string;
   status: string;
+  is_active?: boolean;
+  needs_renewal?: boolean;
   provider: string | null;
   currency: string;
   monthly_volume: number | null;
