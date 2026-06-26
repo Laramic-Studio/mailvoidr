@@ -219,8 +219,8 @@ Work **one item at a time**. Agent proposes → you say go / skip / defer. **Mod
 | **P4** | Analytics tab split | Analytics · Module 18 | Small | ✅ Per-tab lazy fetch + distinct summaries/panels |
 | **P5** | Geo breakdown (IP enrichment) | Analytics · Module 18 | Medium | ✅ IpGeoLookupService + engagement geography table |
 | **P6** | CSV export | Analytics · Module 18 | Small–Medium | ✅ `GET /analytics/export/{sends|engagement}` + Reports tab |
-| **P7** | SMTP-path send tracking | Lifecycle · smtp + ui | Medium | Lifecycle events for sends that never hit HTTP API |
-| **P8** | Template detail polish | Templates · Module 16 | Small | Confirm `/dashboard/templates/:id` fully wired (not dummy) |
+| **P7** | SMTP-path send tracking | Lifecycle · smtp + ui | Medium | ✅ SMTP sends record queued→sent→delivered/failed via internal API; HTML tracking injected in Node |
+| **P8** | Template detail polish | Templates · Module 16 | Small | ✅ Settings editor, version picker, send/delete actions, deep-link to Send |
 | **P9** | Sandbox inbox v2 | Sandbox · Module 6 | Medium | Cursor pagination, stronger spam/HTML checks, inbox unique constraint |
 | **P10** | Avatar upload | Settings · Module 13 | Small | Profile photo in settings |
 | **P11** | Marketing Pricing page | Module 0 / 19 | Small | Honest static tiers or wire `GET /plans` — **skipped so far** |
@@ -233,7 +233,7 @@ Work **one item at a time**. Agent proposes → you say go / skip / defer. **Mod
 | **P18** | Playwright E2E | Testing | Medium | Smoke tests for auth, send, onboarding |
 | — | **Billing (full)** | Module 19 | Large | **Deferred by user** — Stripe subs, invoices, payment methods |
 
-**Current pointer:** Start at **P7** unless you reorder.
+**Current pointer:** Start at **P9** unless you reorder.
 
 **Polish already done:** Lifecycle webhooks, silent JWT refresh, marketing honest copy (Home/Features/About/Status), docs per-page content + search, status uptime candles + hover tooltips.
 
@@ -1184,7 +1184,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 | Issue | Fix in | Status |
 |-------|--------|--------|
-| `/dashboard/templates/:id` not routed | Module 16 — `App.tsx` | ✅ Routed (page still dummy data) |
+| `/dashboard/templates/:id` not routed | Module 16 — `App.tsx` | ✅ Routed + detail page wired to API |
 | `/workspace/select` wrong link | Module 3 — `DashboardLayout.tsx` | ✅ Fixed → `/workspaces` |
 | `ThemeProvider` not mounted | Module 0 — `index.tsx` | ✅ Fixed |
 | Silent JWT refresh on 401 | Module 1 — `lib/api.ts` | ✅ Shipped |
@@ -1225,7 +1225,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 **Deferred by user:** Module 19 Billing (full).
 
-**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P7** and wait for go-ahead.
+**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P9** and wait for go-ahead.
 
 ---
 

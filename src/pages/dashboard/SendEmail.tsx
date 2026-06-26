@@ -10,7 +10,7 @@ import { useTemplates } from '@/hooks/useTemplates';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailPreview, EmailTemplate } from '@/types';
 import { Send, Calendar, Eye, Loader2, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const TABS = [
   { id: 'compose', label: 'Compose' },
@@ -30,6 +30,8 @@ function parseEmails(value: string): string[] {
 }
 
 export default function SendEmail() {
+  const [searchParams] = useSearchParams();
+  const templateFromUrl = searchParams.get('template');
   const [tab, setTab] = useState<TabId>('compose');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -75,6 +77,16 @@ export default function SendEmail() {
       setCreditsRemaining(credits.total_available);
     }
   }, [credits]);
+
+  useEffect(() => {
+    if (!templateFromUrl || templates.length === 0) return;
+
+    const match = templates.find((template) => template.id === templateFromUrl);
+    if (!match) return;
+
+    setSelectedTemplateId(match.id);
+    setTab('templates');
+  }, [templateFromUrl, templates]);
 
   useEffect(() => {
     if (!selectedTemplate) {

@@ -4,6 +4,7 @@ import type {
   TemplateListResponse,
   TemplatePreview,
   TemplateVariable,
+  TemplateVisibility,
 } from '@/types';
 import { api } from '@/lib/api';
 

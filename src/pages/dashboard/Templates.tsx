@@ -7,7 +7,7 @@ import { useTemplateMutations, useTemplates } from '@/hooks/useTemplates';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailTemplate, TemplateCategory, TemplateVisibility } from '@/types';
 import { Plus, Search, FileCode2, Loader2, Store } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function categoryLabel(category: TemplateCategory): string {
   return category === 'marketing' ? 'Marketing' : 'Transactional';
@@ -27,6 +27,7 @@ function formatUpdatedAt(value: string): string {
 }
 
 export default function Templates() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
@@ -63,6 +64,7 @@ export default function Templates() {
       setSubject('');
       setHtml('<p>Hi {{name}},</p>\n<p>Your message here.</p>');
       toastSuccess(result.message);
+      navigate(`/dashboard/templates/${result.template.id}`);
     } catch (error) {
       toastError(error, 'Could not create template.');
     }
