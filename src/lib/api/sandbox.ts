@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 export interface SandboxMessageFilters {
   search?: string;
   unread?: boolean;
+  cursor?: string;
 }
 
 export async function fetchSandbox(): Promise<SandboxResponse> {
@@ -23,6 +24,7 @@ export async function fetchSandboxMessages(
     params: {
       ...(filters.search ? { search: filters.search } : {}),
       ...(filters.unread ? { unread: true } : {}),
+      ...(filters.cursor ? { cursor: filters.cursor } : {}),
     },
   });
   return data;

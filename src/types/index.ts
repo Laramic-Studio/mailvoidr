@@ -4,6 +4,7 @@ export interface User {
   email: string;
   username?: string;
   timezone?: string | null;
+  avatar_url?: string | null;
   email_verified: boolean;
   two_factor_enabled?: boolean;
   onboarding_completed: boolean;
@@ -46,6 +47,7 @@ export interface SettingsSnapshot {
     timezone: string | null;
     email_verified: boolean;
     two_factor_enabled: boolean;
+    avatar_url: string | null;
   };
   notifications: NotificationPreferences;
   workspace: Workspace | null;
@@ -243,10 +245,12 @@ export interface EmailMessage extends EmailMessageSummary {
 export interface EmailMessageListResponse {
   data: EmailMessageSummary[];
   meta: {
-    current_page: number;
-    last_page: number;
     per_page: number;
-    total: number;
+    next_cursor?: string | null;
+    prev_cursor?: string | null;
+    current_page?: number;
+    last_page?: number;
+    total?: number;
   };
 }
 

@@ -22,6 +22,22 @@ export async function updateProfile(payload: {
   return data;
 }
 
+export async function uploadAvatar(file: File): Promise<{ user: User; message: string }> {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const { data } = await api.post<{ user: User; message: string }>('/auth/me/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  return data;
+}
+
+export async function deleteAvatar(): Promise<{ user: User; message: string }> {
+  const { data } = await api.delete<{ user: User; message: string }>('/auth/me/avatar');
+  return data;
+}
+
 export async function updatePassword(payload: {
   current_password: string;
   password: string;

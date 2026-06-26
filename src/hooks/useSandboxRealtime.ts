@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { type InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { fetchSandboxMessageSidebar } from '@/lib/api/sandbox';
 import { getEmailSocket, joinUserRoom, type NewEmailPayload } from '@/lib/email-socket';
 import { queryKeys } from '@/lib/query-keys';
 import type { EmailMessageListResponse, EmailMessageSummary, SandboxResponse } from '@/types';
 
-const MAX_VISIBLE = 50;
+type SandboxMessagesInfinite = InfiniteData<EmailMessageListResponse, string | undefined>;
 
 function patchSandboxCounts(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -28,22 +28,27 @@ function patchSandboxCounts(
 }
 
 function upsertMessage(
-  current: EmailMessageListResponse | undefined,
+  current: SandboxMessagesInfinite | undefined,
   incoming: EmailMessageSummary,
-): EmailMessageListResponse | undefined {
-  if (!current) {
+  perPage: number,
+): SandboxMessagesInfinite | undefined {
+  if (!current || current.pages.length === 0) {
     return current;
   }
 
-  const withoutDuplicate = current.data.filter((entry) => entry.id !== incoming.id);
+  const [firstPage, ...rest] = current.pages;
+  const withoutDuplicate = firstPage.data.filter((entry) => entry.id !== incoming.id);
 
   return {
     ...current,
-    data: [incoming, ...withoutDuplicate].slice(0, MAX_VISIBLE),
-    meta: {
-      ...current.meta,
-      total: current.meta.total + (withoutDuplicate.length === current.data.length ? 1 : 0),
-    },
+    pages: [
+      {
+        ...firstPage,
+        data: [incoming, ...withoutDuplicate].slice(0, perPage),
+      },
+      ...rest,
+    ],
+    pageParams: current.pageParams,
   };
 }
 
@@ -87,9 +92,10 @@ export function useSandboxRealtime(options: {
           return;
         }
 
-        queryClient.setQueryData<EmailMessageListResponse>(listKey, (current) =>
-          upsertMessage(current, message),
-        );
+        queryClient.setQueryData<SandboxMessagesInfinite>(listKey, (current) => {
+          const perPage = current?.pages[0]?.meta.per_page ?? 30;
+          return upsertMessage(current, message, perPage);
+        });
         patchSandboxCounts(queryClient, message);
         onNewMessageRef.current?.(message);
       } catch {

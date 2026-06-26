@@ -221,8 +221,8 @@ Work **one item at a time**. Agent proposes → you say go / skip / defer. **Mod
 | **P6** | CSV export | Analytics · Module 18 | Small–Medium | ✅ `GET /analytics/export/{sends|engagement}` + Reports tab |
 | **P7** | SMTP-path send tracking | Lifecycle · smtp + ui | Medium | ✅ SMTP sends record queued→sent→delivered/failed via internal API; HTML tracking injected in Node |
 | **P8** | Template detail polish | Templates · Module 16 | Small | ✅ Settings editor, version picker, send/delete actions, deep-link to Send |
-| **P9** | Sandbox inbox v2 | Sandbox · Module 6 | Medium | Cursor pagination, stronger spam/HTML checks, inbox unique constraint |
-| **P10** | Avatar upload | Settings · Module 13 | Small | Profile photo in settings |
+| **P9** | Sandbox inbox v2 | Sandbox · Module 6 | Medium | ✅ Cursor pagination, stronger spam/HTML heuristics, unique workspace inbox |
+| **P10** | Avatar upload | Settings · Module 13 | Small | ✅ `POST/DELETE /auth/me/avatar` + Settings profile UI |
 | **P11** | Marketing Pricing page | Module 0 / 19 | Small | Honest static tiers or wire `GET /plans` — **skipped so far** |
 | **P12** | Marketing Blog | Module 22 | Medium | MD files in repo or CMS — nav hidden |
 | **P13** | Marketing Enterprise page | Module 24 | Small | Honest copy (no fake SOC 2) — nav hidden |
@@ -233,7 +233,7 @@ Work **one item at a time**. Agent proposes → you say go / skip / defer. **Mod
 | **P18** | Playwright E2E | Testing | Medium | Smoke tests for auth, send, onboarding |
 | — | **Billing (full)** | Module 19 | Large | **Deferred by user** — Stripe subs, invoices, payment methods |
 
-**Current pointer:** Start at **P9** unless you reorder.
+**Current pointer:** Start at **P11** unless you reorder (P11–P13 marketing mostly skipped/deferred).
 
 **Polish already done:** Lifecycle webhooks, silent JWT refresh, marketing honest copy (Home/Features/About/Status), docs per-page content + search, status uptime candles + hover tooltips.
 
@@ -524,7 +524,7 @@ Reuse: `Api/EmailController`, `test-emails` APIs — scope by virtual email id.
 
 ## Module 6 — Email testing (sandbox inbox)
 
-**Status: ✅ Shipped v1**
+**Status: ✅ Shipped v2**
 
 **Goal:** **One sandbox inbox** per user/workspace — SMTP credentials, captured messages, spam/render tools. Maps to `inboxes` table + `ui/resources/js/pages/dashboard.tsx`.
 
@@ -539,7 +539,7 @@ Reuse: `Api/EmailController`, `test-emails` APIs — scope by virtual email id.
 |--------|------|-------|
 | GET | `/sandbox` | User/workspace **single** `Inbox` + SMTP creds |
 | POST | `/sandbox/enable` | Create inbox if missing |
-| GET | `/sandbox/messages` | Paginated list |
+| GET | `/sandbox/messages` | Cursor-paginated list (`?cursor=`) |
 | GET | `/sandbox/messages/{id}` | Message detail |
 | GET | `/sandbox/messages/{id}/sidebar` | Lightweight row for realtime upsert |
 | GET | `/sandbox/messages/{id}/raw` | Raw MIME |
@@ -554,7 +554,7 @@ Reuse: `SandboxService`, `SandboxInboxResource`, `Inbox` model, inbound SMTP on 
 
 ### Schema changes
 - `email_analyses` table + `EmailAnalysis` model (migration `2026_06_25_120000_create_email_analyses_table`)
-- Unique constraint on one inbox per workspace — **not yet enforced** (defer)
+- Unique constraint on one inbox per workspace (`2026_06_27_100000_add_unique_workspace_inbox_constraint`)
 
 ### Done when
 - [x] Inbox shows real messages from the user's single sandbox inbox
@@ -562,8 +562,9 @@ Reuse: `SandboxService`, `SandboxInboxResource`, `Inbox` model, inbound SMTP on 
 - [x] Spam Analysis + HTML Check tabs show data from `email_analyses`
 - [x] Socket.IO realtime (`new-email` event) updates list without refresh
 - [x] Responsive layout + desktop/mobile HTML preview toggle
-
-**Deferred v2:** cursor pagination, production spam/HTML engines, DB unique constraint on sandbox inbox.
+- [x] Cursor pagination + infinite scroll in SPA
+- [x] Stronger spam/HTML heuristics in `emailAnalysisService.ts`
+- [x] One sandbox inbox per workspace enforced at DB level
 
 ---
 
@@ -749,7 +750,7 @@ Open/click in delivery breakdown appear when tracking events exist; otherwise vo
 
 | Section | Endpoints |
 |---------|-----------|
-| Profile | `PATCH /auth/me`, `PATCH /auth/password` |
+| Profile | `PATCH /auth/me`, `PATCH /auth/password`, `POST/DELETE /auth/me/avatar` |
 | Security | `GET/POST/DELETE /settings/two-factor/*` |
 | Notifications | `PATCH /settings/notifications` (JSON on `users`) |
 | Workspace | `GET /settings`, `PATCH /settings/workspaces/{id}` |
@@ -762,7 +763,7 @@ Workspace policy toggles are **enforced** via `WorkspacePolicyService` (2FA gate
 - [x] Profile, security (2FA), notifications, workspace, danger zone persist and reload
 - [x] Settings cache keyed by `selected_workspace_id`; invalidates on workspace switch
 - [x] Enforce workspace policy toggles app-wide
-- [ ] Avatar upload
+- [x] Avatar upload (JPEG/PNG/WebP/GIF, max 2 MB, public disk)
 
 ---
 
@@ -1225,7 +1226,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 **Deferred by user:** Module 19 Billing (full).
 
-**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P9** and wait for go-ahead.
+**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P11** (or skip to P14+) and wait for go-ahead.
 
 ---
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -6,7 +6,9 @@ import { FormSelect } from '@/components/form/FormSelect';
 import { useSettings, useSettingsMutations } from '@/hooks/useSettings';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { NotificationPreferences, WorkspaceSettings } from '@/types';
-import { AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Loader2, ShieldCheck, Upload, X } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { workspaceInitials } from '@/hooks/useWorkspaces';
 
 const SECTIONS = [
   'General',
@@ -130,12 +132,14 @@ function ProfileSection({ snapshot }: { snapshot: import('@/types').SettingsSnap
   const [name, setName] = useState(snapshot.profile.name);
   const [email, setEmail] = useState(snapshot.profile.email);
   const [timezone, setTimezone] = useState(snapshot.profile.timezone ?? 'UTC');
-  const { updateProfile } = useSettingsMutations();
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(snapshot.profile.avatar_url);
+  const { updateProfile, uploadAvatar, deleteAvatar } = useSettingsMutations();
 
   useEffect(() => {
     setName(snapshot.profile.name);
     setEmail(snapshot.profile.email);
     setTimezone(snapshot.profile.timezone ?? 'UTC');
+    setAvatarPreview(snapshot.profile.avatar_url);
   }, [snapshot.profile]);
 
   async function handleSave() {
@@ -147,8 +151,84 @@ function ProfileSection({ snapshot }: { snapshot: import('@/types').SettingsSnap
     }
   }
 
+  async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toastError('Choose a JPEG, PNG, WebP, or GIF image.');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toastError('Image must be 2 MB or smaller.');
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
+    try {
+      const result = await uploadAvatar.mutateAsync(file);
+      setAvatarPreview(result.user.avatar_url ?? null);
+      toastSuccess(result.message);
+    } catch (error) {
+      setAvatarPreview(snapshot.profile.avatar_url);
+      toastError(error, 'Could not upload profile photo.');
+    } finally {
+      URL.revokeObjectURL(previewUrl);
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    try {
+      const result = await deleteAvatar.mutateAsync();
+      setAvatarPreview(null);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not remove profile photo.');
+    }
+  }
+
   return (
     <Section title="Profile" desc="Your personal info">
+      <div className="flex items-center gap-4 border border-border bg-card p-4">
+        <Avatar className="h-16 w-16 border border-border">
+          {avatarPreview ? <AvatarImage src={avatarPreview} alt={name} /> : null}
+          <AvatarFallback className="font-mono text-sm">
+            {workspaceInitials(name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent">
+              <Upload className="h-3.5 w-3.5" />
+              {uploadAvatar.isPending ? 'Uploading…' : 'Upload photo'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="sr-only"
+                onChange={handleAvatarChange}
+                disabled={uploadAvatar.isPending}
+              />
+            </label>
+            {avatarPreview ? (
+              <button
+                type="button"
+                onClick={handleRemoveAvatar}
+                disabled={deleteAvatar.isPending}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[13px] text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" />
+                Remove
+              </button>
+            ) : null}
+          </div>
+          <p className="text-[12px] text-muted-foreground">Square images work best. Max 2 MB.</p>
+        </div>
+      </div>
       <Field label="Full name" value={name} onChange={setName} />
       <Field label="Email" value={email} onChange={setEmail} mono />
       {!snapshot.profile.email_verified ? (
@@ -158,7 +238,6 @@ function ProfileSection({ snapshot }: { snapshot: import('@/types').SettingsSnap
         <label className="label-mono mb-2 block">Timezone</label>
         <FormSelect value={timezone} onValueChange={setTimezone} options={TIMEZONE_OPTIONS} />
       </div>
-      <p className="text-[12px] text-muted-foreground">Avatar upload ships in a later release.</p>
       <SaveButton onClick={handleSave} pending={updateProfile.isPending} />
     </Section>
   );

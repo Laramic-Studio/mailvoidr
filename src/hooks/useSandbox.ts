@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type InfiniteData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   clearSandboxMessages,
   enableSandbox,
@@ -12,6 +12,8 @@ import {
 import { queryKeys } from '@/lib/query-keys';
 import { useAuth } from '@/hooks/useAuth';
 import type { EmailMessageListResponse, SandboxResponse } from '@/types';
+
+type SandboxMessagesInfinite = InfiniteData<EmailMessageListResponse, string | undefined>;
 
 function isSandboxListQueryKey(key: readonly unknown[]): boolean {
   return (
@@ -38,28 +40,39 @@ function patchSandboxUnreadCount(
   });
 }
 
+function patchInfiniteMessages(
+  queryClient: ReturnType<typeof useQueryClient>,
+  mapper: (pages: EmailMessageListResponse[]) => EmailMessageListResponse[],
+) {
+  queryClient.setQueriesData<SandboxMessagesInfinite>(
+    {
+      predicate: (query) => isSandboxListQueryKey(query.queryKey),
+    },
+    (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: mapper(old.pages),
+      };
+    },
+  );
+}
+
 function markMessageReadInCache(
   queryClient: ReturnType<typeof useQueryClient>,
   messageId: string,
 ) {
   let wasUnread = false;
 
-  queryClient.setQueriesData<EmailMessageListResponse>(
-    {
-      predicate: (query) => isSandboxListQueryKey(query.queryKey),
-    },
-    (old) => {
-      if (!old) return old;
-
-      return {
-        ...old,
-        data: old.data.map((item) => {
-          if (item.id !== messageId) return item;
-          if (!item.is_read) wasUnread = true;
-          return { ...item, is_read: true };
-        }),
-      };
-    },
+  patchInfiniteMessages(queryClient, (pages) =>
+    pages.map((page) => ({
+      ...page,
+      data: page.data.map((item) => {
+        if (item.id !== messageId) return item;
+        if (!item.is_read) wasUnread = true;
+        return { ...item, is_read: true };
+      }),
+    })),
   );
 
   if (wasUnread) {
@@ -86,9 +99,16 @@ export function useSandboxMessages(
   const search = filters.search?.trim() || undefined;
   const unreadOnly = Boolean(filters.unread);
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.sandbox.messages(search, unreadOnly),
-    queryFn: () => fetchSandboxMessages({ search, unread: unreadOnly }),
+    queryFn: ({ pageParam }) =>
+      fetchSandboxMessages({
+        search,
+        unread: unreadOnly,
+        cursor: pageParam,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.meta.next_cursor ?? undefined,
     enabled: Boolean(user?.onboarding_completed && inboxEnabled),
     staleTime: 15_000,
   });
@@ -128,11 +148,6 @@ export function useSandboxMutations(filters: SandboxMessageFilters = {}) {
   const search = filters.search?.trim() || undefined;
   const unreadOnly = Boolean(filters.unread);
 
-  const invalidateMessages = () =>
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.sandbox.messages(search, unreadOnly),
-    });
-
   const enable = useMutation({
     mutationFn: enableSandbox,
     onSuccess: (data) => {
@@ -146,15 +161,11 @@ export function useSandboxMutations(filters: SandboxMessageFilters = {}) {
   const markAllRead = useMutation({
     mutationFn: markAllSandboxMessagesRead,
     onSuccess: () => {
-      queryClient.setQueriesData<EmailMessageListResponse>(
-        { predicate: (query) => isSandboxListQueryKey(query.queryKey) },
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            data: old.data.map((item) => ({ ...item, is_read: true })),
-          };
-        },
+      patchInfiniteMessages(queryClient, (pages) =>
+        pages.map((page) => ({
+          ...page,
+          data: page.data.map((item) => ({ ...item, is_read: true })),
+        })),
       );
       queryClient.setQueryData<SandboxResponse>(queryKeys.sandbox.all, (old) => {
         if (!old?.inbox) return old;
@@ -181,9 +192,21 @@ export function useSandboxMutations(filters: SandboxMessageFilters = {}) {
           stats: old.stats ? { ...old.stats, messages_last_24h: 0 } : old.stats,
         };
       });
-      queryClient.setQueriesData<EmailMessageListResponse>(
+      queryClient.setQueriesData<SandboxMessagesInfinite>(
         { predicate: (query) => isSandboxListQueryKey(query.queryKey) },
-        (old) => (old ? { ...old, data: [], meta: { ...old.meta, total: 0 } } : old),
+        (old) =>
+          old
+            ? {
+                ...old,
+                pages: [
+                  {
+                    data: [],
+                    meta: { per_page: old.pages[0]?.meta.per_page ?? 30, next_cursor: null },
+                  },
+                ],
+                pageParams: [undefined],
+              }
+            : old,
       );
     },
   });

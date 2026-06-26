@@ -9,7 +9,7 @@ import {
 } from '@/components/dashboard/GlobalSearchDialog';
 import { NotificationBell } from '@/components/dashboard/NotificationBell';
 import { Send, Menu } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -106,6 +106,9 @@ export function DashboardLayout({
               <DropdownMenu>
                 <DropdownMenuTrigger data-testid="user-menu-trigger">
                   <Avatar className="h-8 w-8 border border-border">
+                    {user?.avatar_url ? (
+                      <AvatarImage src={user.avatar_url} alt={user.name} />
+                    ) : null}
                     <AvatarFallback className="bg-card font-mono text-[11px]">
                       {user ? workspaceInitials(user.name) : '—'}
                     </AvatarFallback>

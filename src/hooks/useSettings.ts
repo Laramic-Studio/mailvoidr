@@ -8,9 +8,11 @@ import {
   fetchSettings,
   fetchTwoFactorStatus,
   regenerateRecoveryCodes,
+  deleteAvatar,
   updateNotifications,
   updatePassword,
   updateProfile,
+  uploadAvatar,
   updateWorkspace,
   updateWorkspaceSettings,
 } from '@/lib/api/settings';
@@ -52,6 +54,22 @@ export function useSettingsMutations() {
 
   const updateProfileMutation = useMutation({
     mutationFn: updateProfile,
+    onSuccess: async () => {
+      await refreshUser();
+      await invalidate();
+    },
+  });
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: uploadAvatar,
+    onSuccess: async () => {
+      await refreshUser();
+      await invalidate();
+    },
+  });
+
+  const deleteAvatarMutation = useMutation({
+    mutationFn: deleteAvatar,
     onSuccess: async () => {
       await refreshUser();
       await invalidate();
@@ -132,6 +150,8 @@ export function useSettingsMutations() {
 
   return {
     updateProfile: updateProfileMutation,
+    uploadAvatar: uploadAvatarMutation,
+    deleteAvatar: deleteAvatarMutation,
     updatePassword: updatePasswordMutation,
     updateNotifications: updateNotificationsMutation,
     updateWorkspace: updateWorkspaceMutation,

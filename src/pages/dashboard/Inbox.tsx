@@ -76,6 +76,9 @@ export default function Inbox() {
     data: messagesData,
     isLoading: messagesLoading,
     isFetching: messagesFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     refetch: refetchMessages,
   } = useSandboxMessages(filters, Boolean(inbox));
 
@@ -86,7 +89,12 @@ export default function Inbox() {
     detailTab === 'raw',
   );
 
-  const messages = messagesData?.data ?? [];
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const messages = useMemo(
+    () => messagesData?.pages.flatMap((page) => page.data) ?? [],
+    [messagesData?.pages],
+  );
   const selectedIdRef = useRef(selectedMessageId);
   selectedIdRef.current = selectedMessageId;
 
@@ -129,6 +137,24 @@ export default function Inbox() {
     unreadOnly,
     onNewMessage: handleRealtimeMessage,
   });
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: '120px' },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, messages.length]);
 
   function handleSelectMessage(summary: EmailMessageSummary) {
     setSelectedSummary(summary);
@@ -215,7 +241,7 @@ export default function Inbox() {
   const displayMessage: EmailMessage | EmailMessageSummary | null = message ?? selectedSummary;
   const from = displayMessage ? parseEmailAddress(displayMessage.from) : null;
   const analysis = message?.analysis;
-  const unreadCount = messages.filter((m) => !m.is_read).length;
+  const unreadCount = inbox?.unread_count ?? messages.filter((m) => !m.is_read).length;
 
   return (
     <DashboardLayout flush>
@@ -385,6 +411,11 @@ export default function Inbox() {
                   })}
                 </ul>
               )}
+              {hasNextPage ? (
+                <div ref={loadMoreRef} className="flex items-center justify-center py-4 text-muted-foreground">
+                  {isFetchingNextPage ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                </div>
+              ) : null}
             </div>
           </aside>
 
