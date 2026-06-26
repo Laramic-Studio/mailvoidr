@@ -1,8 +1,9 @@
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { DOCS_NAV } from "@/lib/dummyData";
-import { Search, Github, ChevronRight } from "lucide-react";
+import { DocsSearch, DocsSearchMobileLink } from "@/components/docs/DocsSearch";
+import { DOCS_NAV } from "@/content/docs/nav";
+import { Github, ChevronRight } from "lucide-react";
 
 import type { ReactNode } from "react";
 
@@ -13,9 +14,6 @@ interface DocsLayoutProps {
 }
 
 export function DocsLayout({ children, toc = [], title }: DocsLayoutProps) {
-  const { pathname } = useLocation();
-  const current = pathname.split("/").pop();
-
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 h-14 border-b border-border bg-background/80 backdrop-blur">
@@ -25,16 +23,10 @@ export function DocsLayout({ children, toc = [], title }: DocsLayoutProps) {
             <span className="hidden md:inline-flex font-mono text-[11px] text-muted-foreground uppercase tracking-wider border-l border-border pl-6">Docs</span>
           </div>
           <div className="hidden md:flex items-center gap-3 flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                data-testid="docs-search"
-                placeholder="Search documentation…"
-                className="w-full bg-card border border-border rounded-md pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
+            <DocsSearch />
           </div>
           <div className="flex items-center gap-2">
+            <DocsSearchMobileLink />
             <a href="#" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><Github className="h-3.5 w-3.5" /> GitHub</a>
             <ThemeToggle />
             <Link to="/login" className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-foreground px-2">Sign in</Link>

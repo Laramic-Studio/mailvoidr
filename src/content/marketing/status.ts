@@ -10,8 +10,10 @@ export interface StatusComponent {
 
 export const STATUS_HERO = {
   subtitle:
-    'We probe the public REST API from this page every 30 seconds. Other paths run on the same stack but are not individually checked yet.',
+    'Daily status from the start of last month through today. We probe the REST API live every 30 seconds — today\'s bar reflects that check; earlier days assume operational unless an incident is posted below.',
 };
+
+export const STATUS_HISTORY_LABEL = 'Uptime · last month to date';
 
 export const STATUS_COMPONENTS: StatusComponent[] = [
   {
@@ -52,4 +54,4 @@ export const STATUS_INCIDENTS = {
 };
 
 export const STATUS_FOOTNOTE =
-  'Historical uptime charts and per-region status pages are on the roadmap. For now, curl GET /api/v1/health on your deployment.';
+  'Bars show one day each from the 1st of the previous calendar month through today. Hover a bar for the date.';

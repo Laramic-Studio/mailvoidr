@@ -8,8 +8,8 @@ const NAV = [
   { to: "/features", label: "Features" },
   { to: "/pricing", label: "Pricing" },
   { to: "/docs", label: "Docs" },
-  { to: "/enterprise", label: "Enterprise" },
-  { to: "/blog", label: "Blog" },
+  // { to: "/enterprise", label: "Enterprise" },
+  // { to: "/blog", label: "Blog" },
   { to: "/about", label: "About" },
   { to: "/status", label: "Status" },
 ];
@@ -87,9 +87,9 @@ export function MarketingLayout({ children }) {
               </a>
             </div>
           </div>
-          <FooterCol title="Product" links={[["Features","/features"],["Pricing","/pricing"],["Enterprise","/enterprise"],["Changelog","/blog"],["Status","/status"]]} />
-          <FooterCol title="Developers" links={[["Documentation","/docs"],["API reference","/docs"],["SDKs","/docs"],["Webhooks","/docs"]]} />
-          <FooterCol title="Company" links={[["About","/about"],["Blog","/blog"],["Contact","/contact"],["Customers","/about"]]} />
+          <FooterCol title="Product" links={[["Features","/features"],["Pricing","/pricing"],/* ["Enterprise","/enterprise"], ["Changelog","/blog"], */["Status","/status"]]} />
+          <FooterCol title="Developers" links={[["Documentation","/docs"],["API reference","/docs/api-reference"],["Webhooks","/docs/webhooks"],["Quickstart","/docs/quickstart"]]} />
+          <FooterCol title="Company" links={[["About","/about"],/* ["Blog","/blog"], */["Contact","/contact"]]} />
         </div>
         <div className="border-t border-border">
           <div className="mx-auto max-w-7xl px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12.5px] text-muted-foreground">

@@ -191,7 +191,7 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | 20 | Notifications | ✅ Shipped | `tests/Unit/Api/V1/Notification/NotificationTest.php` |
 | 21 | Global search | ✅ Shipped | `tests/Unit/Api/V1/Search/SearchTest.php` |
 | 22 | Contact form | ✅ Shipped | `tests/Unit/Api/V1/Contact/ContactTest.php` |
-| 23 | Docs | ⏸️ Static | MDX in repo for v1 |
+| 23 | Docs | ✅ Static v1 | MDX in repo; `content/docs/*` wired |
 | 24 | Enterprise | ⏸️ Marketing-only | No backend until SAML/audit exports |
 
 \*Module 1 gaps: OAuth buttons in SPA are UI-only (no JWT exchange yet); 401 clears session instead of silent `POST /auth/refresh`.
@@ -200,9 +200,9 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 **Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
 
-**Next up:** Marketing — Docs landing (honest copy, remove fictional SDKs). Pricing skipped (Module 19 deferred).
+**Next up:** Marketing — About / Blog / Enterprise (honest copy). Pricing skipped (Module 19 deferred).
 
-**Polish backlog:** Paid template marketplace, OAuth JWT exchange, SMTP path tracking, geo IP enrichment, CSV export, Module 23 CMS, Module 24 enterprise backend, Blog/About/Enterprise marketing pages.
+**Polish backlog:** Paid template marketplace, OAuth JWT exchange, SMTP path tracking, geo IP enrichment, CSV export, Module 23 CMS (optional), Module 24 enterprise backend, publish official SDKs.
 
 ---
 
@@ -217,7 +217,7 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 - `pages/marketing/Features.tsx` — **wired** (`content/marketing/features.ts`)
 - `pages/marketing/Status.tsx` — **wired** (`content/marketing/status.ts`, live API health)
 - Other `pages/marketing/*` — still static / dummyData
-- `pages/docs/DocsLanding.tsx`, `pages/docs/DocsArticle.tsx` (static for now)
+- `pages/docs/DocsLanding.tsx`, `pages/docs/DocsArticle.tsx` — **wired** (`content/docs/*`, SDK blocks preserved)
 - Layouts: `MarketingLayout`, `DocsLayout`
 
 ### Backend
@@ -1064,11 +1064,11 @@ GET /search?q=...&types[]=sends&types[]=templates&types[]=domains&types[]=virtua
 
 ## Module 23 — Docs
 
-**Status: ⏸️ Static for v1**
+**Status: ✅ Static v1 shipped**
 
-Keep static MDX/Markdown in repo for v1. Optional later: `GET /docs/:slug` from CMS.
+Keep static content in `frontend/src/content/docs/`. SDK install card and language grid stay in the UI (reserved package names); HTTP examples are live, SDK client lines commented in code samples until packages publish.
 
-Files: `pages/docs/*`, `DOCS_NAV` in dummyData → move to `content/docs/`.
+Files: `pages/docs/*`, `content/docs/nav.ts`, `landing.ts`, `articles.ts`, `samples.ts`.
 
 ---
 
