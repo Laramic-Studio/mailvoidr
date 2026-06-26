@@ -1,10 +1,27 @@
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useCredits } from '@/hooks/useCredits';
+import { useBilling } from '@/hooks/useBilling';
+
+function formatUsage(used: number, limit: number | null): string {
+  if (limit === null) {
+    return `${used.toLocaleString()} used`;
+  }
+
+  return `${used.toLocaleString()} / ${limit.toLocaleString()}`;
+}
+
+function usagePercent(used: number, limit: number | null): number {
+  if (!limit) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((used / limit) * 100));
+}
 
 export function CreditsUsageWidget({ onNavigate }: { onNavigate?: () => void }) {
-  const { data, isLoading } = useCredits();
-  const credits = data?.credits;
+  const { data, isLoading } = useBilling();
+  const usage = data?.usage;
+  const plan = data?.plan;
 
   if (isLoading) {
     return (
@@ -14,51 +31,35 @@ export function CreditsUsageWidget({ onNavigate }: { onNavigate?: () => void }) 
     );
   }
 
-  if (!credits?.live_sending_enabled) {
-    return (
-      <div className="rounded-lg border border-border bg-background p-3">
-        <div className="label-mono mb-1">Send credits</div>
-        <p className="text-[12px] text-muted-foreground">Enable live sending to start outbound mail.</p>
-        <Link
-          to="/dashboard/smtp"
-          onClick={onNavigate}
-          className="mt-3 inline-flex items-center text-[11.5px] text-primary hover:underline"
-        >
-          Enable live sending →
-        </Link>
-      </div>
-    );
+  if (!usage) {
+    return null;
   }
 
-  const usedPercent = credits.free_allowance
-    ? Math.min(100, Math.round((credits.free_used / credits.free_allowance) * 100))
-    : 0;
+  const emailPercent = usagePercent(usage.emails.used, usage.emails.limit);
 
   return (
     <div className="rounded-lg border border-border bg-background p-3">
-      <div className="label-mono mb-1">Send credits</div>
-      <div className="flex items-center justify-between text-[12px]">
-        <span>
-          {credits.total_available.toLocaleString()} available
-        </span>
+      <div className="label-mono mb-1">Plan usage</div>
+      <div className="text-[11px] text-muted-foreground capitalize">
+        {plan?.name ?? usage.plan_slug} plan
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[12px]">
+        <span>Emails this month</span>
         <span className="font-mono text-muted-foreground">
-          {credits.free_remaining}/{credits.free_allowance} free
+          {formatUsage(usage.emails.used, usage.emails.limit)}
         </span>
       </div>
-      <div className="mt-1.5 h-1 overflow-hidden bg-muted">
-        <div className="h-full bg-primary" style={{ width: `${usedPercent}%` }} />
-      </div>
-      {credits.purchased_balance > 0 ? (
-        <p className="mt-2 text-[11px] text-muted-foreground font-mono">
-          +{credits.purchased_balance.toLocaleString()} purchased
-        </p>
+      {usage.emails.limit !== null ? (
+        <div className="mt-1.5 h-1 overflow-hidden bg-muted">
+          <div className="h-full bg-primary" style={{ width: `${emailPercent}%` }} />
+        </div>
       ) : null}
       <Link
         to="/dashboard/billing"
         onClick={onNavigate}
         className="mt-3 inline-flex items-center text-[11.5px] text-primary hover:underline"
       >
-        Buy credits →
+        Manage plan →
       </Link>
     </div>
   );

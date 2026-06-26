@@ -27,7 +27,7 @@ function WorkspaceMeta({ workspace }: { workspace: Workspace }) {
 
   return (
     <>
-      <p className="truncate text-[13px] font-medium leading-tight">{workspace.name}</p>
+      <p className="truncate text-[13px] font-medium leading-tight capitalize">{workspace.name}</p>
       {subtitle && (
         <p className="truncate text-[11px] text-muted-foreground font-mono uppercase leading-tight mt-0.5">
           {subtitle}
@@ -77,7 +77,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
 
           {!collapsed && (
             <>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 ">
                 {active ? (
                   <WorkspaceMeta workspace={active} />
                 ) : (

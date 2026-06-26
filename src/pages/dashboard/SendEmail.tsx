@@ -4,11 +4,11 @@ import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CodeBlock } from '@/components/CodeBlock';
 import { useDomains } from '@/hooks/useDomains';
-import { useCredits } from '@/hooks/useCredits';
+import { useBilling } from '@/hooks/useBilling';
 import { useSendHistory, useSendMutations } from '@/hooks/useSend';
 import { useTemplates } from '@/hooks/useTemplates';
 import { toastError, toastSuccess } from '@/lib/toast';
-import type { EmailPreview, EmailTemplate } from '@/types';
+import type { BillingUsageMetric, EmailPreview, EmailTemplate } from '@/types';
 import { Send, Calendar, Eye, Loader2, X } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -42,12 +42,12 @@ export default function SendEmail() {
   const [text, setText] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState<EmailPreview | null>(null);
-  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [emailUsage, setEmailUsage] = useState<BillingUsageMetric | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
 
   const { data: domainsData } = useDomains();
-  const { data: creditsData } = useCredits();
+  const { data: billing } = useBilling();
   const { data: historyData, isLoading: historyLoading } = useSendHistory();
   const { data: templatesData } = useTemplates();
   const { send, preview } = useSendMutations();
@@ -56,8 +56,7 @@ export default function SendEmail() {
   const history = historyData?.data ?? [];
   const templates = templatesData?.data ?? [];
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? null;
-  const credits = creditsData?.credits;
-  const liveSendingEnabled = credits?.live_sending_enabled ?? false;
+  const liveSendingEnabled = billing?.live_sending_enabled ?? false;
 
   const suggestedFrom = useMemo(() => {
     if (verifiedDomains[0]) {
@@ -73,10 +72,10 @@ export default function SendEmail() {
   }, [from, suggestedFrom]);
 
   useEffect(() => {
-    if (credits) {
-      setCreditsRemaining(credits.total_available);
+    if (billing?.usage?.emails) {
+      setEmailUsage(billing.usage.emails);
     }
-  }, [credits]);
+  }, [billing?.usage?.emails]);
 
   useEffect(() => {
     if (!templateFromUrl || templates.length === 0) return;
@@ -144,7 +143,7 @@ export default function SendEmail() {
         template_id: selectedTemplateId,
         variables: templateVariables,
       });
-      setCreditsRemaining(result.credits_remaining);
+      setEmailUsage(result.email_usage);
       toastSuccess(result.message);
     } catch (error) {
       toastError(error, 'Could not send email.');
@@ -182,7 +181,7 @@ export default function SendEmail() {
         html: bodyMode === 'html' ? html : undefined,
         text: bodyMode === 'text' ? text : undefined,
       });
-      setCreditsRemaining(result.credits_remaining);
+      setEmailUsage(result.email_usage);
       toastSuccess(result.message);
     } catch (error) {
       toastError(error, 'Could not send email.');
@@ -384,10 +383,14 @@ export default function SendEmail() {
   -d '{"from":"${from || suggestedFrom}","to":["recipient@example.com"],"subject":"Hello","html":"<p>Hi</p>"}'`}
               />
             </div>
-            {creditsRemaining !== null ? (
+            {emailUsage ? (
               <div className="border border-border bg-card p-4">
-                <div className="label-mono">Credits remaining</div>
-                <div className="mt-2 font-mono text-xl">{creditsRemaining}</div>
+                <div className="label-mono">Emails this month</div>
+                <div className="mt-2 font-mono text-xl">
+                  {emailUsage.limit === null
+                    ? emailUsage.used.toLocaleString()
+                    : `${emailUsage.used.toLocaleString()} / ${emailUsage.limit.toLocaleString()}`}
+                </div>
               </div>
             ) : null}
           </aside>

@@ -1,4 +1,5 @@
 import type {
+  BillingUsageMetric,
   EmailPreview,
   EmailSendHistoryResponse,
   EmailSendSummary,
@@ -32,12 +33,12 @@ export interface PreviewEmailPayload {
 export async function sendEmail(payload: SendEmailPayload): Promise<{
   email_send: EmailSendSummary;
   message: string;
-  credits_remaining: number;
+  email_usage: BillingUsageMetric | null;
 }> {
   const { data } = await api.post<{
     email_send: EmailSendSummary;
     message: string;
-    credits_remaining: number;
+    email_usage: BillingUsageMetric | null;
   }>('/send', payload);
   return data;
 }

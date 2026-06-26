@@ -87,9 +87,14 @@ export function TeamInviteDialog({
               value={role}
               onValueChange={setRole}
               options={roles}
-              disabled={lockRole}
+              disabled={lockRole || roles.length <= 1}
               data-testid="team-invite-role"
             />
+            {roles.length <= 1 ? (
+              <p className="text-[12px] text-muted-foreground">
+                Custom roles are available on the Growth plan and above.
+              </p>
+            ) : null}
           </div>
 
           <DialogFooter className="mt-6 gap-2 sm:gap-2">

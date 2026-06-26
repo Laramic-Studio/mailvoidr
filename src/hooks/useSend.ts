@@ -8,6 +8,7 @@ import {
 } from '@/lib/api/send';
 import { queryKeys } from '@/lib/query-keys';
 import { useAuth } from '@/hooks/useAuth';
+import { useWorkspaceStore } from '@/stores/workspace-store';
 
 export function useSendHistory() {
   const { user } = useAuth();
@@ -21,10 +22,11 @@ export function useSendHistory() {
 
 export function useSendMutations() {
   const queryClient = useQueryClient();
+  const workspaceId = useWorkspaceStore((s) => s.selectedWorkspaceId);
 
   const invalidateHistory = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.send.history });
-    queryClient.invalidateQueries({ queryKey: queryKeys.credits.summary });
+    queryClient.invalidateQueries({ queryKey: queryKeys.billing.context(workspaceId ?? undefined) });
   };
 
   const send = useMutation({

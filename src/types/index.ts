@@ -110,10 +110,11 @@ export interface TeamMember {
 
 export interface TeamMemberListResponse {
   data: TeamMember[];
-  meta: {
+    meta: {
     can_manage: boolean;
     can_invite: boolean;
     default_member_role: string;
+    roles_enabled: boolean;
     assignable_roles: WorkspaceRoleOption[];
   };
 }
@@ -415,21 +416,19 @@ export interface SendLogFilters {
   period?: '24h' | '7d' | '30d';
 }
 
-export interface CreditPack {
-  size: number;
-  price_cents: number;
-  price_label: string;
+export interface BillingUsageMetric {
+  used: number;
+  limit: number | null;
+  remaining: number | null;
 }
 
 export interface CreditsSummary {
   live_sending_enabled: boolean;
-  free_allowance: number;
-  free_remaining: number;
-  free_used: number;
-  purchased_balance: number;
-  total_available: number;
-  billing_enabled: boolean;
-  credit_packs: CreditPack[];
+  emails: BillingUsageMetric | null;
+}
+
+export interface CreditsResponse {
+  credits: CreditsSummary;
 }
 
 export interface CreditTransaction {
@@ -439,10 +438,6 @@ export interface CreditTransaction {
   description: string | null;
   reference_id: string | null;
   created_at: string | null;
-}
-
-export interface CreditsResponse {
-  credits: CreditsSummary;
 }
 
 export interface CreditTransactionsResponse {
@@ -687,7 +682,8 @@ export interface DashboardOverviewResponse {
   top_domains: DashboardTopDomain[];
   top_templates: DashboardTopTemplate[];
   activity: DashboardActivityItem[];
-  credits: CreditsSummary;
+  live_sending_enabled: boolean;
+  usage: BillingUsage;
 }
 
 export interface AnalyticsSummary {
@@ -818,3 +814,77 @@ export interface LoginResponse extends AuthTokens {
 export type ApiEnvelope<T> = {
   data: T;
 };
+
+export interface BillingRegion {
+  provider: 'paystack';
+  currency: 'USD' | 'NGN';
+  label: string;
+  usd_ngn_rate: number;
+}
+
+export interface BillingPlanPrice {
+  currency: string;
+  amount: number | null;
+  amount_minor: number | null;
+  formatted: string;
+  usd_amount: number | null;
+}
+
+export interface BillingPlan {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  included_emails: number | null;
+  limits: Record<string, unknown> | null;
+  popular: boolean;
+  price: BillingPlanPrice;
+  quoted: boolean;
+}
+
+export interface BillingQuote {
+  volume: number;
+  tier_slug: string;
+  price: BillingPlanPrice;
+}
+
+export interface PlansResponse {
+  region: BillingRegion;
+  quote: BillingQuote | null;
+  plans: BillingPlan[];
+}
+
+export interface BillingCheckoutResponse {
+  checkout_url: string;
+  provider: 'paystack';
+  currency: PricingCurrency;
+  reference: string;
+}
+
+export interface BillingSubscription {
+  id: string;
+  status: string;
+  provider: string | null;
+  currency: string;
+  monthly_volume: number | null;
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+}
+
+export interface BillingUsage {
+  plan_slug: string;
+  emails: BillingUsageMetric;
+  domains: BillingUsageMetric;
+  virtual_inboxes: BillingUsageMetric;
+  team_members: BillingUsageMetric;
+}
+
+export interface BillingContextResponse {
+  payment_options: BillingRegion[];
+  live_sending_enabled: boolean;
+  subscription: BillingSubscription | null;
+  plan: BillingPlan | null;
+  usage: BillingUsage;
+}
+
+export type PricingCurrency = 'USD' | 'NGN';

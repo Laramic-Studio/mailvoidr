@@ -89,4 +89,11 @@ export const queryKeys = {
   search: {
     global: (query: string) => ['search', query] as const,
   },
+  plans: {
+    list: (currency: string, volume: number) =>
+      ['plans', currency, volume] as const,
+  },
+  billing: {
+    context: (workspaceId?: string) => ['billing', workspaceId ?? ''] as const,
+  },
 } as const;

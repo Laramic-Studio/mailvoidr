@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  confirmCreditCheckout,
-  createCreditCheckout,
   enableLiveSending,
   fetchCreditTransactions,
   fetchCredits,
 } from '@/lib/api/credits';
 import { queryKeys } from '@/lib/query-keys';
 import { useAuth } from '@/hooks/useAuth';
+import { useWorkspaceStore } from '@/stores/workspace-store';
 
 export function useCredits() {
   const { user } = useAuth();
@@ -31,10 +30,12 @@ export function useCreditTransactions() {
 
 export function useCreditMutations() {
   const queryClient = useQueryClient();
+  const workspaceId = useWorkspaceStore((s) => s.selectedWorkspaceId);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.credits.summary });
     queryClient.invalidateQueries({ queryKey: queryKeys.credits.transactions });
+    queryClient.invalidateQueries({ queryKey: queryKeys.billing.context(workspaceId ?? undefined) });
     queryClient.invalidateQueries({ queryKey: queryKeys.smtpCredentials.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.send.history });
   };
@@ -44,14 +45,5 @@ export function useCreditMutations() {
     onSuccess: invalidate,
   });
 
-  const checkout = useMutation({
-    mutationFn: createCreditCheckout,
-  });
-
-  const confirmCheckout = useMutation({
-    mutationFn: confirmCreditCheckout,
-    onSuccess: invalidate,
-  });
-
-  return { enableSending, checkout, confirmCheckout };
+  return { enableSending };
 }

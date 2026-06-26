@@ -401,7 +401,7 @@ email.complained`),
       prose('codes', 'HTTP status codes', [
         '202 — send accepted and queued.',
         '401 — missing or invalid API key / JWT.',
-        '402 — insufficient credits.',
+        '402 — plan email limit reached.',
         '403 — live sending disabled for the workspace.',
         '422 — validation error (check the errors object).',
         '429 — rate limit exceeded — back off and retry.',

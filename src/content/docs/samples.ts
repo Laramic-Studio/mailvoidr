@@ -39,7 +39,7 @@ export function buildDocsCodeSamples(sendUrl: string = mailSendUrl()): Record<Do
   }),
 });
 
-const { id, status, message_id, credits_remaining } = await response.json();
+const { id, status, message_id, email_usage } = await response.json();
 // → 202 Accepted · status=queued`,
     send_python: `import os
 import requests
@@ -105,7 +105,7 @@ export const DOCS_SEND_RESPONSE_SAMPLE = {
   id: 1842,
   message_id: '<202606251200.1842.1@mail.yourdomain.com>',
   status: 'queued',
-  credits_remaining: 97,
+  email_usage: { used: 3, limit: 3000, remaining: 2997 },
 };
 
 export const DOCS_SEND_ERROR_SAMPLE = {

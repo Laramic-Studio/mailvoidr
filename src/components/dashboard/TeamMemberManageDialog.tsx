@@ -58,14 +58,20 @@ export function TeamMemberManageDialog({
           </DialogHeader>
 
           <div className="mt-4">
-            <FormSelect
-              label="Role"
-              value={role}
-              onValueChange={setRole}
-              options={isOwner ? [{ value: 'owner', label: 'Owner' }] : roles}
-              disabled={isOwner}
-              data-testid="team-manage-role"
-            />
+            {roles.length > 1 ? (
+              <FormSelect
+                label="Role"
+                value={role}
+                onValueChange={setRole}
+                options={isOwner ? [{ value: 'owner', label: 'Owner' }] : roles}
+                disabled={isOwner}
+                data-testid="team-manage-role"
+              />
+            ) : (
+              <p className="text-[13px] text-muted-foreground">
+                Custom roles are available on the Growth plan and above.
+              </p>
+            )}
           </div>
 
           <DialogFooter className="mt-6 gap-2 sm:gap-2">
@@ -85,7 +91,7 @@ export function TeamMemberManageDialog({
             >
               Cancel
             </button>
-            {!isOwner && (
+            {!isOwner && roles.length > 1 && (
               <SubmitButton
                 type="submit"
                 loading={isPending}

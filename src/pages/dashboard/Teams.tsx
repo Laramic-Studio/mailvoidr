@@ -65,6 +65,7 @@ export default function Teams() {
   const { invite, updateRole, removeMember, revokeInvitation, resendInvitation } = useTeamMutations(workspaceId);
 
   const members = membersQuery.data?.data ?? [];
+  const rolesEnabled = membersQuery.data?.meta.roles_enabled ?? false;
   const assignableRoles = membersQuery.data?.meta.assignable_roles ?? [];
   const invitations = invitationsQuery.data?.data ?? [];
   const activities = activityQuery.data?.data ?? [];
@@ -139,7 +140,7 @@ export default function Teams() {
   const tabs = [
     ['members', `Members · ${members.length}`],
     ['invitations', `Invitations · ${invitations.length}`],
-    ['roles', 'Roles'],
+    ...(rolesEnabled ? [['roles', 'Roles'] as const] : []),
     ['activity', 'Activity'],
   ] as const;
 

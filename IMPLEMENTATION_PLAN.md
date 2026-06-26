@@ -173,7 +173,7 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | 3 | Workspaces + invites | ✅ Shipped | `tests/Unit/Api/V1/Workspace/` |
 | 4 | Virtual emails (list) | ✅ Shipped | `tests/Unit/Api/V1/VirtualEmail/VirtualEmailTest.php` |
 | 5 | Virtual email detail | ✅ Shipped | `tests/Unit/Api/V1/VirtualEmail/VirtualEmailMessageTest.php` |
-| 6 | Sandbox inbox | ✅ Shipped v1 | `tests/Unit/Api/V1/Sandbox/` |
+| 6 | Sandbox inbox | ✅ Shipped v2 | `tests/Unit/Api/V1/Sandbox/` |
 | 7 | Domains | ✅ Shipped | `tests/Unit/Api/V1/Domain/` |
 | 8 | API keys | ✅ Shipped | `tests/Unit/Api/V1/ApiKey/` |
 | 9 | SMTP credentials | ✅ Shipped | `tests/Unit/Api/V1/Smtp/` |
@@ -235,7 +235,64 @@ Work **one item at a time**. Agent proposes → you say go / skip / defer. **Mod
 
 **Current pointer:** Start at **P11** unless you reorder (P11–P13 marketing mostly skipped/deferred).
 
-**Polish already done:** Lifecycle webhooks, silent JWT refresh, marketing honest copy (Home/Features/About/Status), docs per-page content + search, status uptime candles + hover tooltips.
+**Polish already done:** Lifecycle webhooks, silent JWT refresh, marketing honest copy (Home/Features/About/Status), docs per-page content + search, status uptime candles + hover tooltips, improvement queue **P1–P10**.
+
+---
+
+## Remaining work (consolidated)
+
+Everything not yet shipped from the go-ahead queue, module backlog, and deferred items. **Billing (Module 19) stays out of scope** unless you explicitly reopen it.
+
+### Improvement queue — not done (P11–P18)
+
+| # | Item | Area | Effort | What to build | Blockers |
+|---|------|------|--------|---------------|----------|
+| **P11** | Marketing Pricing page | Module 0 / 19 | Small | Replace `Pricing.tsx` `dummyData` with honest static tiers **or** wire `GET /plans`; uncomment nav when ready | None — **skipped so far** |
+| **P12** | Marketing Blog | Module 22 | Medium | MD files in repo (`content/blog/*`) or CMS; `Blog.tsx` off dummy data; uncomment nav | None — nav hidden |
+| **P13** | Marketing Enterprise page | Module 24 | Small | Honest enterprise copy in `Enterprise.tsx` (no fake SOC 2 / compliance claims); uncomment nav | None — nav hidden |
+| **P14** | Paid template marketplace | Module 16b+ | Large | Stripe listings, creator payouts, paid vs free templates | **Module 19 billing** |
+| **P15** | Official SDKs | Docs + packages | Large | Uncomment docs install blocks; publish npm, PyPI, etc. | None |
+| **P16** | Docs CMS backend | Module 23 | Medium | Optional `GET /docs/:slug` API; static v1 in repo is enough for now | Low priority |
+| **P17** | Enterprise backend | Module 24 | Large | SAML SSO, audit log exports, dedicated sending IPs | Product scope |
+| **P18** | Playwright E2E | Testing | Medium | Smoke tests: auth, onboarding, send email, sandbox inbox | None |
+
+### Deferred by user (do not start without explicit go-ahead)
+
+| Item | Module | Effort | Scope |
+|------|--------|--------|--------|
+| **Billing (full)** | 19 | Large | Stripe subscriptions, invoices, payment methods, full `Billing.tsx` redesign (interim **credits UI** from Module 15 already ships) |
+| **Paid template marketplace** | 16b+ | Large | Same as **P14** — depends on billing |
+
+### Marketing routes still on placeholder data
+
+| Route | File | Current state | Queue item |
+|-------|------|---------------|------------|
+| `/pricing` | `pages/marketing/Pricing.tsx` | `dummyData` / `PLANS` | P11 |
+| `/blog` | `pages/marketing/Blog.tsx` | `dummyData` / `BLOG_POSTS`; nav commented out | P12 |
+| `/enterprise` | `pages/marketing/Enterprise.tsx` | Placeholder claims; nav commented out | P13 |
+
+### Minor backlog (not numbered in P-queue)
+
+| Item | Area | Notes |
+|------|------|--------|
+| Region selectors | Onboarding / Domains / Settings | Partially stubbed; hide or wire when multi-region exists |
+| `SCHEDULED_EMAILS`, `CAMPAIGNS` in `dummyData.ts` | Send email UI | Unused exports — wire scheduled/campaign flows or remove stubs |
+| Production spam/HTML engines | Sandbox Module 6 | v2 shipped heuristic analysis in Node; third-party APIs (e.g. SpamAssassin) optional later |
+
+### Completed improvement queue (reference)
+
+| # | Item | Shipped |
+|---|------|---------|
+| P1 | OAuth → JWT in SPA | ✅ |
+| P2 | Team invitation resend | ✅ |
+| P3 | Enforce workspace policy toggles | ✅ |
+| P4 | Analytics tab split | ✅ |
+| P5 | Geo breakdown | ✅ |
+| P6 | CSV export | ✅ |
+| P7 | SMTP-path send tracking | ✅ |
+| P8 | Template detail polish | ✅ |
+| P9 | Sandbox inbox v2 | ✅ |
+| P10 | Avatar upload | ✅ |
 
 ---
 
@@ -1193,8 +1250,11 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 | Region selectors in onboarding/domains/settings | Hide/stub — Modules 2, 7, 13 | Partial (onboarding hides region) |
 | Billing page full redesign | Module 19 — `Billing.tsx` has interim credits UI | ⏳ Deferred |
 | Team invitation resend | Module 14 — `Teams.tsx` | ✅ Shipped |
-| Workspace settings policies not enforced | Module 13 — saved only | ⏳ Pending |
+| Workspace settings policies not enforced | Module 13 — `WorkspacePolicyService` | ✅ Shipped (P3) |
 | Analytics tabs all show same content | Module 18 — split tab components | ✅ Shipped |
+| `/dashboard/templates/:id` dummy data | Module 16 — `TemplateDetail.tsx` | ✅ Shipped (P8) |
+| Sandbox cursor pagination + unique inbox | Module 6 | ✅ Shipped (P9) |
+| Avatar upload | Module 13 — Settings profile | ✅ Shipped (P10) |
 | `SCHEDULED_EMAILS`, `CAMPAIGNS` unused in dummyData | Wire in Modules 10/16 or leave for later | ⏳ Pending |
 
 ---
@@ -1205,7 +1265,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 |-------|------|
 | API | Pest feature tests per module (`tests/Feature/Api/V1/`) |
 | Auth | JWT login, refresh, 401, workspace scoping |
-| Frontend | Manual QA checklist per module; add Playwright later using `constants/testIds/` |
+| Frontend | Manual QA checklist per module; **Playwright E2E — P18 (not started)** |
 | Integration | Inbound SMTP → inbox appears in SPA; outbound send → log appears |
 
 ---
@@ -1222,12 +1282,14 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 ## Suggested sprint order (updated)
 
-**Completed:** Modules 0–18, 12, 16b, 20–23 (static docs). Dashboard stack + lifecycle webhooks + silent refresh + marketing/docs polish.
+**Completed:** Modules 0–18, 12, 16b, 20–23 (static docs). Improvement queue **P1–P10**. Dashboard stack + lifecycle webhooks + silent refresh + marketing/docs polish.
+
+**Remaining:** See [Remaining work (consolidated)](#remaining-work-consolidated) — **P11–P18** + deferred Module 19.
 
 **Deferred by user:** Module 19 Billing (full).
 
-**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P11** (or skip to P14+) and wait for go-ahead.
+**Work next:** Propose **P11** (or skip marketing → **P18** E2E / **P15** SDKs) and wait for go-ahead.
 
 ---
 
-*Last updated: June 2026 — Plan refreshed after marketing (Home/Features/About/Status), docs (per-page + search), status candles, silent JWT refresh, lifecycle events. Improvement queue added for go-ahead workflow.*
+*Last updated: June 2026 — P1–P10 shipped; remaining work consolidated in [Remaining work](#remaining-work-consolidated).*
