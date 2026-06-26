@@ -216,9 +216,9 @@ Work **one item at a time**. Agent proposes → you say go / skip / defer. **Mod
 | **P1** | OAuth → JWT in SPA | Auth · Module 1 | Medium | ✅ Socialite callback issues JWT; SPA `/auth/oauth/callback` exchange |
 | **P2** | Team invitation resend | Teams · Module 14 | Small | ✅ `POST …/invitations/{id}/resend` + Teams tab button |
 | **P3** | Enforce workspace policy toggles | Settings · Module 13 | Medium | ✅ 2FA gate, public invites, default role enforced |
-| **P4** | Analytics tab split | Analytics · Module 18 | Small | Engagement / domains / templates tabs show distinct data |
-| **P5** | Geo breakdown (IP enrichment) | Analytics · Module 18 | Medium | Backend geo lookup on open/click; replace empty state |
-| **P6** | CSV export | Analytics · Module 18 | Small–Medium | Export sends/engagement for date range |
+| **P4** | Analytics tab split | Analytics · Module 18 | Small | ✅ Per-tab lazy fetch + distinct summaries/panels |
+| **P5** | Geo breakdown (IP enrichment) | Analytics · Module 18 | Medium | ✅ IpGeoLookupService + engagement geography table |
+| **P6** | CSV export | Analytics · Module 18 | Small–Medium | ✅ `GET /analytics/export/{sends|engagement}` + Reports tab |
 | **P7** | SMTP-path send tracking | Lifecycle · smtp + ui | Medium | Lifecycle events for sends that never hit HTTP API |
 | **P8** | Template detail polish | Templates · Module 16 | Small | Confirm `/dashboard/templates/:id` fully wired (not dummy) |
 | **P9** | Sandbox inbox v2 | Sandbox · Module 6 | Medium | Cursor pagination, stronger spam/HTML checks, inbox unique constraint |
@@ -233,7 +233,7 @@ Work **one item at a time**. Agent proposes → you say go / skip / defer. **Mod
 | **P18** | Playwright E2E | Testing | Medium | Smoke tests for auth, send, onboarding |
 | — | **Billing (full)** | Module 19 | Large | **Deferred by user** — Stripe subs, invoices, payment methods |
 
-**Current pointer:** Start at **P4** unless you reorder.
+**Current pointer:** Start at **P7** unless you reorder.
 
 **Polish already done:** Lifecycle webhooks, silent JWT refresh, marketing honest copy (Home/Features/About/Status), docs per-page content + search, status uptime candles + hover tooltips.
 
@@ -993,7 +993,7 @@ Index: `(visibility, created_at)` for marketplace listing. Workspace library que
 ### Frontend
 - `pages/dashboard/Analytics.tsx` — `hooks/useAnalytics.ts`, `lib/api/analytics.ts`
 - Period selector (24h / 7d / 30d / 90d), tabbed views
-- Geo: honest empty state (IP enrichment deferred)
+- Geo: resolved from open/click IP via `IpGeoLookupService` (cached ip-api.com lookup)
 - Reports tab: deferred
 
 ### Backend
@@ -1015,8 +1015,8 @@ Index: `(visibility, created_at)` for marketplace listing. Workspace library que
 - [x] Volume + delivery charts use real data
 - [x] Open/click populate from tracking events
 - [x] Analytics UI wired to API
-- [ ] Geo breakdown (needs IP enrichment)
-- [ ] CSV export / scheduled reports
+- [x] Geo breakdown from open/click IP enrichment
+- [x] CSV export for sends and engagement (scheduled reports still deferred)
 
 ---
 
@@ -1193,7 +1193,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 | Billing page full redesign | Module 19 — `Billing.tsx` has interim credits UI | ⏳ Deferred |
 | Team invitation resend | Module 14 — `Teams.tsx` | ✅ Shipped |
 | Workspace settings policies not enforced | Module 13 — saved only | ⏳ Pending |
-| Analytics tabs all show same content | Module 18 — split tab components | ⏳ Pending |
+| Analytics tabs all show same content | Module 18 — split tab components | ✅ Shipped |
 | `SCHEDULED_EMAILS`, `CAMPAIGNS` unused in dummyData | Wire in Modules 10/16 or leave for later | ⏳ Pending |
 
 ---
@@ -1225,7 +1225,7 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 **Deferred by user:** Module 19 Billing (full).
 
-**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P4** and wait for go-ahead.
+**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P7** and wait for go-ahead.
 
 ---
 

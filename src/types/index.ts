@@ -726,7 +726,7 @@ export interface AnalyticsEngagementResponse {
   devices: Array<{ name: string; value: number }>;
   geography: {
     available: boolean;
-    data: Array<{ code: string; country: string; pct: number }>;
+    data: Array<{ code: string; country: string; events: number; pct: number }>;
   };
 }
 

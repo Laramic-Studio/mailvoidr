@@ -7,6 +7,7 @@ import { CodeBlock } from '@/components/CodeBlock';
 import { FormSelect } from '@/components/form/FormSelect';
 import { useDomains } from '@/hooks/useDomains';
 import { useSendDetail, useSendLogMutations, useSends } from '@/hooks/useSends';
+import { downloadAnalyticsExport } from '@/lib/api/analytics';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailSendTimelineEvent } from '@/types';
 import { ChevronRight, Download, Loader2, RefreshCw, Search, X } from 'lucide-react';
@@ -28,6 +29,7 @@ export default function EmailLogs() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [domain, setDomain] = useState('all');
   const [period, setPeriod] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const sendId = searchParams.get('send');
@@ -77,6 +79,19 @@ export default function EmailLogs() {
 
   const verifiedDomains = domainsData?.data.filter((d) => d.status === 'verified') ?? [];
 
+  async function handleExport() {
+    const exportPeriod = period === 'all' ? '90d' : period;
+    setExporting(true);
+    try {
+      await downloadAnalyticsExport('sends', exportPeriod);
+      toastSuccess('Sends CSV downloaded.');
+    } catch (error) {
+      toastError(error, 'Could not export CSV.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const domainOptions = useMemo(
     () => [
       { value: 'all', label: 'All domains' },
@@ -94,12 +109,13 @@ export default function EmailLogs() {
         actions={
           <>
             <button
+              type="button"
               data-testid="logs-export"
-              disabled
-              title="Export coming soon"
-              className="inline-flex items-center gap-1.5 border border-border bg-card rounded-md px-3 py-1.5 text-[13px] text-muted-foreground opacity-60 cursor-not-allowed"
+              disabled={exporting}
+              onClick={handleExport}
+              className="inline-flex items-center gap-1.5 border border-border bg-card rounded-md px-3 py-1.5 text-[13px] hover:bg-accent disabled:opacity-60"
             >
-              <Download className="h-3 w-3" />
+              {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
               Export
             </button>
             <button
