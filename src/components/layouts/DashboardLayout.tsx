@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { workspaceInitials } from '@/hooks/useWorkspaces';
 import { useUiStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
+import { WorkspaceTwoFactorBanner } from '@/components/dashboard/WorkspaceTwoFactorBanner';
 
 export function DashboardLayout({
   children,
@@ -142,6 +143,9 @@ export function DashboardLayout({
             )}
             data-testid="dashboard-main"
           >
+            <div className={flush ? 'px-4 pt-4' : undefined}>
+              <WorkspaceTwoFactorBanner />
+            </div>
             {children}
           </main>
         </div>

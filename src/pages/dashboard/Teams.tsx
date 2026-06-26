@@ -49,17 +49,20 @@ export default function Teams() {
   const [memberToManage, setMemberToManage] = useState<TeamMember | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [invitationToRevoke, setInvitationToRevoke] = useState<TeamInvitation | null>(null);
+  const [resendingInvitationId, setResendingInvitationId] = useState<string | null>(null);
 
   const { currentWorkspace } = useWorkspaces();
   const workspaceId = currentWorkspace?.id ?? null;
 
   const membersQuery = useTeamMembers(workspaceId);
   const canManage = membersQuery.data?.meta.can_manage ?? false;
+  const canInvite = membersQuery.data?.meta.can_invite ?? false;
+  const defaultMemberRole = membersQuery.data?.meta.default_member_role ?? 'developer';
   const invitationsQuery = useTeamInvitations(
     membersQuery.isSuccess && canManage ? workspaceId : null,
   );
   const activityQuery = useTeamActivity(workspaceId);
-  const { invite, updateRole, removeMember, revokeInvitation } = useTeamMutations(workspaceId);
+  const { invite, updateRole, removeMember, revokeInvitation, resendInvitation } = useTeamMutations(workspaceId);
 
   const members = membersQuery.data?.data ?? [];
   const assignableRoles = membersQuery.data?.meta.assignable_roles ?? [];
@@ -121,6 +124,18 @@ export default function Teams() {
     }
   }
 
+  async function handleResend(invitation: TeamInvitation) {
+    setResendingInvitationId(invitation.id);
+    try {
+      const result = await resendInvitation.mutateAsync(invitation.id);
+      toastSuccess(result.message);
+    } catch (error) {
+      toastError(error, 'Could not resend invitation.');
+    } finally {
+      setResendingInvitationId(null);
+    }
+  }
+
   const tabs = [
     ['members', `Members · ${members.length}`],
     ['invitations', `Invitations · ${invitations.length}`],
@@ -135,7 +150,7 @@ export default function Teams() {
         title="Team"
         description="Invite collaborators. Assign granular roles. Track activity."
         actions={
-          canManage ? (
+          canInvite ? (
             <button
               type="button"
               data-testid="team-invite"
@@ -284,11 +299,11 @@ export default function Teams() {
                     <td className="space-x-3 p-3 text-right">
                       <button
                         type="button"
-                        disabled
-                        title="Resend is not available yet"
-                        className="text-[12px] text-muted-foreground/50"
+                        disabled={resendingInvitationId === invitation.id}
+                        onClick={() => handleResend(invitation)}
+                        className="text-[12px] text-muted-foreground hover:text-foreground disabled:opacity-60"
                       >
-                        Resend
+                        {resendingInvitationId === invitation.id ? 'Sending…' : 'Resend'}
                       </button>
                       <button
                         type="button"
@@ -357,6 +372,8 @@ export default function Teams() {
         open={showInvite}
         onOpenChange={setShowInvite}
         roles={assignableRoles}
+        defaultRole={defaultMemberRole}
+        lockRole={canInvite && !canManage}
         onInvite={handleInvite}
         isPending={invite.isPending}
       />

@@ -167,7 +167,7 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 
 | # | Module | Status | Backend tests |
 |---|--------|--------|---------------|
-| 0 | Foundation + marketing | ✅ Shipped | health route |
+| 0 | Foundation + marketing | ✅ Shipped‡ | health route |
 | 1 | Authentication | ✅ Shipped* | `tests/Unit/Api/V1/Auth/` |
 | 2 | Onboarding wizard | ✅ Shipped | `tests/Unit/Api/V1/Onboarding/` |
 | 3 | Workspaces + invites | ✅ Shipped | `tests/Unit/Api/V1/Workspace/` |
@@ -192,33 +192,74 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 | 21 | Global search | ✅ Shipped | `tests/Unit/Api/V1/Search/SearchTest.php` |
 | 22 | Contact form | ✅ Shipped | `tests/Unit/Api/V1/Contact/ContactTest.php` |
 | 23 | Docs | ✅ Static v1 | MDX in repo; `content/docs/*` wired |
-| 24 | Enterprise | ⏸️ Marketing-only | No backend until SAML/audit exports |
+| 23 | Docs | ✅ Static v1 | `content/docs/*` — per-page articles, search |
+| 24 | Enterprise | ⏸️ Nav hidden | Page exists; no SAML/audit backend |
 
-\*Module 1 gaps: OAuth buttons in SPA are UI-only (no JWT exchange yet); 401 clears session instead of silent `POST /auth/refresh`.
+\*Module 1 gap: **OAuth → JWT in SPA** ✅ shipped (GitHub/Google → Socialite → JWT hash → `/auth/oauth/callback`).
+
+‡Module 0 marketing: Home, Features, Status, About, Docs, Contact shipped with honest copy. Pricing/Blog/Enterprise routes exist; **navbar links for Enterprise + Blog commented out**. Pricing skipped (ties to Module 19).
 
 †Module 15: credits API + sidebar widget + `Billing.tsx` overview tab wired; full billing redesign deferred to Module 19.
 
+**Also shipped (cross-cutting):** Send lifecycle events (sent/delivered/bounced/failed + webhooks), silent JWT refresh, global search fix, `ui/routes/spa-redirect.php` for local dev (`ui.test` → Vite `:5175`).
+
 **Deploy checklist:** [DEPLOY-STEPS.md](../DEPLOY-STEPS.md) — update when each module ships.
 
-**Next up:** Marketing — About / Blog / Enterprise (honest copy). Pricing skipped (Module 19 deferred).
+---
 
-**Polish backlog:** Paid template marketplace, OAuth JWT exchange, SMTP path tracking, geo IP enrichment, CSV export, Module 23 CMS (optional), Module 24 enterprise backend, publish official SDKs.
+## Improvement queue (go-ahead workflow)
+
+Work **one item at a time**. Agent proposes → you say go / skip / defer. **Module 19 billing excluded** unless you explicitly reopen it.
+
+| # | Item | Area | Effort | Notes |
+|---|------|------|--------|-------|
+| **P1** | OAuth → JWT in SPA | Auth · Module 1 | Medium | ✅ Socialite callback issues JWT; SPA `/auth/oauth/callback` exchange |
+| **P2** | Team invitation resend | Teams · Module 14 | Small | ✅ `POST …/invitations/{id}/resend` + Teams tab button |
+| **P3** | Enforce workspace policy toggles | Settings · Module 13 | Medium | ✅ 2FA gate, public invites, default role enforced |
+| **P4** | Analytics tab split | Analytics · Module 18 | Small | Engagement / domains / templates tabs show distinct data |
+| **P5** | Geo breakdown (IP enrichment) | Analytics · Module 18 | Medium | Backend geo lookup on open/click; replace empty state |
+| **P6** | CSV export | Analytics · Module 18 | Small–Medium | Export sends/engagement for date range |
+| **P7** | SMTP-path send tracking | Lifecycle · smtp + ui | Medium | Lifecycle events for sends that never hit HTTP API |
+| **P8** | Template detail polish | Templates · Module 16 | Small | Confirm `/dashboard/templates/:id` fully wired (not dummy) |
+| **P9** | Sandbox inbox v2 | Sandbox · Module 6 | Medium | Cursor pagination, stronger spam/HTML checks, inbox unique constraint |
+| **P10** | Avatar upload | Settings · Module 13 | Small | Profile photo in settings |
+| **P11** | Marketing Pricing page | Module 0 / 19 | Small | Honest static tiers or wire `GET /plans` — **skipped so far** |
+| **P12** | Marketing Blog | Module 22 | Medium | MD files in repo or CMS — nav hidden |
+| **P13** | Marketing Enterprise page | Module 24 | Small | Honest copy (no fake SOC 2) — nav hidden |
+| **P14** | Paid template marketplace | Module 16b+ | Large | Stripe + creator payouts — after billing |
+| **P15** | Official SDKs | Docs + packages | Large | Uncomment docs install blocks; publish npm/PyPI/etc. |
+| **P16** | Docs CMS backend | Module 23 | Medium | Optional `GET /docs/:slug` — static v1 is enough for now |
+| **P17** | Enterprise backend | Module 24 | Large | SAML, audit exports, dedicated IPs |
+| **P18** | Playwright E2E | Testing | Medium | Smoke tests for auth, send, onboarding |
+| — | **Billing (full)** | Module 19 | Large | **Deferred by user** — Stripe subs, invoices, payment methods |
+
+**Current pointer:** Start at **P4** unless you reorder.
+
+**Polish already done:** Lifecycle webhooks, silent JWT refresh, marketing honest copy (Home/Features/About/Status), docs per-page content + search, status uptime candles + hover tooltips.
 
 ---
 
 ## Module 0 — Foundation + static marketing
 
-**Status: ✅ Shipped** (Home + Features + Status wired — honest copy; Pricing still on dummyData)
+**Status: ✅ Shipped** (core marketing + docs; Pricing/Blog/Enterprise nav hidden)
 
 **Goal:** SPA deploys, talks to Laravel health check, marketing pages live without auth.
 
 ### Frontend files
-- `pages/marketing/Home.tsx` — **wired** (`content/marketing/home.ts`)
-- `pages/marketing/Features.tsx` — **wired** (`content/marketing/features.ts`)
-- `pages/marketing/Status.tsx` — **wired** (`content/marketing/status.ts`, live API health)
-- Other `pages/marketing/*` — still static / dummyData
-- `pages/docs/DocsLanding.tsx`, `pages/docs/DocsArticle.tsx` — **wired** (`content/docs/*`, SDK blocks preserved)
+| Route / area | File | Status |
+|--------------|------|--------|
+| `/` | `pages/marketing/Home.tsx` | ✅ `content/marketing/home.ts` |
+| `/features` | `pages/marketing/Features.tsx` | ✅ `content/marketing/features.ts` |
+| `/status` | `pages/marketing/Status.tsx` | ✅ Live API health + uptime candles |
+| `/about` | `pages/marketing/About.tsx` | ✅ `content/marketing/about.ts` |
+| `/contact` | `pages/marketing/Contact.tsx` | ✅ `POST /api/v1/contact` |
+| `/docs`, `/docs/:slug` | `pages/docs/*` | ✅ `content/docs/*`, header search |
+| `/pricing` | `pages/marketing/Pricing.tsx` | ⏸️ `dummyData` — skipped |
+| `/blog` | `pages/marketing/Blog.tsx` | ⏸️ `dummyData` — nav commented out |
+| `/enterprise` | `pages/marketing/Enterprise.tsx` | ⏸️ fake claims — nav commented out |
+
 - Layouts: `MarketingLayout`, `DocsLayout`
+- Local dev: `ui/routes/spa-redirect.php` redirects `ui.test/docs` etc. → Vite `:5175`
 
 ### Backend
 - `GET /api/v1/health` → `{ status: "ok" }`
@@ -228,12 +269,15 @@ Module 1 does **not** implement the wizard — only the gate that sends new user
 - [x] `yarn dev` + Laravel — health check passes from browser
 - [x] Marketing routes render with real deploy URL
 - [x] API client + auth shell exist (`lib/api.ts`, `hooks/useAuth.ts`, route guards)
+- [x] Honest copy on Home, Features, About, Status, Docs
+- [ ] Pricing page (deferred with Module 19)
+- [ ] Blog / Enterprise pages (routes exist; nav hidden until copy/CMS ready)
 
 ---
 
 ## Module 1 — Authentication
 
-**Status: ✅ Shipped** (OAuth SPA + silent refresh deferred → **silent refresh ✅ shipped**)
+**Status: ✅ Shipped** — silent refresh ✅ · OAuth JWT exchange ✅
 
 **Goal:** Real login/register/reset/verify/2FA. Unauthenticated users cannot reach `/dashboard/*` or `/onboarding`.
 
@@ -290,7 +334,7 @@ Login    → (2FA if enabled) → /onboarding if !onboarding_completed else /das
 - [x] Silent token refresh on 401 (`POST /auth/refresh` in axios interceptor; deduped refresh queue)
 - [x] Email OTP verification blocks dashboard until verified
 - [x] 2FA challenge works end-to-end (login → `/2fa` → dashboard)
-- [ ] OAuth buttons redirect and return with valid JWT (buttons present; Laravel Socialite is web-only today)
+- [x] OAuth buttons redirect and return with valid JWT (GitHub/Google → Laravel Socialite → SPA callback)
 - [x] Route guards protect `/dashboard/*`, `/onboarding`, `/workspaces`
 - [x] `GET /auth/me` returns `onboarding_completed: boolean`
 - [x] `OnboardingLayout` sends incomplete users to `/onboarding` after login
@@ -712,13 +756,13 @@ Open/click in delivery breakdown appear when tracking events exist; otherwise vo
 | General | workspace name/slug via settings snapshot |
 | Danger zone | `DELETE /settings/workspaces/{id}` |
 
-Workspace policy toggles (2FA required, public invites, default role) are **saved but not enforced** elsewhere yet.
+Workspace policy toggles are **enforced** via `WorkspacePolicyService` (2FA gate on workspace access, public invites, default invite role).
 
 ### Done when
 - [x] Profile, security (2FA), notifications, workspace, danger zone persist and reload
 - [x] Settings cache keyed by `selected_workspace_id`; invalidates on workspace switch
+- [x] Enforce workspace policy toggles app-wide
 - [ ] Avatar upload
-- [ ] Enforce workspace policy toggles app-wide
 
 ---
 
@@ -1051,10 +1095,12 @@ GET /search?q=...&types[]=sends&types[]=templates&types[]=domains&types[]=virtua
 | Page | Backend need | Status |
 |------|--------------|--------|
 | `Contact.tsx` | `POST /contact` → `contact_inquiries` table | ✅ Shipped |
-| `Pricing.tsx` | `GET /plans` (exists) | ✅ Static / existing |
-| `Blog.tsx` | CMS or MD files — defer | ⏸️ Deferred |
-| `Status.tsx` | Live probe of `GET /api/v1/health` + static component list | ✅ Shipped v1 |
-| `Enterprise.tsx` | Static + contact form | ✅ Marketing-only |
+| `Home.tsx`, `Features.tsx`, `About.tsx` | Static content | ✅ Shipped |
+| `Status.tsx` | Live `GET /api/v1/health` + uptime UI | ✅ Shipped v1 |
+| `DocsLanding.tsx`, `DocsArticle.tsx` | Static `content/docs/*` + client search | ✅ Shipped |
+| `Pricing.tsx` | `GET /plans` (exists) or static | ⏸️ Skipped — still `dummyData` |
+| `Blog.tsx` | CMS or MD files | ⏸️ Deferred — nav hidden |
+| `Enterprise.tsx` | Static + contact | ⏸️ Nav hidden — needs honest copy |
 
 ### Done when
 - [x] Contact form persists inquiry (throttled public route)
@@ -1066,17 +1112,25 @@ GET /search?q=...&types[]=sends&types[]=templates&types[]=domains&types[]=virtua
 
 **Status: ✅ Static v1 shipped**
 
-Keep static content in `frontend/src/content/docs/`. SDK install card and language grid stay in the UI (reserved package names); HTTP examples are live, SDK client lines commented in code samples until packages publish.
+Static content in `frontend/src/content/docs/`:
 
-Files: `pages/docs/*`, `content/docs/nav.ts`, `landing.ts`, `articles.ts`, `samples.ts`.
+| File | Purpose |
+|------|---------|
+| `nav.ts` | Sidebar (Regions, Scheduling, Attachments, SDKs removed/hidden) |
+| `pages.ts` | Per-slug article sections |
+| `landing.ts` | Docs home — cURL quickstart (SDK install commented out) |
+| `samples.ts` | HTTP code tabs (Node/Python/Go/cURL) |
+| `search.ts` | Header search over nav + page content |
+
+SDK install card and language grid are **commented out** until packages publish. Optional later: Docs CMS (`GET /docs/:slug`).
 
 ---
 
 ## Module 24 — Enterprise / compliance UI
 
-**Status: ⏸️ Marketing-only**
+**Status: ⏸️ Nav hidden · page not updated**
 
-Enterprise page stays marketing-only until SAML, audit exports, and dedicated IPs exist. Do not remove enterprise claims from marketing — backend catches up later.
+`/enterprise` route still serves legacy marketing copy (SOC 2, SAML claims). Navbar + footer links are **commented out** until honest copy or real backend (SAML, audit exports, dedicated IPs) ships.
 
 ---
 
@@ -1134,10 +1188,10 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 | `/workspace/select` wrong link | Module 3 — `DashboardLayout.tsx` | ✅ Fixed → `/workspaces` |
 | `ThemeProvider` not mounted | Module 0 — `index.tsx` | ✅ Fixed |
 | Silent JWT refresh on 401 | Module 1 — `lib/api.ts` | ✅ Shipped |
-| OAuth → JWT in SPA | Module 1 — auth pages | ⏳ Deferred |
+| OAuth → JWT in SPA | Module 1 — auth pages | ✅ Shipped |
 | Region selectors in onboarding/domains/settings | Hide/stub — Modules 2, 7, 13 | Partial (onboarding hides region) |
 | Billing page full redesign | Module 19 — `Billing.tsx` has interim credits UI | ⏳ Deferred |
-| Team invitation resend | Module 14 — `Teams.tsx` | ⏳ Stub disabled |
+| Team invitation resend | Module 14 — `Teams.tsx` | ✅ Shipped |
 | Workspace settings policies not enforced | Module 13 — saved only | ⏳ Pending |
 | Analytics tabs all show same content | Module 18 — split tab components | ⏳ Pending |
 | `SCHEDULED_EMAILS`, `CAMPAIGNS` unused in dummyData | Wire in Modules 10/16 or leave for later | ⏳ Pending |
@@ -1167,12 +1221,12 @@ New controllers live under `App\Http\Controllers\Api\V1\`.
 
 ## Suggested sprint order (updated)
 
-**Completed (Modules 0–18, 12, 16b, 20–22):** Full outbound stack, webhooks, tracking, dashboard, analytics, notifications, search, contact form.
+**Completed:** Modules 0–18, 12, 16b, 20–23 (static docs). Dashboard stack + lifecycle webhooks + silent refresh + marketing/docs polish.
 
-**Deferred:** Module 19 Billing (full), Module 23 Docs CMS, Module 24 Enterprise backend.
+**Deferred by user:** Module 19 Billing (full).
 
-**Polish backlog:** Paid template marketplace, OAuth JWT exchange, silent refresh, SMTP path tracking, ~~lifecycle webhooks (sent/delivered/bounced)~~ ✅, geo IP enrichment, CSV export.
+**Work next:** See [Improvement queue](#improvement-queue-go-ahead-workflow) — propose **P4** and wait for go-ahead.
 
 ---
 
-*Last updated: June 2026 — Modules 20–22 shipped (notifications, global search, contact form). Module 19 billing deferred.*
+*Last updated: June 2026 — Plan refreshed after marketing (Home/Features/About/Status), docs (per-page + search), status candles, silent JWT refresh, lifecycle events. Improvement queue added for go-ahead workflow.*

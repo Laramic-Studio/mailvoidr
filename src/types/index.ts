@@ -110,6 +110,8 @@ export interface TeamMemberListResponse {
   data: TeamMember[];
   meta: {
     can_manage: boolean;
+    can_invite: boolean;
+    default_member_role: string;
     assignable_roles: WorkspaceRoleOption[];
   };
 }

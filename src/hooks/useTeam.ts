@@ -5,6 +5,7 @@ import {
   fetchTeamMembers,
   inviteTeamMembers,
   removeTeamMember,
+  resendTeamInvitation,
   revokeTeamInvitation,
   updateTeamMemberRole,
   type InviteTeamMembersPayload,
@@ -73,5 +74,10 @@ export function useTeamMutations(workspaceId: string | null | undefined) {
     onSuccess: invalidate,
   });
 
-  return { invite, updateRole, removeMember, revokeInvitation };
+  const resendInvitation = useMutation({
+    mutationFn: (invitationId: string) => resendTeamInvitation(workspaceId!, invitationId),
+    onSuccess: invalidate,
+  });
+
+  return { invite, updateRole, removeMember, revokeInvitation, resendInvitation };
 }

@@ -11,6 +11,7 @@ import ForgotPassword from "@/pages/auth/ForgotPassword";
 import ResetPassword from "@/pages/auth/ResetPassword";
 import VerifyEmail from "@/pages/auth/VerifyEmail";
 import TwoFA from "@/pages/auth/TwoFA";
+import OAuthCallback from "@/pages/auth/OAuthCallback";
 import WorkspaceSelect from "@/pages/auth/WorkspaceSelect";
 import InviteAccept from "@/pages/auth/InviteAccept";
 
@@ -77,6 +78,7 @@ function App() {
 
           {/* Mid-login 2FA — no session yet */}
           <Route path="/2fa" element={<TwoFA />} />
+          <Route path="/auth/oauth/callback" element={<OAuthCallback />} />
 
           <Route path="/invite" element={<InviteAccept />} />
 

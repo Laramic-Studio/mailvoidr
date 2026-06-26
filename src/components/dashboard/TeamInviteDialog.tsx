@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ interface TeamInviteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   roles: WorkspaceRoleOption[];
+  defaultRole?: string;
+  lockRole?: boolean;
   onInvite: (payload: { emails: string[]; role: string }) => Promise<void>;
   isPending?: boolean;
 }
@@ -30,11 +32,19 @@ export function TeamInviteDialog({
   open,
   onOpenChange,
   roles,
+  defaultRole = 'developer',
+  lockRole = false,
   onInvite,
   isPending = false,
 }: TeamInviteDialogProps) {
   const [emails, setEmails] = useState('');
-  const [role, setRole] = useState(roles[0]?.value ?? 'developer');
+  const [role, setRole] = useState(defaultRole);
+
+  useEffect(() => {
+    if (open) {
+      setRole(defaultRole);
+    }
+  }, [open, defaultRole]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -77,6 +87,7 @@ export function TeamInviteDialog({
               value={role}
               onValueChange={setRole}
               options={roles}
+              disabled={lockRole}
               data-testid="team-invite-role"
             />
           </div>

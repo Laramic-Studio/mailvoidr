@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useInvitationByToken } from "@/hooks/useWorkspaces";
 import { storePendingInviteToken, verifyEmailPath } from "@/lib/invite-flow";
+import { startOAuth } from "@/lib/oauth";
 import { Github, Mail, Check } from "lucide-react";
 
 export default function Register() {
@@ -60,10 +61,22 @@ export default function Register() {
         </p>
       </div>
       <div className="mt-8 space-y-2.5">
-        <button type="button" disabled={loading} data-testid="social-github" className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => startOAuth("github", inviteToken)}
+          data-testid="social-github"
+          className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        >
           <Github className="h-3.5 w-3.5" /> Continue with GitHub
         </button>
-        <button type="button" disabled={loading} data-testid="social-google" className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => startOAuth("google", inviteToken)}
+          data-testid="social-google"
+          className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        >
           <Mail className="h-3.5 w-3.5" /> Continue with Google
         </button>
       </div>

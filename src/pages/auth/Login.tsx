@@ -6,6 +6,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { inviteAcceptPath, postAuthDestination, storePendingInviteToken } from "@/lib/invite-flow";
+import { startOAuth, type OAuthProvider } from "@/lib/oauth";
 import { Github, Mail } from "lucide-react";
 
 export default function Login() {
@@ -63,8 +64,20 @@ export default function Login() {
         <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your Mailvoidr workspace</p>
       </div>
       <div className="mt-8 space-y-2.5">
-        <SocialBtn icon={Github} label="Continue with GitHub" disabled={loading} />
-        <SocialBtn icon={Mail} label="Continue with Google" disabled={loading} />
+        <SocialBtn
+          icon={Github}
+          label="Continue with GitHub"
+          provider="github"
+          inviteToken={inviteToken}
+          disabled={loading}
+        />
+        <SocialBtn
+          icon={Mail}
+          label="Continue with Google"
+          provider="google"
+          inviteToken={inviteToken}
+          disabled={loading}
+        />
       </div>
       <div className="my-6 flex items-center gap-3">
         <div className="flex-1 h-px bg-border" />
@@ -107,17 +120,22 @@ export default function Login() {
 function SocialBtn({
   icon: Icon,
   label,
+  provider,
+  inviteToken,
   disabled,
 }: {
   icon: typeof Github;
   label: string;
+  provider: OAuthProvider;
+  inviteToken?: string | null;
   disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       disabled={disabled}
-      data-testid={`social-${label.toLowerCase().replace(/\s+/g, "-")}`}
+      onClick={() => startOAuth(provider, inviteToken)}
+      data-testid={`social-${provider}`}
       className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
     >
       <Icon className="h-3.5 w-3.5" /> {label}

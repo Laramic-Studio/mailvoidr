@@ -76,4 +76,14 @@ export async function revokeTeamInvitation(
   return data;
 }
 
+export async function resendTeamInvitation(
+  workspaceId: string,
+  invitationId: string,
+): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>(
+    `/workspaces/${workspaceId}/invitations/${invitationId}/resend`,
+  );
+  return data;
+}
+
 export type { WorkspaceRoleOption };
