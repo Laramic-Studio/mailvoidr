@@ -335,6 +335,7 @@ export interface SmtpCredential {
   port: number;
   encryption: string;
   username: string;
+  password?: string;
   region: string;
   is_active: boolean;
   enabled_at: string | null;
