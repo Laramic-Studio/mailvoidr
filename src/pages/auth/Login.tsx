@@ -2,6 +2,7 @@ import { type FormEvent, useEffect } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
+import { PasswordField } from "@/components/auth/PasswordField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
@@ -95,9 +96,8 @@ export default function Login() {
             required
             autoComplete="email"
           />
-          <AuthField
+          <PasswordField
             label="Password"
-            type="password"
             name="password"
             placeholder="••••••••"
             data-testid="field-password"

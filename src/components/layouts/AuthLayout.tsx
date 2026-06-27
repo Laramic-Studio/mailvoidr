@@ -34,7 +34,7 @@ export function AuthLayout({ children, side = "right" }: AuthLayoutProps) {
         </div>
         <div className="text-[12px] text-muted-foreground flex items-center justify-between">
           <span>© 2026 Mailvoidr</span>
-          <div className="flex items-center gap-4 font-mono text-[11px]">
+          <div className="flex items-center gap-4 font-outfit text-[11px]">
             <Link to="/docs" className="hover:text-foreground">Docs</Link>
             <Link to="/status" className="hover:text-foreground">Status</Link>
             <Link to="/contact" className="hover:text-foreground">Help</Link>
@@ -46,7 +46,7 @@ export function AuthLayout({ children, side = "right" }: AuthLayoutProps) {
         <div className="absolute inset-0 grid-bg opacity-50" />
         <div className="absolute inset-0 gradient-radial-primary" />
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
-          <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground uppercase tracking-wider">
+          <div className="flex items-center gap-2 font-display text-[11px] text-muted-foreground uppercase tracking-wider">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Trusted by 12,400+ developers
           </div>

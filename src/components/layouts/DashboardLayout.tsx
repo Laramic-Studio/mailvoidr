@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import {
+  SIDEBAR_EASE,
+  SIDEBAR_TRANSITION_MS,
+} from '@/components/dashboard/sidebar-constants';
+import {
   GlobalSearchDialog,
   GlobalSearchTrigger,
   useGlobalSearchShortcut,
@@ -52,22 +56,28 @@ export function DashboardLayout({
     nav('/login');
   }
 
-  const collapsed = hydrated && sidebarCollapsed;
+  const collapsed = !hydrated || sidebarCollapsed;
+  const expanded = !collapsed;
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex h-screen overflow-hidden bg-background">
         <aside
           className={cn(
-            'hidden shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 ease-in-out lg:flex',
-            collapsed ? 'w-[72px]' : 'w-[260px]',
+            'hidden h-full shrink-0 flex-col overflow-hidden border-r border-border bg-card lg:flex',
+            'transition-[width] ease-[var(--sidebar-ease)] will-change-[width]',
+            expanded ? 'w-[240px]' : 'w-[52px]',
           )}
+          style={{
+            ['--sidebar-ease' as string]: SIDEBAR_EASE,
+            transitionDuration: `${SIDEBAR_TRANSITION_MS}ms`,
+          }}
         >
-          <DashboardSidebar collapsed={collapsed} />
+          <DashboardSidebar expanded={expanded} />
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/80 px-4 backdrop-blur lg:px-8">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-background/80 px-4 backdrop-blur lg:px-8">
             <div className="flex max-w-md flex-1 items-center gap-3">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
@@ -82,7 +92,7 @@ export function DashboardLayout({
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[280px] p-0">
                   <DashboardSidebar
-                    collapsed={false}
+                    expanded
                     showCollapseToggle={false}
                     onNavigate={() => setMobileOpen(false)}
                   />
@@ -141,8 +151,8 @@ export function DashboardLayout({
 
           <main
             className={cn(
-              'min-w-0 flex-1',
-              flush ? 'flex flex-col overflow-hidden p-0' : 'px-4 py-6 lg:px-8 lg:py-8',
+              'min-h-0 flex-1 overflow-y-auto',
+              flush ? 'flex flex-col p-0' : 'px-4 py-6 lg:px-8 lg:py-8',
             )}
             data-testid="dashboard-main"
           >

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { OtpInput } from "@/components/auth/OtpInput";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -48,9 +48,10 @@ export default function VerifyEmail() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get("invite_token");
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const { loading, run } = useAsyncAction();
   const [resending, setResending] = useState(false);
+  const [changingEmail, setChangingEmail] = useState(false);
   const [code, setCode] = useState("");
 
   async function handleSubmit(e: FormEvent) {
@@ -77,7 +78,22 @@ export default function VerifyEmail() {
     }
   }
 
-  const inputsDisabled = loading || resending;
+  async function handleChangeEmail() {
+    setChangingEmail(true);
+    try {
+      await logout();
+    } catch {
+      // Session is cleared in logout onSettled even when the API call fails.
+    } finally {
+      const href = inviteToken
+        ? `/register?invite_token=${encodeURIComponent(inviteToken)}`
+        : "/register";
+      nav(href, { replace: true });
+      setChangingEmail(false);
+    }
+  }
+
+  const inputsDisabled = loading || resending || changingEmail;
 
   return (
     <AuthLayout>
@@ -121,7 +137,15 @@ export default function VerifyEmail() {
         {resending ? "Sending…" : "Resend code"}
       </button>
       <p className="mt-6 text-center text-[12.5px] text-muted-foreground">
-        Wrong email? <Link to="/register" className="text-foreground hover:underline">Change it</Link>
+        Wrong email?{" "}
+        <button
+          type="button"
+          onClick={handleChangeEmail}
+          disabled={inputsDisabled}
+          className="text-foreground hover:underline disabled:opacity-60"
+        >
+          {changingEmail ? "Signing out…" : "Change it"}
+        </button>
       </p>
     </AuthLayout>
   );

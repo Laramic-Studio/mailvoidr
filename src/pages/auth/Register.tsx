@@ -1,14 +1,16 @@
-import { type FormEvent, useEffect } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
+import { PasswordField } from "@/components/auth/PasswordField";
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useInvitationByToken } from "@/hooks/useWorkspaces";
 import { storePendingInviteToken, verifyEmailPath } from "@/lib/invite-flow";
 import { startOAuth } from "@/lib/oauth";
-import { Github, Mail, Check } from "lucide-react";
+import { Github, Mail } from "lucide-react";
 
 export default function Register() {
   const nav = useNavigate();
@@ -17,6 +19,7 @@ export default function Register() {
   const invitePreview = useInvitationByToken(inviteToken);
   const { register } = useAuth();
   const { loading, run } = useAsyncAction();
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (inviteToken) {
@@ -108,25 +111,32 @@ export default function Register() {
             autoComplete="email"
           />
           <div>
-            <AuthField
+            <PasswordField
               label="Password"
               name="password"
-              type="password"
               required
               minLength={8}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 8 characters"
               data-testid="field-password"
               autoComplete="new-password"
             />
-            <div className="mt-2 text-[11.5px] text-muted-foreground space-y-0.5">
-              <div className="flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> 8+ characters</div>
-            </div>
+            <PasswordStrengthMeter password={password} />
           </div>
           <SubmitButton data-testid="register-submit" loading={loading} loadingText="Creating account…">
             Create account
           </SubmitButton>
           <p className="text-[11.5px] text-muted-foreground text-center">
-            By signing up, you agree to our <a href="#" className="text-foreground hover:underline">Terms</a> and <a href="#" className="text-foreground hover:underline">Privacy Policy</a>.
+            By signing up, you agree to our{" "}
+            <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </fieldset>
       </form>

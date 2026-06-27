@@ -44,6 +44,8 @@ import Blog from "@/pages/marketing/Blog";
 import About from "@/pages/marketing/About";
 import Status from "@/pages/marketing/Status";
 import Contact from "@/pages/marketing/Contact";
+import Terms from "@/pages/marketing/Terms";
+import Privacy from "@/pages/marketing/Privacy";
 
 function LegacyVirtualEmailDetailRedirect() {
   const { id } = useParams();
@@ -65,6 +67,8 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/status" element={<Status />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/docs" element={<DocsLanding />} />
           <Route path="/docs/:slug" element={<DocsArticle />} />
 

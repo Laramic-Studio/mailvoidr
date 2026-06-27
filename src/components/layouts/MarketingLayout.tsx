@@ -89,7 +89,7 @@ export function MarketingLayout({ children }) {
           </div>
           <FooterCol title="Product" links={[["Features","/features"],["Pricing","/pricing"],/* ["Enterprise","/enterprise"], ["Changelog","/blog"], */["Status","/status"]]} />
           <FooterCol title="Developers" links={[["Documentation","/docs"],["API reference","/docs/api-reference"],["Webhooks","/docs/webhooks"],["Quickstart","/docs/quickstart"]]} />
-          <FooterCol title="Company" links={[["About","/about"],/* ["Blog","/blog"], */["Contact","/contact"]]} />
+          <FooterCol title="Company" links={[["About","/about"],/* ["Blog","/blog"], */["Contact","/contact"],["Privacy","/privacy"],["Terms","/terms"]]} />
         </div>
         <div className="border-t border-border">
           <div className="mx-auto max-w-7xl px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12.5px] text-muted-foreground">
@@ -99,8 +99,8 @@ export function MarketingLayout({ children }) {
                 <span className={`h-1.5 w-1.5 rounded-full ${statusClass} ${apiHealthy ? "animate-pulse" : ""}`} />
                 {statusLabel}
               </Link>
-              <a href="#" className="hover:text-foreground">Privacy</a>
-              <a href="#" className="hover:text-foreground">Terms</a>
+              <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+              <Link to="/terms" className="hover:text-foreground">Terms</Link>
             </div>
           </div>
         </div>

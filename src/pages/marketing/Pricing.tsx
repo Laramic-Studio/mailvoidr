@@ -116,13 +116,7 @@ export default function Pricing() {
             </div>
           </div>
 
-          {data?.region && (
-            <p className="mt-4 font-mono text-[11px] text-muted-foreground">
-              Price preview in {data.region.currency}
-              {data.region.currency === 'NGN' && ` · 1 USD = ₦${data.region.usd_ngn_rate.toLocaleString()}`}
-              {' · '}Pay with Paystack in USD or NGN
-            </p>
-          )}
+       
 
           <div className="mx-auto mt-12 max-w-2xl text-left">
             <div className="flex items-end justify-between gap-4">

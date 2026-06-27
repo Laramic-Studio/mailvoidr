@@ -10,11 +10,12 @@ interface UiStore {
 }
 
 export const useUiStore = create<UiStore>((set, get) => ({
-  sidebarCollapsed: false,
+  sidebarCollapsed: true,
   hydrated: false,
   hydrate: () => {
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
     set({
-      sidebarCollapsed: localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true',
+      sidebarCollapsed: stored === null ? true : stored === 'true',
       hydrated: true,
     });
   },
