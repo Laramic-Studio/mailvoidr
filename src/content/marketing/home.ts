@@ -1,7 +1,7 @@
-export const FREE_SENDS_PER_MONTH = 100;
+export const FREE_SENDS_PER_MONTH = "3,000";
 
 export function mailSendUrl(): string {
-  const base = import.meta.env.VITE_API_URL ?? 'https://app.mailvoidr.com/api/v1';
+  const base = import.meta.env.VITE_API_URL ?? 'https://api.mailvoidr.com/api/v1';
   const origin = base.replace(/\/api\/v1\/?$/, '');
   return `${origin}/api/v1/mail/send`;
 }

@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { IconTooltip } from '@/components/ui/icon-tooltip';
 import { useDomainMutations, useDomains } from '@/hooks/useDomains';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { DomainDnsRecord, VerifiedDomain } from '@/types';
@@ -10,6 +11,7 @@ import {
   Plus,
   Globe,
   Copy,
+  Check,
   ChevronDown,
   ChevronRight,
   Loader2,
@@ -28,6 +30,36 @@ function recordClass(status: string): string {
   return 'border-border text-muted-foreground';
 }
 
+function CopyFieldButton({
+  label,
+  value,
+  field,
+  copiedField,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  field: string;
+  copiedField: string | null;
+  onCopy: (value: string, field: string, label: string) => void;
+}) {
+  const copied = copiedField === field;
+  const tooltipLabel = copied ? label.replace(/^Copy /, 'Copied ') : label;
+
+  return (
+    <IconTooltip label={tooltipLabel}>
+      <button
+        type="button"
+        aria-label={label}
+        className="inline-flex shrink-0 rounded-md border border-border p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+        onClick={() => onCopy(value, field, label)}
+      >
+        {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
+      </button>
+    </IconTooltip>
+  );
+}
+
 function DnsRecordRow({
   record,
   domainId,
@@ -37,33 +69,52 @@ function DnsRecordRow({
   record: DomainDnsRecord;
   domainId: string;
   copiedField: string | null;
-  onCopy: (value: string, field: string) => void;
+  onCopy: (value: string, field: string, label: string) => void;
 }) {
-  const field = `${domainId}-${record.purpose}`;
+  const nameField = `${domainId}-${record.purpose}-name`;
+  const valueField = `${domainId}-${record.purpose}-value`;
 
   return (
-    <div className="grid grid-cols-[60px_140px_1fr_auto] items-center gap-4 p-4">
-      <span className="font-mono text-[11px] uppercase tracking-wider text-primary">
-        {record.type}
-      </span>
-      <div>
-        <div className="font-mono text-[12.5px]">{record.name}</div>
-        <div className="label-mono mt-0.5">{record.purpose}</div>
-        {record.note ? (
-          <p className="mt-1 text-[11px] text-muted-foreground">{record.note}</p>
-        ) : null}
+    <div className="p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[11px] uppercase tracking-wider text-primary">
+          {record.type}
+        </span>
+        <span className="label-mono">{record.purpose}</span>
       </div>
-      <div className="truncate font-mono text-[12px] text-muted-foreground">{record.value}</div>
-      <button
-        type="button"
-        className="text-muted-foreground hover:text-foreground"
-        onClick={() => onCopy(record.value, field)}
-      >
-        <Copy className="h-3 w-3" />
-        {copiedField === field ? (
-          <span className="sr-only">Copied</span>
-        ) : null}
-      </button>
+      {record.note ? (
+        <p className="mt-1 text-[11px] text-muted-foreground">{record.note}</p>
+      ) : null}
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div className="min-w-0">
+          <div className="label-mono mb-1">Name</div>
+          <div className="flex items-start justify-between gap-2">
+            <code className="min-w-0 break-all font-mono text-[12.5px]">{record.name}</code>
+            <CopyFieldButton
+              label="Copy name"
+              value={record.name}
+              field={nameField}
+              copiedField={copiedField}
+              onCopy={onCopy}
+            />
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="label-mono mb-1">Value</div>
+          <div className="flex items-start justify-between gap-2">
+            <code className="min-w-0 break-all font-mono text-[12px] text-muted-foreground">
+              {record.value}
+            </code>
+            <CopyFieldButton
+              label="Copy value"
+              value={record.value}
+              field={valueField}
+              copiedField={copiedField}
+              onCopy={onCopy}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -125,10 +176,10 @@ export default function Domains() {
     }
   }
 
-  async function copyValue(value: string, field: string) {
+  async function copyValue(value: string, field: string, label: string) {
     await navigator.clipboard.writeText(value);
     setCopiedField(field);
-    toastSuccess('Copied.');
+    toastSuccess(label.replace(/^Copy /, 'Copied '));
     window.setTimeout(() => setCopiedField(null), 1500);
   }
 

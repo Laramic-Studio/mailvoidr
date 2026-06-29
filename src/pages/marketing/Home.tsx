@@ -29,6 +29,7 @@ import {
   mailSendUrl,
   type CodeSampleId,
 } from '@/content/marketing/home';
+import DeliverySpeedometer from './particle';
 
 export default function Home() {
   const [lang, setLang] = useState<CodeSampleId>('send_node');
@@ -41,46 +42,55 @@ export default function Home() {
         <div className="pointer-events-none absolute inset-0 dotted-bg opacity-40" />
         <div className="pointer-events-none absolute inset-0 gradient-radial-primary" />
         <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-24">
-          <Link
-            to={HOME_HERO.eyebrow.href}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[12.5px] transition-colors hover:bg-accent"
-          >
-            <span className="font-mono text-[10.5px] uppercase tracking-wider text-primary">
-              {HOME_HERO.eyebrow.label}
-            </span>
-            <span className="text-muted-foreground">{HOME_HERO.eyebrow.text}</span>
-            <ArrowRight className="h-3 w-3 text-muted-foreground" />
-          </Link>
-          <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1] tracking-[-0.04em] md:text-6xl lg:text-7xl">
-            {HOME_HERO.title}
-            <br />
-            <span className="text-muted-foreground">{HOME_HERO.titleMuted}</span>
-          </h1>
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
-            {HOME_HERO.subtitle}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              to="/register"
-              data-testid="hero-cta-primary"
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-[14px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Start sending free <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-            <Link
-              to="/docs"
-              data-testid="hero-cta-docs"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-5 py-2.5 text-[14px] font-medium transition-colors hover:bg-accent"
-            >
-              <Terminal className="h-3.5 w-3.5" /> Read the docs
-            </Link>
-          </div>
-          <div className="mt-10 flex flex-wrap items-center gap-4 font-mono text-[12.5px] text-muted-foreground">
-            {HOME_HERO.bullets.map((item) => (
-              <span key={item} className="inline-flex items-center gap-1.5">
-                <Check className="h-3 w-3 text-primary" /> {item}
-              </span>
-            ))}
+          <div className="grid items-center gap-10 md:grid-cols-[1fr,minmax(300px,400px)] md:gap-8 lg:gap-12">
+            <div className="min-w-0">
+              <Link
+                to={HOME_HERO.eyebrow.href}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[12.5px] transition-colors hover:bg-accent"
+              >
+                <span className="font-body text-[10.5px] uppercase tracking-wider text-primary">
+                  {HOME_HERO.eyebrow.label}
+                </span>
+                <span className="text-muted-foreground">{HOME_HERO.eyebrow.text}</span>
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              </Link>
+              <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1] tracking-[-0.04em] md:text-6xl lg:text-7xl">
+                {HOME_HERO.title}
+                <br />
+                <span className="text-muted-foreground">{HOME_HERO.titleMuted}</span>
+              </h1>
+              <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
+                {HOME_HERO.subtitle}
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/register"
+                  data-testid="hero-cta-primary"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-[14px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Start sending free <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <Link
+                  to="/docs"
+                  data-testid="hero-cta-docs"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-5 py-2.5 text-[14px] font-medium transition-colors hover:bg-accent"
+                >
+                  <Terminal className="h-3.5 w-3.5" /> Read the docs
+                </Link>
+              </div>
+              <div className="mt-10 flex flex-wrap items-center gap-4 font-headline text-[11px] text-muted-foreground">
+                {HOME_HERO.bullets.map((item) => (
+                  <span key={item} className="inline-flex items-center gap-1.5">
+                    <Check className="h-3 w-3 text-primary" /> {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative z-10 mx-auto w-full max-w-md md:mx-0 md:justify-self-end">
+              <div className="pointer-events-none absolute -inset-6 rounded-3xl bg-primary/10 blur-3xl" />
+              <DeliverySpeedometer />
+            </div>
           </div>
         </div>
       </section>
@@ -92,7 +102,7 @@ export default function Home() {
             {HOME_STACK.map((item) => (
               <span
                 key={item}
-                className="rounded-md border border-border bg-card px-3 py-1.5 font-mono text-[12px] text-muted-foreground"
+                className="rounded-md border border-border bg-card px-3 py-1.5 font-body text-[12px] text-muted-foreground"
               >
                 {item}
               </span>
@@ -116,7 +126,7 @@ export default function Home() {
               <ul className="mt-6 space-y-3 text-sm">
                 {HOME_SEND_FEATURES.map((feature) => (
                   <li key={feature} className="flex items-start gap-2.5">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary font-outfit" />
                     {feature}
                   </li>
                 ))}
@@ -130,7 +140,7 @@ export default function Home() {
                     type="button"
                     onClick={() => setLang(sample.id)}
                     data-testid={`code-lang-${sample.label.toLowerCase()}`}
-                    className={`px-3 py-2 font-mono text-[12.5px] transition-colors ${
+                    className={`px-3 py-2 font-body text-[12.5px] transition-colors ${
                       lang === sample.id
                         ? '-mb-px border-b-2 border-primary text-foreground'
                         : 'text-muted-foreground hover:text-foreground'
@@ -296,9 +306,9 @@ function SendPreview({ endpoint }: { endpoint: string }) {
         <span className="h-2 w-2 rounded-full bg-destructive/60" />
         <span className="h-2 w-2 rounded-full bg-amber-500/60" />
         <span className="h-2 w-2 rounded-full bg-primary/60" />
-        <span className="ml-2 font-mono text-[10.5px] text-muted-foreground">POST {path}</span>
+        <span className="ml-2 font-body text-[10.5px] text-muted-foreground">POST {path}</span>
       </div>
-      <div className="space-y-1 p-3 font-mono text-[11.5px] text-muted-foreground">
+      <div className="space-y-1 p-3 font-body text-[11.5px] text-muted-foreground">
         <div>
           <span className="text-foreground">→</span> from: hello@mail.yourdomain.com
         </div>
@@ -319,14 +329,14 @@ function TestPreview() {
     <div className="border border-border bg-background p-4">
       <div className="flex items-center justify-between">
         <span className="label-mono">Spam score</span>
-        <span className="font-mono text-xs text-primary">0.4 / 10</span>
+        <span className="font-body text-xs text-primary">0.4 / 10</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden bg-muted">
         <div className="h-full bg-primary" style={{ width: '4%' }} />
       </div>
       <div className="mt-4 space-y-1.5 text-[11.5px]">
         {['DKIM ✓', 'SPF ✓', 'List-Unsubscribe ✓'].map((item) => (
-          <div key={item} className="font-mono text-muted-foreground">
+          <div key={item} className="font-body text-muted-foreground">
             {item}
           </div>
         ))}
@@ -344,7 +354,7 @@ function InboxPreview() {
         ['Figma', 'Comment on Dashboard v4'],
       ].map(([from, subject]) => (
         <div key={subject} className="flex items-center gap-3 px-3 py-2">
-          <div className="inline-flex h-5 w-5 items-center justify-center rounded bg-muted font-mono text-[9.5px]">
+          <div className="inline-flex h-5 w-5 items-center justify-center rounded bg-muted font-body text-[9.5px]">
             {from.slice(0, 2)}
           </div>
           <div className="min-w-0 flex-1 text-[12px]">
