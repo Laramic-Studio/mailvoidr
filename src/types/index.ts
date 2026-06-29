@@ -280,6 +280,7 @@ export interface SandboxResponse {
 export interface DomainDnsRecord {
   type: string;
   name: string;
+  host?: string;
   value: string;
   purpose: string;
   note?: string;

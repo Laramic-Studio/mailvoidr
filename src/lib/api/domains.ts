@@ -24,10 +24,19 @@ export async function createDomain(domain: string): Promise<{
 export async function verifyDomain(id: string): Promise<{
   domain: VerifiedDomain;
   message: string;
+  diagnostics?: Record<
+    string,
+    { verified: boolean; host: string; expected: string; found: string[]; hint?: string }
+  >;
 }> {
-  const { data } = await api.post<{ domain: VerifiedDomain; message: string }>(
-    `/domains/${id}/verify`,
-  );
+  const { data } = await api.post<{
+    domain: VerifiedDomain;
+    message: string;
+    diagnostics?: Record<
+      string,
+      { verified: boolean; host: string; expected: string; found: string[]; hint?: string }
+    >;
+  }>(`/domains/${id}/verify`);
   return data;
 }
 

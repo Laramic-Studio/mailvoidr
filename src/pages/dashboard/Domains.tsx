@@ -88,6 +88,11 @@ function DnsRecordRow({
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
         <div className="min-w-0">
           <div className="label-mono mb-1">Name</div>
+          {'host' in record && record.host && record.host !== record.name ? (
+            <p className="mb-1 font-mono text-[11px] text-muted-foreground">
+              DNS host: {record.host}
+            </p>
+          ) : null}
           <div className="flex items-start justify-between gap-2">
             <code className="min-w-0 break-all font-mono text-[12.5px]">{record.name}</code>
             <CopyFieldButton
@@ -155,7 +160,14 @@ export default function Domains() {
     setVerifyingId(id);
     try {
       const result = await verify.mutateAsync(id);
-      toastSuccess(result.message);
+      if (result.diagnostics) {
+        const hints = Object.entries(result.diagnostics)
+          .filter(([, detail]) => !detail.verified && detail.hint)
+          .map(([purpose, detail]) => `${purpose.toUpperCase()}: ${detail.hint}`);
+        toastError(hints.join(' '));
+      } else {
+        toastSuccess(result.message);
+      }
     } catch (error) {
       toastError(error, 'Could not verify domain.');
     } finally {
