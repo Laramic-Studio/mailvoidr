@@ -32,6 +32,9 @@ export const queryKeys = {
   domains: {
     all: ['domains'] as const,
   },
+  whitelistedIps: {
+    all: ['whitelisted-ips'] as const,
+  },
   apiKeys: {
     all: ['api-keys'] as const,
   },

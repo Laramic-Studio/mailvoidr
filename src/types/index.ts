@@ -310,6 +310,17 @@ export interface DomainListResponse {
   data: VerifiedDomain[];
 }
 
+export interface WhitelistedSendingIp {
+  id: string;
+  ip_address: string;
+  label: string | null;
+  created_at: string | null;
+}
+
+export interface WhitelistedIpListResponse {
+  data: WhitelistedSendingIp[];
+}
+
 export interface ApiKey {
   id: string;
   name: string;
@@ -334,6 +345,7 @@ export interface SmtpCredential {
   name: string;
   host: string;
   port: number;
+  alt_ports?: number[];
   encryption: string;
   username: string;
   password?: string;

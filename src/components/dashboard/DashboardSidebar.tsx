@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Send, Inbox, Mail, Globe, BarChart3,
-  ListChecks, FileCode2, KeyRound, Server, Webhook,
+  ListChecks, FileCode2, KeyRound, Server, Webhook, Shield,
   Users, CreditCard, Settings, PanelLeftClose, PanelLeft,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
@@ -25,6 +25,7 @@ const NAV_GROUPS = [
     label: 'Operate',
     items: [
       { to: '/dashboard/domains', icon: Globe, label: 'Domains' },
+      { to: '/dashboard/ip-whitelist', icon: Shield, label: 'IP whitelist' },
       { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
       { to: '/dashboard/logs', icon: ListChecks, label: 'Email Logs' },
       { to: '/dashboard/templates', icon: FileCode2, label: 'Templates' },

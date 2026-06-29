@@ -21,6 +21,7 @@ import Inbox from "@/pages/dashboard/Inbox";
 import VirtualEmails from "@/pages/dashboard/VirtualEmails";
 import VirtualEmailDetail from "@/pages/dashboard/VirtualEmailDetail";
 import Domains from "@/pages/dashboard/Domains";
+import WhitelistedIps from "@/pages/dashboard/WhitelistedIps";
 import Analytics from "@/pages/dashboard/Analytics";
 import EmailLogs from "@/pages/dashboard/EmailLogs";
 import Templates from "@/pages/dashboard/Templates";
@@ -105,6 +106,7 @@ function App() {
               <Route path="/dashboard/inboxes/:id" element={<LegacyVirtualEmailDetailRedirect />} />
 
               <Route path="/dashboard/domains" element={<Domains />} />
+              <Route path="/dashboard/ip-whitelist" element={<WhitelistedIps />} />
               <Route path="/dashboard/analytics" element={<Analytics />} />
               <Route path="/dashboard/logs" element={<EmailLogs />} />
               <Route path="/dashboard/templates/marketplace" element={<TemplateMarketplace />} />

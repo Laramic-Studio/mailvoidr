@@ -33,7 +33,7 @@ export default function SMTP() {
       <PageHeader
         eyebrow="Developer"
         title="SMTP credentials"
-        description="Connect your app over SMTP — capture test mail in the sandbox, or deliver live on port 587."
+        description="Connect your app over SMTP — capture test mail on port 587, or deliver live on port 2525."
       />
 
       <Tabs
@@ -46,12 +46,12 @@ export default function SMTP() {
             <TabsTrigger value="test" data-testid="smtp-tab-test" className="gap-2 px-4">
               <FlaskConical className="h-3.5 w-3.5" />
               Test
-              <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline">:2525</span>
+              <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline">:587</span>
             </TabsTrigger>
             <TabsTrigger value="live" data-testid="smtp-tab-live" className="gap-2 px-4">
               <Zap className="h-3.5 w-3.5" />
               Live
-              <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline">:587</span>
+              <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline">:2525</span>
             </TabsTrigger>
           </TabsList>
 
@@ -107,7 +107,7 @@ function TestSmtpPanel() {
       <EmptyPanel
         icon={FlaskConical}
         title="Enable sandbox SMTP"
-        description="Get a dedicated test inbox and SMTP credentials on port 2525. Messages stay in your workspace — nothing is delivered to real recipients."
+        description="Get a dedicated test inbox and SMTP credentials on port 587. Messages stay in your workspace — nothing is delivered to real recipients."
         actionLabel={enable.isPending ? 'Enabling…' : 'Enable test SMTP'}
         actionTestId="smtp-test-enable"
         actionPending={enable.isPending}
@@ -293,15 +293,24 @@ function LiveSmtpPanel() {
       <ModeCallout
         tone="live"
         title="Production delivery"
-        description="Mail is relayed to real recipients. Requires a verified domain and counts against your plan quota."
+        description="Verify a domain for branded sending, or whitelist your server IP to send from any From address (shown via mailvoidr.com)."
         action={
-          <Link
-            to="/dashboard/domains"
-            className="inline-flex items-center gap-1 text-[12.5px] font-medium text-foreground hover:underline"
-          >
-            Verify a domain
-            <ArrowRight className="h-3 w-3" />
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to="/dashboard/ip-whitelist"
+              className="inline-flex items-center gap-1 text-[12.5px] font-medium text-foreground hover:underline"
+            >
+              IP whitelist
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+            <Link
+              to="/dashboard/domains"
+              className="inline-flex items-center gap-1 text-[12.5px] font-medium text-foreground hover:underline"
+            >
+              Verify a domain
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         }
       />
 
@@ -309,7 +318,7 @@ function LiveSmtpPanel() {
         <EmptyPanel
           icon={Zap}
           title="Live sending is off"
-          description="Enable live SMTP to get port 587 credentials for production traffic. Use the Test tab for sandbox capture in the meantime."
+          description="Enable live SMTP to get port 2525 credentials for production traffic. Use the Test tab for sandbox capture on port 587."
           actionLabel={enable.isPending ? 'Enabling…' : 'Enable live sending'}
           actionTestId="smtp-live-enable-inline"
           actionPending={enable.isPending}
@@ -319,11 +328,20 @@ function LiveSmtpPanel() {
         <CredentialCard
           testId={`smtp-row-${credential.id}`}
           title={credential.name}
-          subtitle={`${credential.host} · port ${credential.port}`}
+          subtitle={`${credential.host} · port ${credential.port}${formatAltPorts(credential.alt_ports)}`}
           status={credential.is_active ? 'active' : 'paused'}
           rows={[
             { label: 'HOST', value: credential.host, onCopy: () => copyValue(credential.host, 'Host') },
             { label: 'PORT', value: credential.port, onCopy: () => copyValue(String(credential.port), 'Port') },
+            ...(credential.alt_ports?.length
+              ? [
+                  {
+                    label: 'ALT PORTS',
+                    value: credential.alt_ports.join(', '),
+                    onCopy: () => copyValue(credential.alt_ports!.join(', '), 'Alternate ports'),
+                  },
+                ]
+              : []),
             {
               label: 'USERNAME',
               value: credential.username,
@@ -364,7 +382,7 @@ function LiveSmtpPanel() {
       {liveSendingEnabled && credential ? (
         <SnippetSection
           title="Connect — live"
-          description="Use STARTTLS on port 587. Store the password in an env var in production."
+          description="Use STARTTLS. Port 2525 works on most hosting providers where 587 is blocked."
           code={snippet}
         />
       ) : null}
@@ -565,13 +583,21 @@ async function copyEnvSnippet(host: string, port: number, username: string, pass
   toastSuccess('Live SMTP credentials copied.');
 }
 
+function formatAltPorts(altPorts?: number[]): string {
+  if (!altPorts?.length) {
+    return '';
+  }
+
+  return ` · alt ${altPorts.join(', ')}`;
+}
+
 function buildNodemailerSnippet(cred: SandboxInbox | SmtpCredential | null): string {
   if (!cred) {
     return `import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   host: "YOUR_SMTP_HOST",
-  port: 2525,
+  port: 587,
   secure: false,
   auth: { user: "YOUR_SMTP_USERNAME", pass: process.env.MV_SMTP_PASS },
 });`;
@@ -591,7 +617,7 @@ const transporter = nodemailer.createTransport({
 });
 
 await transporter.sendMail({
-  from: "${'smtp_port' in cred ? 'test@your-app.dev' : 'hello@your-verified-domain.com'}",
+  from: "${'smtp_port' in cred ? 'test@your-app.dev' : 'noreply@your-domain.com'}",
   to: "recipient@example.com",
   subject: "${'smtp_port' in cred ? 'Sandbox test' : 'Welcome'}",
   html: "<h1>Hello from Mailvoidr</h1>",
