@@ -24,4 +24,8 @@ export function toastSuccess(message: string) {
   sonnerToast.success(message);
 }
 
+export function toastFailure(message: string) {
+  sonnerToast.error(message);
+}
+
 export { sonnerToast as toast };

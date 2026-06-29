@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
 import { useDomainMutations, useDomains } from '@/hooks/useDomains';
-import { toastError, toastSuccess } from '@/lib/toast';
+import { toastError, toastFailure, toastSuccess } from '@/lib/toast';
 import type { DomainDnsRecord, VerifiedDomain } from '@/types';
 import {
   Plus,
@@ -164,7 +164,7 @@ export default function Domains() {
         const hints = Object.entries(result.diagnostics)
           .filter(([, detail]) => !detail.verified && detail.hint)
           .map(([purpose, detail]) => `${purpose.toUpperCase()}: ${detail.hint}`);
-        toastError(hints.join(' '));
+        toastFailure(hints.length > 0 ? hints.join(' ') : result.message);
       } else {
         toastSuccess(result.message);
       }
