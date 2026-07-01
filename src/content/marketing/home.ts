@@ -61,6 +61,56 @@ export const HOME_PLATFORM = [
   { title: 'Team workspaces', desc: 'Invite developers, share domains and templates.' },
 ] as const;
 
+export const HOME_REVIEWS_HEADING = {
+  title: 'Loved by Devs',
+  subtitle: 'Mailvoidr is popular among developers worldwide.',
+} as const;
+
+export const HOME_REVIEWS = [
+  {
+    quote:
+      'We replaced three tools with Mailvoidr. Sandbox capture alone saved our QA team hours every sprint.',
+    name: 'Riya Mehta',
+    role: 'Staff engineer',
+    company: 'Acme',
+  },
+  {
+    quote:
+      'The API is boring in the best way — predictable responses, clear webhooks, and logs that actually help debug bounces.',
+    name: 'Marcus Chen',
+    role: 'Backend lead',
+    company: 'Northline',
+  },
+  {
+    quote:
+      'Virtual inboxes in CI mean we never leak test mail to real users. TTL expiry is exactly what we needed.',
+    name: 'Sara Okonkwo',
+    role: 'Platform engineer',
+    company: 'Relay',
+  },
+  {
+    quote:
+      'Spam scoring on captured mail caught a broken template before we shipped. That paid for the plan on day one.',
+    name: 'Tomás Álvarez',
+    role: 'DevOps',
+    company: 'Stackform',
+  },
+  {
+    quote:
+      'SMTP relay plus REST — our legacy services use one, new microservices use the other. Same dashboard for both.',
+    name: 'Elena Park',
+    role: 'CTO',
+    company: 'Parcel',
+  },
+  {
+    quote:
+      'Onboarding took twelve minutes: domain verified, first send queued, webhook firing. No sales call, no ticket queue.',
+    name: 'James Okafor',
+    role: 'Founding engineer',
+    company: 'Ledgerly',
+  },
+] as const;
+
 /** Demo chart for the marketing bento — illustrative, not live data. */
 export const HOME_CHART_PREVIEW = Array.from({ length: 14 }, (_, index) => ({
   date: `Day ${index + 1}`,

@@ -48,17 +48,17 @@ export function AuthLayout({ children, side = "right" }: AuthLayoutProps) {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-2 font-display text-[11px] text-muted-foreground uppercase tracking-wider">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Trusted by 12,400+ developers
+            Trusted by 2,400+ developers
           </div>
           <div className="space-y-6">
             <blockquote className="text-2xl tracking-tight font-medium text-balance leading-snug">
               &quot;We replaced three tools — SendGrid, Mailtrap, and Postmark — with Mailvoidr in a weekend. Our p99 send latency dropped from 1.8s to 240ms.&quot;
             </blockquote>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/30 inline-flex items-center justify-center font-mono text-sm">JK</div>
+              <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/30 inline-flex items-center justify-center font-mono text-sm">EA</div>
               <div>
-                <div className="text-sm">Jordan Kowalski</div>
-                <div className="text-xs text-muted-foreground">Staff Engineer, Northwind Labs</div>
+                <div className="text-sm">Ebenezer Akpas</div>
+                <div className="text-xs text-muted-foreground">Senior Blockchain/Backend Engineer, INITS LIMITED</div>
               </div>
             </div>
           </div>

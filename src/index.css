@@ -157,6 +157,59 @@
             transparent 60%
         );
     }
+    .gradient-radial-muted {
+        background: radial-gradient(
+            ellipse 70% 55% at 50% 45%,
+            hsl(var(--muted-foreground) / 0.07) 0%,
+            transparent 72%
+        );
+    }
+    .reviews-marquee-track {
+        animation: reviews-marquee 60s linear infinite;
+        will-change: transform;
+    }
+    .reviews-marquee-track-reverse {
+        animation: reviews-marquee-reverse 65s linear infinite;
+        will-change: transform;
+    }
+    @keyframes reviews-marquee {
+        from {
+            transform: translateX(0);
+        }
+        to {
+            transform: translateX(-25%);
+        }
+    }
+    @keyframes reviews-marquee-reverse {
+        from {
+            transform: translateX(-25%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .reviews-marquee-track,
+        .reviews-marquee-track-reverse {
+            animation: none;
+        }
+    }
+    .reviews-edge-mask {
+        mask-image: linear-gradient(
+            to right,
+            transparent 0%,
+            black 5%,
+            black 95%,
+            transparent 100%
+        );
+        -webkit-mask-image: linear-gradient(
+            to right,
+            transparent 0%,
+            black 5%,
+            black 95%,
+            transparent 100%
+        );
+    }
 }
 
 ::selection {

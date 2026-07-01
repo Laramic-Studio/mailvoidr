@@ -1,8 +1,19 @@
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { type ReactNode } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
 import { useHealth } from "@/hooks/useHealth";
-import { ArrowRight, Github, Twitter } from "lucide-react";
+import { workspaceInitials } from "@/hooks/useWorkspaces";
+import { ArrowRight, Github, LayoutDashboard, Twitter } from "lucide-react";
 
 const NAV = [
   { to: "/features", label: "Features" },
@@ -14,8 +25,10 @@ const NAV = [
   { to: "/status", label: "Status" },
 ];
 
-export function MarketingLayout({ children }) {
+export function MarketingLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const nav = useNavigate();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { data: apiHealthy, isLoading: healthLoading } = useHealth();
   const statusLabel = healthLoading
     ? "Checking API…"
@@ -23,6 +36,13 @@ export function MarketingLayout({ children }) {
       ? "API operational"
       : "API unreachable";
   const statusClass = apiHealthy ? "bg-primary" : healthLoading ? "bg-muted-foreground" : "bg-destructive";
+
+  async function handleLogout() {
+    await logout();
+    nav("/");
+  }
+
+  const showAuthenticatedNav = isAuthenticated && !isLoading;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -51,20 +71,62 @@ export function MarketingLayout({ children }) {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link
-              to="/login"
-              data-testid="nav-login-link"
-              className="hidden sm:inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/register"
-              data-testid="nav-get-started-btn"
-              className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Get started <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            {showAuthenticatedNav ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  data-testid="nav-dashboard-btn"
+                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  Dashboard
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger data-testid="nav-user-menu">
+                    <Avatar className="h-8 w-8 border border-border">
+                      {user?.avatar_url ? (
+                        <AvatarImage src={user.avatar_url} alt={user.name} />
+                      ) : null}
+                      <AvatarFallback className="bg-card font-mono text-[11px]">
+                        {user ? workspaceInitials(user.name) : "—"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5">
+                      <div className="text-[13px]">{user?.name ?? "Account"}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">{user?.email}</div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard/settings">Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  data-testid="nav-login-link"
+                  className="hidden sm:inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  data-testid="nav-get-started-btn"
+                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  Get started <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -93,7 +155,8 @@ export function MarketingLayout({ children }) {
         </div>
         <div className="border-t border-border">
           <div className="mx-auto max-w-7xl px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12.5px] text-muted-foreground">
-            <span>© 2026 Mailvoidr, Inc. — Made with restraint in San Francisco & Bengaluru.</span>
+            <span>© 2026 Mailvoidr, Inc. — By developers, for developers 🍻.</span>
+       
             <div className="flex items-center gap-5 font-mono text-[11px]">
               <Link to="/status" className="inline-flex items-center gap-1.5 hover:text-foreground">
                 <span className={`h-1.5 w-1.5 rounded-full ${statusClass} ${apiHealthy ? "animate-pulse" : ""}`} />
@@ -109,7 +172,13 @@ export function MarketingLayout({ children }) {
   );
 }
 
-function FooterCol({ title, links }) {
+function FooterCol({
+  title,
+  links,
+}: {
+  title: string;
+  links: [string, string][];
+}) {
   return (
     <div>
       <h4 className="label-mono mb-3">{title}</h4>

@@ -9,7 +9,7 @@ export function Logo({ small = false, className = "" }: { small?: boolean; class
     >
       <img src="/logo/favicon-32x32.png" alt="Mailvoidr" className="h-6 w-6" />
       {!small && (
-        <span className="font-medium text-[15px] tracking-tight tracking-[0.03em]">
+        <span className="font-medium text-[15px] tracking-tight tracking-[0.03em] font-display font-semibold">
           Mailvoidr<span className="text-primary">.</span>
         </span>
       )}

@@ -24,6 +24,8 @@ import {
   HOME_HERO,
   HOME_METRICS,
   HOME_PLATFORM,
+  HOME_REVIEWS,
+  HOME_REVIEWS_HEADING,
   HOME_SEND_FEATURES,
   HOME_STACK,
   mailSendUrl,
@@ -224,6 +226,24 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="relative overflow-hidden border-b border-border bg-background py-24">
+        <div className="pointer-events-none absolute inset-0 gradient-radial-muted" />
+
+        <div className="relative mx-auto mb-14 max-w-7xl px-6 text-center">
+          <h2 className="text-balance text-4xl font-medium tracking-tight md:text-5xl">
+            {HOME_REVIEWS_HEADING.title}
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground md:text-lg">
+            {HOME_REVIEWS_HEADING.subtitle}
+          </p>
+        </div>
+
+        <div className="reviews-edge-mask relative space-y-3">
+          <ReviewsMarqueeRow reviews={HOME_REVIEWS} />
+          <ReviewsMarqueeRow reviews={[...HOME_REVIEWS].reverse()} reverse />
+        </div>
+      </section>
+
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 gradient-radial-primary" />
         <div className="relative mx-auto max-w-4xl px-6 py-28 text-center">
@@ -388,5 +408,60 @@ function AnalyticsPreview() {
         </AreaChart>
       </ResponsiveContainer>
     </div>
+  );
+}
+
+function ReviewsMarqueeRow({
+  reviews,
+  reverse = false,
+}: {
+  reviews: readonly (typeof HOME_REVIEWS)[number][];
+  reverse?: boolean;
+}) {
+  const items = [...reviews, ...reviews, ...reviews, ...reviews];
+
+  return (
+    <div className="overflow-hidden">
+      <div
+        className={`flex w-max gap-3 ${reverse ? 'reviews-marquee-track-reverse' : 'reviews-marquee-track'}`}
+      >
+        {items.map((review, index) => (
+          <ReviewCard key={`${review.name}-${index}`} review={review} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function reviewAvatarHue(name: string): string {
+  const hues = ['151', '217', '38', '271', '339', '200'];
+  const index = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % hues.length;
+  return hues[index];
+}
+
+function ReviewCard({ review }: { review: (typeof HOME_REVIEWS)[number] }) {
+  const initials = review.name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const hue = reviewAvatarHue(review.name);
+
+  return (
+    <figure className="flex w-[min(88vw,320px)] shrink-0 flex-col justify-between rounded-lg bg-muted/50 p-6">
+      <blockquote className="text-[14px] leading-[1.65] text-foreground/90">
+        {review.quote}
+      </blockquote>
+      <figcaption className="mt-8 flex items-center gap-2.5">
+        <div
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md font-body text-[10px] font-semibold text-white"
+          style={{ backgroundColor: `hsl(${hue} 45% 42%)` }}
+        >
+          {initials}
+        </div>
+        <span className="truncate text-sm font-medium">{review.name}</span>
+      </figcaption>
+    </figure>
   );
 }
