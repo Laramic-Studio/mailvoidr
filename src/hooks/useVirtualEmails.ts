@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type Query, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createVirtualEmail,
   deleteVirtualEmail,
@@ -12,6 +12,25 @@ import {
 } from '@/lib/api/virtual-emails';
 import { queryKeys } from '@/lib/query-keys';
 import { useAuth } from '@/hooks/useAuth';
+import type { EmailMessageListResponse, VirtualEmailListResponse } from '@/types';
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isVirtualEmailListQuery(query: Query): boolean {
+  const key = query.queryKey;
+  return key.length === 2 && key[0] === 'virtual-emails' && !UUID_RE.test(String(key[1]));
+}
+
+function virtualEmailMatchesSearch(
+  item: VirtualEmailListResponse['data'][number],
+  searchTerm: string,
+): boolean {
+  if (!searchTerm) return true;
+
+  const haystack = `${item.email_address} ${item.label ?? ''}`.toLowerCase();
+  return haystack.includes(searchTerm.toLowerCase());
+}
 
 export function useVirtualEmails(search?: string) {
   const { user } = useAuth();
@@ -80,20 +99,80 @@ export function useVirtualEmailMessageRaw(
   });
 }
 
-export function useVirtualEmailMutations(search?: string) {
+export function useVirtualEmailMutations() {
   const queryClient = useQueryClient();
 
-  const invalidateList = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.virtualEmails.all(search) });
+  const invalidateLists = () =>
+    void queryClient.invalidateQueries({ predicate: isVirtualEmailListQuery });
 
   const create = useMutation({
     mutationFn: (payload: CreateVirtualEmailPayload) => createVirtualEmail(payload),
-    onSuccess: invalidateList,
+    onSuccess: (result) => {
+      queryClient.setQueriesData<VirtualEmailListResponse>(
+        { predicate: isVirtualEmailListQuery },
+        (old, query) => {
+          const searchTerm = String(query.queryKey[1] ?? '');
+          const item = result.virtual_email;
+
+          if (!virtualEmailMatchesSearch(item, searchTerm)) {
+            return old;
+          }
+
+          if (!old) {
+            return {
+              data: [item],
+              meta: { current_page: 1, last_page: 1, per_page: 50, total: 1 },
+            };
+          }
+
+          if (old.data.some((entry) => entry.id === item.id)) {
+            return old;
+          }
+
+          return {
+            ...old,
+            data: [item, ...old.data],
+            meta: { ...old.meta, total: old.meta.total + 1 },
+          };
+        },
+      );
+      invalidateLists();
+    },
   });
 
   const remove = useMutation({
     mutationFn: deleteVirtualEmail,
-    onSuccess: invalidateList,
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ predicate: isVirtualEmailListQuery });
+
+      const snapshots = queryClient.getQueriesData<VirtualEmailListResponse>({
+        predicate: isVirtualEmailListQuery,
+      });
+
+      queryClient.setQueriesData<VirtualEmailListResponse>(
+        { predicate: isVirtualEmailListQuery },
+        (old) => {
+          if (!old) return old;
+
+          return {
+            ...old,
+            data: old.data.filter((item) => item.id !== id),
+            meta: { ...old.meta, total: Math.max(0, old.meta.total - 1) },
+          };
+        },
+      );
+
+      return { snapshots };
+    },
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: queryKeys.virtualEmails.detail(id) });
+      invalidateLists();
+    },
+    onError: (_error, _id, context) => {
+      context?.snapshots.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
   });
 
   return { create, remove };
@@ -104,7 +183,7 @@ export function useVirtualEmailMessageMutations(inboxId: string) {
 
   const invalidate = () => {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.virtualEmails.messages(inboxId),
+      queryKey: ['virtual-emails', inboxId, 'messages'],
     });
     void queryClient.invalidateQueries({
       queryKey: queryKeys.virtualEmails.detail(inboxId),
@@ -113,7 +192,29 @@ export function useVirtualEmailMessageMutations(inboxId: string) {
 
   const remove = useMutation({
     mutationFn: (messageId: string) => deleteVirtualEmailMessage(inboxId, messageId),
-    onSuccess: invalidate,
+    onMutate: async (messageId) => {
+      await queryClient.cancelQueries({ queryKey: ['virtual-emails', inboxId, 'messages'] });
+
+      queryClient.setQueriesData<EmailMessageListResponse>(
+        { queryKey: ['virtual-emails', inboxId, 'messages'] },
+        (old) => {
+          if (!old) return old;
+          return { ...old, data: old.data.filter((m) => m.id !== messageId) };
+        },
+      );
+    },
+    onSuccess: (_, messageId) => {
+      queryClient.removeQueries({
+        queryKey: queryKeys.virtualEmails.message(inboxId, messageId),
+      });
+      queryClient.removeQueries({
+        queryKey: queryKeys.virtualEmails.messageRaw(inboxId, messageId),
+      });
+      invalidate();
+    },
+    onError: () => {
+      void queryClient.invalidateQueries({ queryKey: ['virtual-emails', inboxId, 'messages'] });
+    },
   });
 
   return { remove };

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { CodeBlock } from '@/components/CodeBlock';
+import { HtmlCheckPanel, SpamPanel } from '@/components/email/EmailAnalysisPanels';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
 import {
   useSandbox,
@@ -246,23 +247,7 @@ export default function Inbox() {
   return (
     <DashboardLayout flush>
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex items-center justify-between border-b border-border px-4 py-2.5 lg:px-6">
-          <div className="text-[12px] text-muted-foreground">
-            Inboxes <span className="mx-1">›</span> {currentWorkspace?.name ?? 'Workspace'}{' '}
-            <span className="mx-1">›</span> <span className="text-foreground">Sandbox</span>
-          </div>
-          <IconTooltip label="SMTP credentials">
-            <button
-              type="button"
-              onClick={() => setShowSettings(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-[12px] hover:bg-accent lg:hidden"
-            >
-              <Settings className="h-3 w-3" />
-              SMTP
-            </button>
-          </IconTooltip>
-        </div>
-
+       
         <div className="grid min-h-0 flex-1 lg:grid-cols-[280px_1fr]">
           <aside
             className={`min-h-0 flex-col border-b border-border bg-card lg:border-b-0 lg:border-r ${
@@ -280,7 +265,7 @@ export default function Inbox() {
                   )}
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <IconTooltip label="Mark all as read">
+                  <IconTooltip side="top" label="Mark all as read">
                     <button
                       type="button"
                       onClick={handleMarkAllRead}
@@ -289,7 +274,7 @@ export default function Inbox() {
                       <MailOpen className="h-3.5 w-3.5" />
                     </button>
                   </IconTooltip>
-                  <IconTooltip label="Refresh">
+                  <IconTooltip side="top" label="Refresh">
                     <button
                       type="button"
                       onClick={handleRefresh}
@@ -299,7 +284,7 @@ export default function Inbox() {
                       <RefreshCw className={`h-3.5 w-3.5 ${messagesFetching ? 'animate-spin' : ''}`} />
                     </button>
                   </IconTooltip>
-                  <IconTooltip label="Clear all emails">
+                  <IconTooltip side="top" label="Clear all emails">
                     <button
                       type="button"
                       onClick={() => setClearDialogOpen(true)}
@@ -308,7 +293,7 @@ export default function Inbox() {
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </IconTooltip>
-                  <IconTooltip label="SMTP credentials" side="right">
+                  <IconTooltip side="top" label="SMTP credentials" side="right">
                     <button
                       type="button"
                       onClick={() => setShowSettings(true)}
@@ -386,7 +371,7 @@ export default function Inbox() {
                                 m.is_read ? 'text-muted-foreground' : 'text-foreground'
                               }`}
                             >
-                              {(m.from ?? '').slice(0, 28)}
+                              {(m.subject || '(No Subject)').slice(0, 28)}
                             </span>
                             <span className="shrink-0 font-mono text-[10px] text-muted-foreground/60">
                               {formatRelativeInboxTime(m.created_at)}
@@ -400,16 +385,15 @@ export default function Inbox() {
                             {!m.is_read && (
                               <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                             )}
-                            <span className="truncate">{m.subject || '(No Subject)'}</span>
+                            <span className="truncate">{m.from ?? ''}</span>
                           </div>
-                          <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/60">
-                            {m.preview || 'No preview available'}
-                          </p>
+                         
                         </button>
                       </li>
                     );
                   })}
                 </ul>
+           
               )}
               {hasNextPage ? (
                 <div ref={loadMoreRef} className="flex items-center justify-center py-4 text-muted-foreground">
@@ -431,10 +415,10 @@ export default function Inbox() {
               </div>
             ) : (
               <>
-                <div className="border-b border-border bg-[#0d0d0d] text-foreground">
+                <div className="border-b border-border bg-card text-foreground">
                   <div className="px-5 py-4">
                     <div className="mb-3 lg:hidden">
-                      <IconTooltip label="Back to message list">
+                      <IconTooltip side="top" label="Back to message list">
                         <button
                           type="button"
                           onClick={() => setMobilePane('list')}
@@ -466,9 +450,9 @@ export default function Inbox() {
                         </div>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           {displayMessage.created_at
-                            ? new Date(displayMessage.created_at).toLocaleString()
+                            ? formatRelativeInboxTime(displayMessage.created_at)
                             : '—'}
                         </span>
                         {'formatted_size' in displayMessage && displayMessage.formatted_size && (
@@ -477,7 +461,7 @@ export default function Inbox() {
                           </span>
                         )}
                         {analysis?.html_support_score != null && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 font-mono text-[10.5px]">
+                          <span className="font-mono text-[10.5px] text-muted-foreground  mt-2">
                             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                             Market support: {analysis.html_support_score}%
                           </span>
@@ -494,7 +478,7 @@ export default function Inbox() {
                           type="button"
                           onClick={() => setDetailTab(t.id)}
                           data-testid={`inbox-detail-tab-${t.id}`}
-                          className={`whitespace-nowrap border-b-2 px-3 py-3 font-mono text-xs transition-colors ${
+                          className={`whitespace-nowrap border-b-2 px-3 pt-2 pb-1 font-display font-semibold text-xs transition-colors ${
                             detailTab === t.id
                               ? 'border-primary text-primary'
                               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -510,18 +494,17 @@ export default function Inbox() {
                       ))}
                     </div>
                     {detailTab === 'html' && (
-                      <div className="flex shrink-0 items-center rounded-lg border border-border bg-background p-1">
+                      <div className="flex shrink-0 items-center border-l border-r border-border bg-background ">
                         {(
                           [
                             ['desktop', Laptop, 'Desktop'],
                             ['mobile', Smartphone, 'Mobile'],
                           ] as const
                         ).map(([mode, Icon, label]) => (
-                          <IconTooltip key={mode} label={`${label} preview`}>
                             <button
                               type="button"
                               onClick={() => setPreviewMode(mode)}
-                              className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium ${
+                              className={`inline-flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium ${
                                 previewMode === mode
                                   ? 'bg-accent text-foreground'
                                   : 'text-muted-foreground hover:text-foreground'
@@ -530,7 +513,6 @@ export default function Inbox() {
                               <Icon className="h-3.5 w-3.5" />
                               <span className="hidden sm:inline">{label}</span>
                             </button>
-                          </IconTooltip>
                         ))}
                       </div>
                     )}
@@ -718,106 +700,6 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
     <div className="grid grid-cols-[88px_1fr] gap-3 py-2">
       <span className="text-muted-foreground">{label}</span>
       <span className="break-all">{value}</span>
-    </div>
-  );
-}
-
-function SpamPanel({ analysis }: { analysis?: EmailMessage['analysis'] }) {
-  if (analysis?.status !== 'completed') {
-    return (
-      <p className="p-6 text-sm text-muted-foreground">
-        Spam analysis runs when the message is received via SMTP.
-      </p>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <div className="flex items-baseline gap-3">
-        <span className="text-4xl font-medium">{analysis.spam_score ?? '—'}</span>
-        <span className="font-mono text-sm text-muted-foreground">
-          / 10 · {analysis.spam_rating}
-        </span>
-      </div>
-      <ul className="mt-6 divide-y divide-border">
-        {(analysis.spam_rules ?? []).map((rule) => (
-          <li key={rule.id} className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3">
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  rule.status === 'pass'
-                    ? 'bg-primary'
-                    : rule.status === 'warn'
-                      ? 'bg-amber-500'
-                      : 'bg-destructive'
-                }`}
-              />
-              <div>
-                <div className="font-mono text-[12.5px]">{rule.id}</div>
-                <div className="text-[11.5px] text-muted-foreground">{rule.description}</div>
-              </div>
-            </div>
-            <span className="font-mono text-[12px] text-muted-foreground">
-              {rule.points > 0 ? `+${rule.points}` : rule.points}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function HtmlCheckPanel({ analysis }: { analysis?: EmailMessage['analysis'] }) {
-  if (analysis?.status !== 'completed') {
-    return (
-      <p className="p-6 text-sm text-muted-foreground">
-        HTML compatibility check runs when the message is received via SMTP.
-      </p>
-    );
-  }
-
-  return (
-    <div className="grid gap-6 p-6 lg:grid-cols-[240px_1fr]">
-      <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-muted/20 p-6 text-center">
-        <div className="text-3xl font-medium">{analysis.html_support_score ?? '—'}%</div>
-        <div className="mt-1 font-mono text-[11px] text-muted-foreground">MARKET SUPPORT</div>
-      </div>
-      <div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {(analysis.html_checks ?? []).map((check) => (
-            <div
-              key={check.client}
-              className="flex items-center justify-between rounded border border-border px-3 py-2 text-[12px]"
-            >
-              <span>{check.client}</span>
-              <span className="font-mono text-muted-foreground">{check.support_score}%</span>
-            </div>
-          ))}
-        </div>
-        {(analysis.html_issues ?? []).length > 0 && (
-          <div className="mt-6">
-            <div className="label-mono">&lt;body&gt; element</div>
-            <ul className="mt-3 divide-y divide-border border border-border">
-              {analysis.html_issues.map((issue, index) => (
-                <li
-                  key={`${issue.client}-${index}`}
-                  className="flex items-start gap-3 px-3 py-2.5 text-[12px]"
-                >
-                  <span
-                    className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-                      issue.status === 'fail' ? 'bg-destructive' : 'bg-amber-500'
-                    }`}
-                  />
-                  <div>
-                    <div className="font-medium">{issue.client}</div>
-                    <div className="text-muted-foreground">{issue.message}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

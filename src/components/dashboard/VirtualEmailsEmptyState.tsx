@@ -12,9 +12,7 @@ export function VirtualEmailsEmptyState({ variant, onCreate }: VirtualEmailsEmpt
         data-testid="virtual-emails-empty-search"
         className="flex flex-col items-center justify-center px-6 py-16 text-center"
       >
-        <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-muted/30">
-          <Mail className="h-4 w-4 text-muted-foreground" />
-        </div>
+      
         <h3 className="text-base font-medium tracking-tight">No matching virtual emails</h3>
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">
           Try a different search term, or create a new address for this workspace.
@@ -44,9 +42,7 @@ export function VirtualEmailsEmptyState({ variant, onCreate }: VirtualEmailsEmpt
       />
 
       <div className="relative mx-auto max-w-lg">
-        <div className="mx-auto mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
-          <Mail className="h-5 w-5 text-primary" />
-        </div>
+        
 
         <span className="label-mono">Virtual emails</span>
         <h3 className="mt-2 text-xl font-medium tracking-tight">Create your first address</h3>

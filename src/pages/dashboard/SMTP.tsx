@@ -89,7 +89,7 @@ function TestSmtpPanel() {
 
   async function copyEnv(inbox: SandboxInbox) {
     await navigator.clipboard.writeText(
-      `SMTP_HOST=${inbox.smtp_host}\nSMTP_PORT=${inbox.smtp_port}\nSMTP_USER=${inbox.username}\nSMTP_PASS=${inbox.password}`,
+      `SMTP_HOST=${inbox.smtp_host}\nSMTP_PORT=${inbox.smtp_port}\nSMTP_USER=${inbox.username}\nSMTP_PASS=${inbox.password}\nSMTP_ENCRYPTION=null`,
     );
     toastSuccess('Test SMTP credentials copied.');
   }
@@ -382,7 +382,7 @@ function LiveSmtpPanel() {
       {liveSendingEnabled && credential ? (
         <SnippetSection
           title="Connect — live"
-          description="Use STARTTLS. Port 2525 works on most hosting providers where 587 is blocked."
+          description="Plain SMTP on port 2525 — works with default Laravel mail settings, no TLS configuration needed."
           code={snippet}
         />
       ) : null}
@@ -578,7 +578,7 @@ async function copyValue(value: string, label: string) {
 
 async function copyEnvSnippet(host: string, port: number, username: string, password: string) {
   await navigator.clipboard.writeText(
-    `SMTP_HOST=${host}\nSMTP_PORT=${port}\nSMTP_USER=${username}\nSMTP_PASS=${password}`,
+    `MAIL_MAILER=smtp\nMAIL_HOST=${host}\nMAIL_PORT=${port}\nMAIL_USERNAME=${username}\nMAIL_PASSWORD=${password}\nMAIL_ENCRYPTION=null`,
   );
   toastSuccess('Live SMTP credentials copied.');
 }
@@ -613,6 +613,7 @@ const transporter = nodemailer.createTransport({
   host: "${host}",
   port: ${port},
   secure: false,
+  ignoreTLS: true,
   auth: { user: "${user}", pass: process.env.MV_SMTP_PASS },
 });
 

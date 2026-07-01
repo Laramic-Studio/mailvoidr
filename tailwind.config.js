@@ -7,6 +7,16 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)'],
+        mono: ['var(--font-mono)'],
+        Inter: ['var(--font-Inter)'],
+        display: ['var(--font-display)'],
+        body: ['var(--font-body)'],
+        headline: ['var(--font-headline)'],
+        subheadline: ['var(--font-subheadline)'],
+        caption: ['var(--font-caption)'],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

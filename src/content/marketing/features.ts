@@ -71,7 +71,7 @@ export const FEATURES_LIST: MarketingFeature[] = [
   {
     icon: 'server',
     title: 'Live SMTP',
-    desc: 'Connect your app over SMTP on port 587 with workspace credentials — same deliverability path as the HTTP API.',
+    desc: 'Connect your app over SMTP on port 2525 with workspace credentials — same deliverability path as the HTTP API.',
     docHref: '/docs/smtp',
   },
   {
@@ -128,7 +128,7 @@ export const FEATURES_PILLARS = [
       'Point staging at a sandbox inbox or virtual address, iterate on templates, then flip on live sending with the same domain and credentials.',
     stats: [
       ['REST + SMTP', 'two send paths'],
-      [':2525', 'sandbox capture'],
+      [':587', 'sandbox capture'],
     ] as const,
   },
 ] as const;

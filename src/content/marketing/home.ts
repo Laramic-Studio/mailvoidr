@@ -42,7 +42,7 @@ export const HOME_BENTO = {
   },
   testing: {
     title: 'Sandbox testing',
-    desc: 'Capture mail on :2525, run spam and HTML checks, and debug before you flip live sending on.',
+    desc: 'Capture mail on :587, run spam and HTML checks, and debug before you flip live sending on.',
   },
   inboxes: {
     title: 'Virtual inboxes',

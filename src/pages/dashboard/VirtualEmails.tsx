@@ -4,16 +4,20 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { VirtualEmailCreateDialog } from '@/components/dashboard/VirtualEmailCreateDialog';
 import { VirtualEmailsEmptyState } from '@/components/dashboard/VirtualEmailsEmptyState';
+import { IconTooltip } from '@/components/ui/icon-tooltip';
 import { formatVirtualEmailDate, formatVirtualEmailTtl } from '@/constants/virtual-emails';
-import { useVirtualEmails } from '@/hooks/useVirtualEmails';
-import { toastSuccess } from '@/lib/toast';
-import { Plus, Search, Copy, Mail, Clock, Loader2 } from 'lucide-react';
+import { useVirtualEmailMutations, useVirtualEmails } from '@/hooks/useVirtualEmails';
+import { toastError, toastSuccess } from '@/lib/toast';
+import type { VirtualEmail } from '@/types';
+import { Plus, Search, Copy, Mail, Clock, Loader2, Trash2 } from 'lucide-react';
 
 export default function VirtualEmails() {
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<VirtualEmail | null>(null);
   const { data, isLoading, isError } = useVirtualEmails(search);
+  const { remove } = useVirtualEmailMutations();
 
   const virtualEmails = data?.data ?? [];
   const isSearchEmpty =
@@ -29,6 +33,18 @@ export default function VirtualEmails() {
   async function copyAddress(address: string) {
     await navigator.clipboard.writeText(address);
     toastSuccess('Address copied.');
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+
+    try {
+      await remove.mutateAsync(deleteTarget.id);
+      toastSuccess('Virtual email deleted.');
+      setDeleteTarget(null);
+    } catch (err) {
+      toastError(err, 'Could not delete virtual email');
+    }
   }
 
   return (
@@ -120,14 +136,29 @@ export default function VirtualEmails() {
                     {formatVirtualEmailDate(item.created_at)}
                   </td>
                   <td className="p-3">
-                    <button
-                      type="button"
-                      aria-label={`Copy ${item.email_address}`}
-                      onClick={() => copyAddress(item.email_address)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <IconTooltip label="Copy address">
+                        <button
+                          type="button"
+                          aria-label={`Copy ${item.email_address}`}
+                          onClick={() => copyAddress(item.email_address)}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
+                      </IconTooltip>
+                      <IconTooltip label="Delete address">
+                        <button
+                          type="button"
+                          aria-label={`Delete ${item.email_address}`}
+                          onClick={() => setDeleteTarget(item)}
+                          data-testid={`virtual-email-delete-${item.id}`}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </IconTooltip>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -137,6 +168,37 @@ export default function VirtualEmails() {
       </div>
 
       <VirtualEmailCreateDialog open={showCreate} onOpenChange={setShowCreate} />
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md border border-border bg-card p-6 shadow-lg">
+            <h3 className="text-base font-medium">Delete virtual email?</h3>
+            <p className="mt-2 text-[13px] text-muted-foreground">
+              This permanently deletes{' '}
+              <span className="font-mono text-foreground">{deleteTarget.email_address}</span> and all
+              captured messages.
+            </p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteConfirm()}
+                disabled={remove.isPending}
+                data-testid="virtual-email-delete-confirm"
+                className="rounded-md bg-destructive px-3 py-1.5 text-[13px] text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+              >
+                {remove.isPending ? 'Deleting…' : 'Delete address'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

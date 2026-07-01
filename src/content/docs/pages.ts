@@ -52,8 +52,8 @@ export const DOCS_PAGES: Record<string, DocsPage> = {
         'Each team works inside a workspace with shared domains, templates, API keys, and SMTP credentials.',
       ]),
       prose('pieces', 'Core pieces', [
-        'Send — POST /api/v1/mail/send or SMTP on port 587 for live mail.',
-        'Sandbox — SMTP on port 2525 captures test messages without spending credits.',
+        'Send — POST /api/v1/mail/send or SMTP on port 2525 for live mail.',
+        'Sandbox — SMTP on port 587 captures test messages without spending credits.',
         'Virtual inboxes — disposable addresses with TTL for QA flows.',
         'Domains — verify SPF and DKIM before you send from your own domain.',
         'Webhooks — signed callbacks for queued, sent, delivered, bounced, opened, and clicked events.',
@@ -75,7 +75,7 @@ export const DOCS_PAGES: Record<string, DocsPage> = {
         'intro',
         'Introduction',
         [
-          'Mailvoidr exposes POST /api/v1/mail/send for production traffic and a sandbox SMTP listener on port 2525 for test mail. Every outbound send is logged; verified domains get DKIM signing.',
+          'Mailvoidr exposes POST /api/v1/mail/send for production traffic and a sandbox SMTP listener on port 587 for test mail. Every outbound send is logged; verified domains get DKIM signing.',
         ],
         DOMAIN_CALLOUT,
       ),
@@ -201,7 +201,7 @@ POST /api/v1/templates/{id}/preview`),
     description: 'Capture mail locally before enabling live sending.',
     sections: [
       prose('sandbox', 'Sandbox inbox', [
-        'Each workspace gets a sandbox inbox. Point your app at SMTP port 2525 with the credentials shown in Dashboard → Sandbox.',
+        'Each workspace gets a sandbox inbox. Point your app at SMTP port 587 with the credentials shown in Dashboard → SMTP → Test.',
         'Messages appear in the dashboard instantly — no credits consumed, no external delivery.',
       ]),
       prose('checks', 'What you can inspect', [
@@ -244,7 +244,7 @@ GET    /api/v1/virtual-emails/{id}/messages`),
         'Rules cover DKIM alignment, HTML ratio, unsubscribe headers, and common spam triggers — fix issues before you send to customers.',
       ]),
       prose('workflow', 'Workflow', [
-        '1. Point staging at SMTP :2525.',
+        '1. Point staging at SMTP :587.',
         '2. Trigger the email from your app or test suite.',
         '3. Open the message in Dashboard → Sandbox and review the spam report.',
       ]),
@@ -343,15 +343,14 @@ GET    /api/v1/sandbox/messages`),
     description: 'Send through the same relay as the HTTP API using workspace credentials.',
     sections: [
       prose('intro', 'Credentials', [
-        'Generate SMTP username and password in Dashboard → SMTP. Use port 587 with STARTTLS.',
-        'Sandbox capture uses port 2525 — do not point production traffic there.',
+        'Generate live SMTP username and password in Dashboard → SMTP → Live. Use port 2525 with plain SMTP (no TLS).',
+        'Sandbox capture uses port 587 — do not point production traffic there.',
       ]),
       code('swaks', 'Quick test with swaks', 'bash', `swaks --to you@example.com \\
   --from hello@mail.yourdomain.com \\
-  --server smtp.mailvoidr.com:587 \\
-  --auth-user YOUR_SMTP_USER \\
-  --auth-password YOUR_SMTP_PASSWORD \\
-  --tls`),
+  --server app.mailvoidr.com:2525 \\
+  --auth-user YOUR_LIVE_SMTP_USER \\
+  --auth-password YOUR_LIVE_SMTP_PASSWORD`),
       links('next', 'Next steps', [
         { href: '/docs/verify-domain', label: 'Verify a domain first' },
         { href: '/docs/send-first-email', label: 'REST API alternative' },
