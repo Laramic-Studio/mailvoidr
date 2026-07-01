@@ -189,14 +189,6 @@ export default function TemplateDetail() {
 
   return (
     <DashboardLayout>
-      <div className="mb-6 flex items-center gap-3">
-        <Link
-          to="/dashboard/templates"
-          className="text-muted-foreground hover:text-foreground"
-          data-testid="template-back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
         <PageHeader
           eyebrow="Templates"
           title={template.name}
@@ -221,7 +213,6 @@ export default function TemplateDetail() {
             </>
           }
         />
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="space-y-6">
