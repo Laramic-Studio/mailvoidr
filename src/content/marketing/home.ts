@@ -19,7 +19,20 @@ export const HOME_HERO = {
   bullets: ['No credit card', `${FREE_SENDS_PER_MONTH} sends free every month`, 'API keys in under a minute'],
 };
 
-export const HOME_STACK = ['REST API', 'Live SMTP', 'Sandbox capture', 'Webhooks', 'Templates', 'Analytics'];
+export const HOME_STACK = [
+  'Node.js',
+  'Python',
+  'Go',
+  'cURL',
+  'SMTP',
+  'Laravel',
+  'REST API',
+  'Live SMTP',
+  'Sandbox capture',
+  'Webhooks',
+  'Templates',
+  'Analytics',
+] as const;
 
 export const HOME_SEND_FEATURES = [
   'HTTP API with scoped keys — or connect over SMTP on port 587',

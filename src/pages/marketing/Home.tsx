@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { MarketingLayout } from '@/components/layouts/MarketingLayout';
 import { CodeBlock } from '@/components/CodeBlock';
+import { DashboardPreview } from '@/components/marketing/DashboardPreview';
 import {
   buildCodeSamples,
   CODE_SAMPLE_LANGS,
@@ -40,7 +41,7 @@ export default function Home() {
 
   return (
     <MarketingLayout>
-      <section className="relative overflow-hidden border-b border-border">
+      <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 dotted-bg opacity-40" />
         <div className="pointer-events-none absolute inset-0 gradient-radial-primary" />
         <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-24">
@@ -94,22 +95,15 @@ export default function Home() {
               <DeliverySpeedometer />
             </div>
           </div>
+
+          
         </div>
       </section>
 
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-7xl px-6 py-10">
-          <div className="label-mono mb-6 text-center">Built for your stack</div>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {HOME_STACK.map((item) => (
-              <span
-                key={item}
-                className="rounded-md border border-border bg-card px-3 py-1.5 font-body text-[12px] text-muted-foreground"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
+      <section className="overflow-hidden  py-12">
+        <p className="label-mono mb-8 text-center">Built for your stack</p>
+        <div className="reviews-edge-mask">
+          <StackMarquee items={HOME_STACK} />
         </div>
       </section>
 
@@ -134,36 +128,26 @@ export default function Home() {
                 ))}
               </ul>
             </div>
-            <div className="border border-border bg-card">
-              <div className="flex items-center gap-1 border-b border-border px-2">
-                {CODE_SAMPLE_LANGS.map((sample) => (
-                  <button
-                    key={sample.id}
-                    type="button"
-                    onClick={() => setLang(sample.id)}
-                    data-testid={`code-lang-${sample.label.toLowerCase()}`}
-                    className={`px-3 py-2 font-body text-[12.5px] transition-colors ${
-                      lang === sample.id
-                        ? '-mb-px border-b-2 border-primary text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {sample.label}
-                  </button>
-                ))}
-              </div>
-              <CodeBlock
-                code={codeSamples[lang]}
-                language={lang === 'send_curl' ? 'bash' : lang.replace('send_', '')}
-                filename={
-                  lang === 'send_curl'
-                    ? 'send-email.sh'
-                    : lang === 'send_node'
-                      ? 'send-email.ts'
-                      : 'send-email.py'
-                }
-              />
-            </div>
+            <CodeBlock
+              code={codeSamples[lang]}
+              language={lang === 'send_curl' ? 'bash' : lang.replace('send_', '')}
+              filename={
+                lang === 'send_curl'
+                  ? 'send-email.sh'
+                  : lang === 'send_node'
+                    ? 'send-email.ts'
+                    : 'send-email.py'
+              }
+              showWindowChrome
+              elevated
+              showLineNumbers
+              tabs={CODE_SAMPLE_LANGS.map((sample) => ({
+                id: sample.id,
+                label: sample.label,
+              }))}
+              activeTab={lang}
+              onTabChange={(id) => setLang(id as CodeSampleId)}
+            />
           </div>
         </div>
       </section>
@@ -411,6 +395,25 @@ function AnalyticsPreview() {
   );
 }
 
+function StackMarquee({ items }: { items: readonly string[] }) {
+  const repeated = [...items, ...items, ...items, ...items];
+
+  return (
+    <div className="overflow-hidden">
+      <div className="flex w-max items-center gap-x-10 md:gap-x-14 stack-marquee-track">
+        {repeated.map((item, index) => (
+          <span
+            key={`${item}-${index}`}
+            className="shrink-0 font-display text-lg font-semibold tracking-tight text-muted-foreground/50 md:text-xl"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ReviewsMarqueeRow({
   reviews,
   reverse = false,
@@ -449,7 +452,7 @@ function ReviewCard({ review }: { review: (typeof HOME_REVIEWS)[number] }) {
   const hue = reviewAvatarHue(review.name);
 
   return (
-    <figure className="flex w-[min(88vw,320px)] shrink-0 flex-col justify-between rounded-lg bg-muted/50 p-6">
+    <figure className="flex w-[min(88vw,340px)] shrink-0 flex-col justify-between rounded-lg bg-muted/50 p-6">
       <blockquote className="text-[14px] leading-[1.65] text-foreground/90">
         {review.quote}
       </blockquote>
@@ -460,7 +463,12 @@ function ReviewCard({ review }: { review: (typeof HOME_REVIEWS)[number] }) {
         >
           {initials}
         </div>
-        <span className="truncate text-sm font-medium">{review.name}</span>
+        <div className="min-w-0">
+          <span className="block truncate text-sm font-medium">{review.name}</span>
+          <span className="block truncate text-[12px] text-muted-foreground">
+            {review.role} · {review.company}
+          </span>
+        </div>
       </figcaption>
     </figure>
   );

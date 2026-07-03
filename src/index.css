@@ -32,6 +32,13 @@
         --chart-4: 271 81% 56%;
         --chart-5: 339 82% 52%;
         --radius: 0.375rem;
+        --font-mono: "Outfit", sans-serif;
+        --font-Inter: "Inter", sans-serif;
+        --font-display: "Google Sans Flex", sans-serif;
+        --font-body: "Urbanist", sans-serif;
+        --font-headline: "Outfit", sans-serif;
+        --font-subheadline: "Outfit", sans-serif;
+        --font-caption: "Roboto", sans-serif;
     }
     .dark {
         --background: 0 0% 4%;
@@ -164,6 +171,10 @@
             transparent 72%
         );
     }
+    .stack-marquee-track {
+        animation: stack-marquee 40s linear infinite;
+        will-change: transform;
+    }
     .reviews-marquee-track {
         animation: reviews-marquee 60s linear infinite;
         will-change: transform;
@@ -171,6 +182,14 @@
     .reviews-marquee-track-reverse {
         animation: reviews-marquee-reverse 65s linear infinite;
         will-change: transform;
+    }
+    @keyframes stack-marquee {
+        from {
+            transform: translateX(0);
+        }
+        to {
+            transform: translateX(-25%);
+        }
     }
     @keyframes reviews-marquee {
         from {
@@ -189,6 +208,7 @@
         }
     }
     @media (prefers-reduced-motion: reduce) {
+        .stack-marquee-track,
         .reviews-marquee-track,
         .reviews-marquee-track-reverse {
             animation: none;

@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -10,24 +10,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useHealth } from "@/hooks/useHealth";
 import { workspaceInitials } from "@/hooks/useWorkspaces";
-import { ArrowRight, Github, LayoutDashboard, Twitter } from "lucide-react";
-
-const NAV = [
-  { to: "/features", label: "Features" },
-  { to: "/pricing", label: "Pricing" },
-  { to: "/docs", label: "Docs" },
-  // { to: "/enterprise", label: "Enterprise" },
-  // { to: "/blog", label: "Blog" },
-  { to: "/about", label: "About" },
-  { to: "/status", label: "Status" },
-];
+import { MARKETING_NAV, MARKETING_SOCIAL } from "@/content/marketing/nav";
+import { ArrowRight, Github, LayoutDashboard, Menu, Twitter } from "lucide-react";
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const nav = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { data: apiHealthy, isLoading: healthLoading } = useHealth();
   const statusLabel = healthLoading
@@ -48,10 +47,10 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/70 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 md:gap-8">
             <Logo />
             <nav className="hidden md:flex items-center gap-1">
-              {NAV.map((n) => (
+              {MARKETING_NAV.map((n) => (
                 <NavLink
                   key={n.to}
                   to={n.to}
@@ -70,13 +69,88 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-2">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger
+                data-testid="nav-mobile-menu"
+                className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="h-4 w-4" />
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[min(88vw,320px)]">
+                <SheetHeader>
+                  <SheetTitle className="text-left">
+                    <Logo />
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="mt-8 flex flex-col gap-1">
+                  {MARKETING_NAV.map((n) => (
+                    <NavLink
+                      key={n.to}
+                      to={n.to}
+                      onClick={() => setMobileOpen(false)}
+                      className={({ isActive }) =>
+                        `rounded-md px-3 py-2.5 text-sm transition-colors ${
+                          isActive || pathname.startsWith(n.to)
+                            ? "bg-accent text-foreground"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        }`
+                      }
+                    >
+                      {n.label}
+                    </NavLink>
+                  ))}
+                </nav>
+                <div className="mt-8 flex flex-col gap-2 border-t border-border pt-6">
+                  {showAuthenticatedNav ? (
+                    <>
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setMobileOpen(false)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                      >
+                        <LayoutDashboard className="h-3.5 w-3.5" />
+                        Dashboard
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileOpen(false);
+                          handleLogout();
+                        }}
+                        className="rounded-md border border-border px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      >
+                        Sign out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-md border border-border px-4 py-2.5 text-center text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      >
+                        Sign in
+                      </Link>
+                      <Link
+                        to="/register"
+                        onClick={() => setMobileOpen(false)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                      >
+                        Get started <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
             <ThemeToggle />
             {showAuthenticatedNav ? (
               <>
                 <Link
                   to="/dashboard"
                   data-testid="nav-dashboard-btn"
-                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                  className="hidden sm:inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
                   Dashboard
@@ -141,22 +215,34 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
               Email infrastructure for developers. Send, test, and inspect — without leaving your terminal.
             </p>
             <div className="mt-4 flex items-center gap-2">
-              <a href="#" aria-label="GitHub" className="inline-flex h-8 w-8 items-center justify-center border border-border hover:bg-accent transition-colors">
+              <a
+                href={MARKETING_SOCIAL.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub"
+                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
+              >
                 <Github className="h-3.5 w-3.5" />
               </a>
-              <a href="#" aria-label="Twitter" className="inline-flex h-8 w-8 items-center justify-center border border-border hover:bg-accent transition-colors">
+              <a
+                href={MARKETING_SOCIAL.x}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="X (Twitter)"
+                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
+              >
                 <Twitter className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>
-          <FooterCol title="Product" links={[["Features","/features"],["Pricing","/pricing"],/* ["Enterprise","/enterprise"], ["Changelog","/blog"], */["Status","/status"]]} />
+          <FooterCol title="Product" links={[["Features","/features"],["Pricing","/pricing"],["Status","/status"]]} />
           <FooterCol title="Developers" links={[["Documentation","/docs"],["API reference","/docs/api-reference"],["Webhooks","/docs/webhooks"],["Quickstart","/docs/quickstart"]]} />
-          <FooterCol title="Company" links={[["About","/about"],/* ["Blog","/blog"], */["Contact","/contact"],["Privacy","/privacy"],["Terms","/terms"]]} />
+          <FooterCol title="Company" links={[["About","/about"],["Contact","/contact"],["Privacy","/privacy"],["Terms","/terms"]]} />
         </div>
         <div className="border-t border-border">
           <div className="mx-auto max-w-7xl px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12.5px] text-muted-foreground">
-            <span>© 2026 Mailvoidr, Inc. — By developers, for developers 🍻.</span>
-       
+            <span>© 2026 Mailvoidr, Inc. — By developers, for developers.</span>
+
             <div className="flex items-center gap-5 font-mono text-[11px]">
               <Link to="/status" className="inline-flex items-center gap-1.5 hover:text-foreground">
                 <span className={`h-1.5 w-1.5 rounded-full ${statusClass} ${apiHealthy ? "animate-pulse" : ""}`} />
