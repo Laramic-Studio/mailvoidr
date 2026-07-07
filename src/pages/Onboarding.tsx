@@ -237,11 +237,13 @@ export default function Onboarding() {
         {step === 3 && (
           <div data-testid="onb-apikey">
             <span className="label-mono">Step 4</span>
-            <h1 className="mt-2 text-3xl tracking-tight font-medium">Generate your first API key</h1>
-            <p className="mt-2 text-muted-foreground text-sm">Save this somewhere safe. You won&apos;t see it again.</p>
+            <h1 className="mt-2 text-3xl tracking-tight font-medium">Generate your first test API key</h1>
+            <p className="mt-2 text-muted-foreground text-sm">
+              A sandbox key for staging and CI. You can view it again anytime with your password.
+            </p>
             <div className="mt-8 border border-border bg-card p-4">
               <div className="flex items-center justify-between">
-                <span className="label-mono">Production · web-app</span>
+                <span className="label-mono">Staging · web-app</span>
                 {plainApiKey && (
                   <button
                     type="button"
@@ -271,7 +273,7 @@ export default function Onboarding() {
               </div>
               {plainApiKey && (
                 <div className="mt-4">
-                  <CodeBlock language="bash" code={`export MAILVOIDR_API_KEY="${plainApiKey}"`} />
+                  <CodeBlock language="bash" code={`export MAILVOIDR_TEST_API_KEY="${plainApiKey}"`} />
                 </div>
               )}
             </div>
@@ -286,9 +288,9 @@ export default function Onboarding() {
             <h1 className="text-3xl tracking-tight font-medium">You&apos;re all set{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!</h1>
             <p className="mt-3 text-muted-foreground">Your workspace is ready. Time to send your first email.</p>
             <div className="mt-8 grid sm:grid-cols-2 gap-3 text-left">
-              <Link to="/dashboard/send" className="border border-border bg-card p-4 hover:bg-accent transition-colors">
-                <div className="text-sm font-medium">Send a test email →</div>
-                <div className="mt-1 text-[12.5px] text-muted-foreground">Try sending with your new API key.</div>
+              <Link to="/dashboard/inbox" className="border border-border bg-card p-4 hover:bg-accent transition-colors">
+                <div className="text-sm font-medium">Open your sandbox inbox →</div>
+                <div className="mt-1 text-[12.5px] text-muted-foreground">Send test mail with your new API key.</div>
               </Link>
               <Link to="/docs/quickstart" className="border border-border bg-card p-4 hover:bg-accent transition-colors">
                 <div className="text-sm font-medium">Read the quickstart →</div>

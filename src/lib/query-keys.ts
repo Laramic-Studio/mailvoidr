@@ -37,6 +37,7 @@ export const queryKeys = {
   },
   apiKeys: {
     all: ['api-keys'] as const,
+    list: (environment: 'live' | 'test') => ['api-keys', environment] as const,
   },
   smtpCredentials: {
     all: ['smtp-credentials'] as const,

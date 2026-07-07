@@ -1,48 +1,90 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { ApiKeyCreateDialog } from '@/components/dashboard/ApiKeyCreateDialog';
 import { ApiKeyRevealDialog } from '@/components/dashboard/ApiKeyRevealDialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useApiKeyMutations, useApiKeys } from '@/hooks/useApiKeys';
+import type { ApiKeyEnvironment } from '@/constants/api-keys';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { ApiKey } from '@/types';
-import { Plus, Copy, Eye, EyeOff, KeyRound, RotateCw, Ban, Loader2 } from 'lucide-react';
+import { Plus, KeyRound, RotateCw, Ban, Loader2, FlaskConical, Zap, Eye } from 'lucide-react';
 
 function formatDate(value: string | null): string {
   if (!value) return 'Never';
   return new Date(value).toLocaleString();
 }
 
-function maskPrefix(prefix: string, revealed: boolean): string {
-  return revealed ? prefix : `${prefix.slice(0, 8)}••••••••`;
+function maskPrefix(prefix: string): string {
+  return `${prefix.slice(0, 8)}••••••••`;
 }
 
-export default function APIKeys() {
-  const [showCreate, setShowCreate] = useState(false);
-  const [revealedPrefixes, setRevealedPrefixes] = useState<Record<string, boolean>>({});
-  const [keyToRevoke, setKeyToRevoke] = useState<ApiKey | null>(null);
-  const [revealedKey, setRevealedKey] = useState<{ name: string; plainKey: string } | null>(null);
+type KeyDialogMode = 'created' | 'rotated' | 'view';
 
-  const { data, isLoading, isError } = useApiKeys();
-  const { rotate, revoke } = useApiKeyMutations();
+interface KeyDialogState {
+  name: string;
+  environment: ApiKeyEnvironment;
+  mode: KeyDialogMode;
+  plainKey?: string;
+  apiKeyId?: string;
+}
+
+const PANEL_COPY: Record<
+  ApiKeyEnvironment,
+  { summary?: string; empty: string; emptyHint?: string }
+> = {
+  live: {
+    empty: 'No live keys yet. Enable live sending, then create your first production key.',
+    emptyHint: 'Need staging first? Switch to the Test tab — no live sending required.',
+  },
+  test: {
+    empty: 'No test keys yet. Create one for CI, staging, or local automation.',
+  },
+};
+
+function revealTitle(mode: KeyDialogMode): string {
+  if (mode === 'created') return 'API key created';
+  if (mode === 'rotated') return 'API key rotated';
+  return 'View API key';
+}
+
+interface ApiKeysPanelProps {
+  environment: ApiKeyEnvironment;
+  showCreate: boolean;
+  onShowCreateChange: (open: boolean) => void;
+}
+
+function ApiKeysPanel({ environment, showCreate, onShowCreateChange }: ApiKeysPanelProps) {
+  const [keyToRevoke, setKeyToRevoke] = useState<ApiKey | null>(null);
+  const [keyToRotate, setKeyToRotate] = useState<ApiKey | null>(null);
+  const [keyDialog, setKeyDialog] = useState<KeyDialogState | null>(null);
+
+  const { data, isLoading, isError } = useApiKeys(environment);
+  const { rotate, revoke } = useApiKeyMutations(environment);
 
   const apiKeys = data?.data ?? [];
-  const availableScopes = data?.meta.available_scopes ?? [];
+  const availableScopes = data?.meta.available_scopes?.[environment] ?? [];
+  const copy = PANEL_COPY[environment];
 
   const activeCount = apiKeys.filter((key) => !key.is_revoked).length;
   const revokedCount = apiKeys.filter((key) => key.is_revoked).length;
   const totalRequests = apiKeys.reduce((sum, key) => sum + key.requests_count, 0);
 
-  async function handleRotate(key: ApiKey) {
-    if (!window.confirm(`Rotate "${key.name}"? The current key will stop working immediately.`)) {
-      return;
-    }
+  async function handleRotateConfirm() {
+    if (!keyToRotate) return;
 
     try {
-      const result = await rotate.mutateAsync(key.id);
-      setRevealedKey({ name: result.api_key.name, plainKey: result.plain_key });
+      const result = await rotate.mutateAsync(keyToRotate.id);
+      setKeyToRotate(null);
+      setKeyDialog({
+        name: result.api_key.name,
+        plainKey: result.plain_key,
+        environment: result.api_key.environment,
+        mode: 'rotated',
+      });
       toastSuccess(result.message);
     } catch (error) {
       toastError(error, 'Could not rotate API key.');
@@ -61,28 +103,18 @@ export default function APIKeys() {
     }
   }
 
-  async function copyPrefix(prefix: string) {
-    await navigator.clipboard.writeText(prefix);
-    toastSuccess('Key prefix copied.');
+  function openViewDialog(key: ApiKey) {
+    setKeyDialog({
+      name: key.name,
+      environment: key.environment,
+      apiKeyId: key.id,
+      mode: 'view',
+    });
   }
 
   return (
-    <DashboardLayout>
-      <PageHeader
-        eyebrow="Developer"
-        title="API keys"
-        description="Scoped tokens for the Mailvoidr API. Rotate or revoke at any time."
-        actions={
-          <button
-            type="button"
-            data-testid="apikey-create"
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-3 w-3" /> Create API key
-          </button>
-        }
-      />
+    <>
+      <p className="mb-4 text-[13px] text-muted-foreground">{copy.summary}</p>
 
       <div className="mb-6 grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-3">
         {[
@@ -107,9 +139,18 @@ export default function APIKeys() {
         ) : apiKeys.length === 0 ? (
           <div className="p-12 text-center">
             <KeyRound className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              No API keys yet. Enable live sending, then create your first key.
-            </p>
+            <p className="mt-3 text-sm text-muted-foreground">{copy.empty}</p>
+            {copy.emptyHint ? (
+              <p className="mt-2 text-[12px] text-muted-foreground">{copy.emptyHint}</p>
+            ) : null}
+            {environment === 'live' && data?.meta.can_create_live === false ? (
+              <Link
+                to="/dashboard/smtp"
+                className="mt-4 inline-block text-[13px] font-medium text-primary hover:underline"
+              >
+                Enable live sending →
+              </Link>
+            ) : null}
           </div>
         ) : (
           <table className="w-full text-[13px]">
@@ -137,35 +178,11 @@ export default function APIKeys() {
                     <div className="inline-flex items-center gap-2">
                       <KeyRound className="h-3 w-3 text-muted-foreground" />
                       <span className="font-medium">{key.name}</span>
+                     
                     </div>
                   </td>
-                  <td className="p-3">
-                    <div className="inline-flex items-center gap-1.5 font-mono text-[12px]">
-                      <span>{maskPrefix(key.key_prefix, revealedPrefixes[key.id] ?? false)}</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRevealedPrefixes((current) => ({
-                            ...current,
-                            [key.id]: !current[key.id],
-                          }))
-                        }
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        {revealedPrefixes[key.id] ? (
-                          <EyeOff className="h-3 w-3" />
-                        ) : (
-                          <Eye className="h-3 w-3" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => copyPrefix(key.key_prefix)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </button>
-                    </div>
+                  <td className="p-3 font-mono text-[12px] text-muted-foreground">
+                    {maskPrefix(key.key_prefix)}
                   </td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
@@ -193,7 +210,20 @@ export default function APIKeys() {
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          onClick={() => handleRotate(key)}
+                          onClick={() => openViewDialog(key)}
+                          disabled={!key.can_reveal}
+                          title={
+                            key.can_reveal
+                              ? 'View key'
+                              : 'Rotate this key to enable viewing'
+                          }
+                          className="inline-flex h-7 w-7 items-center justify-center rounded hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setKeyToRotate(key)}
                           className="inline-flex h-7 w-7 items-center justify-center rounded hover:bg-accent"
                           title="Rotate"
                         >
@@ -219,18 +249,48 @@ export default function APIKeys() {
 
       <ApiKeyCreateDialog
         open={showCreate}
-        onOpenChange={setShowCreate}
+        onOpenChange={onShowCreateChange}
+        environment={environment}
         availableScopes={availableScopes}
-        onCreated={({ plainKey, name }) => setRevealedKey({ plainKey, name })}
+        onCreated={({ plainKey, name, environment: keyEnv }) =>
+          setKeyDialog({
+            plainKey,
+            name,
+            environment: keyEnv,
+            mode: 'created',
+          })
+        }
       />
 
       <ApiKeyRevealDialog
-        open={Boolean(revealedKey)}
+        open={Boolean(keyDialog)}
         onOpenChange={(open) => {
-          if (!open) setRevealedKey(null);
+          if (!open) setKeyDialog(null);
         }}
-        name={revealedKey?.name ?? ''}
-        plainKey={revealedKey?.plainKey ?? ''}
+        name={keyDialog?.name ?? ''}
+        environment={keyDialog?.environment ?? environment}
+        plainKey={keyDialog?.plainKey}
+        apiKeyId={keyDialog?.plainKey ? undefined : keyDialog?.apiKeyId}
+        title={keyDialog ? revealTitle(keyDialog.mode) : 'View API key'}
+      />
+
+      <ConfirmDeleteDialog
+        open={Boolean(keyToRotate)}
+        onOpenChange={(open) => {
+          if (!open) setKeyToRotate(null);
+        }}
+        resourceName={keyToRotate?.name ?? ''}
+        resourceLabel="API key"
+        title="Rotate API key"
+        description={
+          keyToRotate
+            ? `The current token for "${keyToRotate.name}" will stop working immediately. Type the key name below to confirm.`
+            : undefined
+        }
+        confirmLabel="Rotate key"
+        onConfirm={handleRotateConfirm}
+        isPending={rotate.isPending}
+        testId="apikey-rotate-dialog"
       />
 
       <ConfirmDeleteDialog
@@ -251,6 +311,82 @@ export default function APIKeys() {
         isPending={revoke.isPending}
         testId="apikey-revoke-dialog"
       />
+    </>
+  );
+}
+
+function tabCount(keys: ApiKey[] | undefined): number {
+  return keys?.filter((key) => !key.is_revoked).length ?? 0;
+}
+
+export default function APIKeys() {
+  const [tab, setTab] = useState<ApiKeyEnvironment>('live');
+  const [showCreate, setShowCreate] = useState(false);
+
+  const liveQuery = useApiKeys('live');
+  const testQuery = useApiKeys('test');
+  const activeMeta = tab === 'live' ? liveQuery.data?.meta : testQuery.data?.meta;
+  const canCreate =
+    tab === 'test'
+      ? (activeMeta?.can_create_test ?? true)
+      : (activeMeta?.can_create_live ?? false);
+
+  const liveActive = tabCount(liveQuery.data?.data);
+  const testActive = tabCount(testQuery.data?.data);
+
+  return (
+    <DashboardLayout>
+      <PageHeader
+        eyebrow="Developer"
+        title="API keys"
+        description="Scoped tokens for production and staging. View anytime with your account password."
+        actions={
+          <button
+            type="button"
+            data-testid={`apikey-create-${tab}`}
+            onClick={() => setShowCreate(true)}
+            disabled={!canCreate}
+            title={
+              canCreate
+                ? undefined
+                : tab === 'live'
+                  ? 'Enable live sending first'
+                  : 'Select a workspace first'
+            }
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-3 w-3" />
+            Create {tab} key
+          </button>
+        }
+      />
+
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          setTab(value as ApiKeyEnvironment);
+          setShowCreate(false);
+        }}
+        className="space-y-6"
+      >
+        <TabsList className="h-10 w-auto shrink-0 grid grid-cols-2">
+          <TabsTrigger value="live" data-testid="apikey-tab-live" className="gap-2 px-4">
+            <Zap className="h-3.5 w-3.5" />
+            Live
+          </TabsTrigger>
+          <TabsTrigger value="test" data-testid="apikey-tab-test" className="gap-2 px-4">
+            <FlaskConical className="h-3.5 w-3.5" />
+            Test
+          </TabsTrigger>
+        </TabsList>
+
+        <ApiKeysPanel
+          key={tab}
+          environment={tab}
+          showCreate={showCreate}
+          onShowCreateChange={setShowCreate}
+        />
+      </Tabs>
     </DashboardLayout>
   );
 }

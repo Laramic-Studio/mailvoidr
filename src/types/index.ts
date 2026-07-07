@@ -324,6 +324,7 @@ export interface WhitelistedIpListResponse {
 export interface ApiKey {
   id: string;
   name: string;
+  environment: 'live' | 'test';
   key_prefix: string;
   scopes: string[];
   requests_count: number;
@@ -331,12 +332,18 @@ export interface ApiKey {
   created_at: string | null;
   revoked_at: string | null;
   is_revoked: boolean;
+  can_reveal: boolean;
 }
 
 export interface ApiKeyListResponse {
   data: ApiKey[];
   meta: {
-    available_scopes: string[];
+    available_scopes: {
+      live: string[];
+      test: string[];
+    };
+    can_create_live: boolean;
+    can_create_test: boolean;
   };
 }
 
