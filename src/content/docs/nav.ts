@@ -53,3 +53,26 @@ export const DOCS_NAV: DocsNavSection[] = [
     ],
   },
 ];
+
+export const DOCS_NAV_FLAT: DocsNavItem[] = DOCS_NAV.flatMap((section) => section.items);
+
+export function getDocsPagination(slug?: string): {
+  prev: DocsNavItem | null;
+  next: DocsNavItem | null;
+} {
+  const flat = DOCS_NAV_FLAT;
+
+  if (!slug) {
+    return { prev: null, next: flat[0] ?? null };
+  }
+
+  const index = flat.findIndex((item) => item.slug === slug);
+  if (index === -1) {
+    return { prev: null, next: null };
+  }
+
+  return {
+    prev: index > 0 ? flat[index - 1] : null,
+    next: index < flat.length - 1 ? flat[index + 1] : null,
+  };
+}

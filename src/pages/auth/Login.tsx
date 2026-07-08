@@ -8,7 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { inviteAcceptPath, postAuthDestination, storePendingInviteToken } from "@/lib/invite-flow";
 import { startOAuth, type OAuthProvider } from "@/lib/oauth";
-import { Github, Mail } from "lucide-react";
+import { GitHubLight, Google, GitHubDark } from "developer-icons";
+import { useTheme } from "next-themes";
 
 export default function Login() {
   const nav = useNavigate();
@@ -24,7 +25,8 @@ export default function Login() {
     : "/register";
   const { login } = useAuth();
   const { loading, run } = useAsyncAction();
-
+  const { theme } = useTheme();
+  const isDarkMode = theme === "dark";
   useEffect(() => {
     if (inviteToken) {
       storePendingInviteToken(inviteToken);
@@ -66,14 +68,14 @@ export default function Login() {
       </div>
       <div className="mt-8 space-y-2.5">
         <SocialBtn
-          icon={Github}
+          icon={!isDarkMode ? GitHubDark : GitHubLight}
           label="Continue with GitHub"
           provider="github"
           inviteToken={inviteToken}
           disabled={loading}
         />
         <SocialBtn
-          icon={Mail}
+          icon={Google}
           label="Continue with Google"
           provider="google"
           inviteToken={inviteToken}
@@ -124,7 +126,7 @@ function SocialBtn({
   inviteToken,
   disabled,
 }: {
-  icon: typeof Github;
+  icon: typeof GitHubLight | typeof Google;
   label: string;
   provider: OAuthProvider;
   inviteToken?: string | null;

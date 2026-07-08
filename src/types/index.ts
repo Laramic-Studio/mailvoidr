@@ -63,6 +63,17 @@ export interface TwoFactorSetup {
 export interface WorkspaceListResponse {
   owned: Workspace[];
   member: Workspace[];
+  meta?: {
+    owned_workspaces: OwnedWorkspaceQuota;
+  };
+}
+
+export interface OwnedWorkspaceQuota {
+  used: number;
+  limit: number | null;
+  remaining: number | null;
+  can_create: boolean;
+  plan_slug: string;
 }
 
 export interface UserSummary {
