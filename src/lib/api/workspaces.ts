@@ -81,11 +81,13 @@ export async function declineInvitation(workspaceId: string): Promise<{
 }
 
 export function flattenWorkspaces(lists: WorkspaceListResponse): Workspace[] {
+  const owned = normalizeWorkspaceList(lists.owned);
+  const member = normalizeWorkspaceList(lists.member);
   const seen = new Set<string>();
   const result: Workspace[] = [];
 
-  for (const workspace of [...lists.owned, ...lists.member]) {
-    if (seen.has(workspace.id)) {
+  for (const workspace of [...owned, ...member]) {
+    if (!workspace?.id || seen.has(workspace.id)) {
       continue;
     }
     seen.add(workspace.id);
@@ -93,4 +95,16 @@ export function flattenWorkspaces(lists: WorkspaceListResponse): Workspace[] {
   }
 
   return result;
+}
+
+function normalizeWorkspaceList(value: Workspace[] | { data?: Workspace[] } | null | undefined): Workspace[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value && Array.isArray(value.data)) {
+    return value.data;
+  }
+
+  return [];
 }

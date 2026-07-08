@@ -119,8 +119,12 @@ export function GlobalSearchTrigger({ onOpen }: GlobalSearchTriggerProps) {
   );
 }
 
-export function useGlobalSearchShortcut(onOpen: () => void) {
+export function useGlobalSearchShortcut(onOpen: () => void, enabled = true) {
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target;
 
@@ -142,5 +146,5 @@ export function useGlobalSearchShortcut(onOpen: () => void) {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onOpen]);
+  }, [onOpen, enabled]);
 }

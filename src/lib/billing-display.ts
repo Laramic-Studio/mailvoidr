@@ -34,4 +34,17 @@ export function billingPriceIsCustom(price: BillingPlanPrice | null | undefined)
   return price?.amount === null || price?.amount === undefined;
 }
 
+export function planHasFeature(
+  limits: Record<string, unknown> | null | undefined,
+  feature: string,
+): boolean {
+  const features = limits?.features;
+
+  if (!features || typeof features !== 'object') {
+    return false;
+  }
+
+  return (features as Record<string, unknown>)[feature] === true;
+}
+
 export { formatVolumeLabel } from '@/content/marketing/pricing';

@@ -4,6 +4,7 @@ import {
   fetchBilling,
   startBillingCheckout,
 } from '@/lib/api/billing';
+import { planHasFeature } from '@/lib/billing-display';
 import { queryKeys } from '@/lib/query-keys';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspaceStore } from '@/stores/workspace-store';
@@ -17,6 +18,12 @@ export function useBilling() {
     queryFn: fetchBilling,
     enabled: Boolean(user?.onboarding_completed),
   });
+}
+
+export function useEmailSearchEnabled() {
+  const { data } = useBilling();
+
+  return planHasFeature(data?.plan?.limits ?? null, 'email_search');
 }
 
 export function useBillingMutations() {

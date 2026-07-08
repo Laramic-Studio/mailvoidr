@@ -28,6 +28,7 @@ export function useWorkspaces() {
     queryKey: queryKeys.workspaces.all,
     queryFn: fetchWorkspaces,
     enabled: Boolean(user?.onboarding_completed),
+    refetchOnMount: true,
   });
 
   const workspaces = useMemo(
@@ -35,13 +36,20 @@ export function useWorkspaces() {
     [query.data],
   );
 
+  const activeWorkspaceId = useMemo(() => {
+    const selectedId = workspaceId ?? user?.selected_workspace_id ?? null;
+    if (selectedId) {
+      return selectedId;
+    }
+    return workspaces[0]?.id ?? null;
+  }, [workspaceId, user?.selected_workspace_id, workspaces]);
+
   const currentWorkspace = useMemo(() => {
-    const selectedId = workspaceId ?? user?.selected_workspace_id;
-    if (!selectedId) {
+    if (!activeWorkspaceId) {
       return workspaces[0] ?? null;
     }
-    return workspaces.find((w) => w.id === selectedId) ?? workspaces[0] ?? null;
-  }, [workspaceId, user?.selected_workspace_id, workspaces]);
+    return workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0] ?? null;
+  }, [activeWorkspaceId, workspaces]);
 
   useEffect(() => {
     if (user?.selected_workspace_id && user.selected_workspace_id !== workspaceId) {
@@ -56,7 +64,7 @@ export function useWorkspaces() {
     }
   }, [currentWorkspace, workspaceId, setWorkspace]);
 
-  return { ...query, workspaces, currentWorkspace };
+  return { ...query, workspaces, currentWorkspace, activeWorkspaceId };
 }
 
 export function useWorkspaceMutations() {

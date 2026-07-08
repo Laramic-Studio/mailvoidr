@@ -11,6 +11,7 @@ import {
   GlobalSearchTrigger,
   useGlobalSearchShortcut,
 } from '@/components/dashboard/GlobalSearchDialog';
+import { DashboardHeaderBreadcrumb } from '@/components/dashboard/DashboardHeaderBreadcrumb';
 import { NotificationBell } from '@/components/dashboard/NotificationBell';
 import { Send, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,6 +25,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmailSearchEnabled } from '@/hooks/useBilling';
 import { workspaceInitials } from '@/hooks/useWorkspaces';
 import { useUiStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
@@ -38,18 +40,23 @@ export function DashboardLayout({
 }) {
   const nav = useNavigate();
   const { user, logout } = useAuth();
+  const emailSearchEnabled = useEmailSearchEnabled();
   const hydrated = useUiStore((s) => s.hydrated);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const hydrate = useUiStore((s) => s.hydrate);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const openSearch = useCallback(() => setSearchOpen(true), []);
+  const openSearch = useCallback(() => {
+    if (emailSearchEnabled) {
+      setSearchOpen(true);
+    }
+  }, [emailSearchEnabled]);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
-  useGlobalSearchShortcut(openSearch);
+  useGlobalSearchShortcut(openSearch, emailSearchEnabled);
 
   async function handleLogout() {
     await logout();
@@ -99,7 +106,11 @@ export function DashboardLayout({
                 </SheetContent>
               </Sheet>
 
-              <GlobalSearchTrigger onOpen={openSearch} />
+              {emailSearchEnabled ? (
+                <GlobalSearchTrigger onOpen={openSearch} />
+              ) : (
+                <DashboardHeaderBreadcrumb />
+              )}
             </div>
 
             <div className="flex items-center gap-2">

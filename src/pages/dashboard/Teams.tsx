@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { DisabledWithTooltip } from '@/components/DisabledWithTooltip';
 import { TeamInviteDialog } from '@/components/dashboard/TeamInviteDialog';
 import { TeamMemberManageDialog } from '@/components/dashboard/TeamMemberManageDialog';
 import {
@@ -14,6 +15,7 @@ import { useWorkspaces, workspaceInitials } from '@/hooks/useWorkspaces';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { TeamInvitation, TeamMember } from '@/types';
 import { Loader2, Search, UserPlus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const ROLE_STYLES: Record<string, string> = {
   Owner: 'border-primary/40 text-primary bg-primary/10',
@@ -51,12 +53,15 @@ export default function Teams() {
   const [invitationToRevoke, setInvitationToRevoke] = useState<TeamInvitation | null>(null);
   const [resendingInvitationId, setResendingInvitationId] = useState<string | null>(null);
 
-  const { currentWorkspace } = useWorkspaces();
-  const workspaceId = currentWorkspace?.id ?? null;
+  const { activeWorkspaceId, isLoading: workspacesLoading, isError: workspacesError } = useWorkspaces();
+  const workspaceId = activeWorkspaceId;
 
   const membersQuery = useTeamMembers(workspaceId);
+  const membersLoaded = membersQuery.isSuccess;
   const canManage = membersQuery.data?.meta.can_manage ?? false;
   const canInvite = membersQuery.data?.meta.can_invite ?? false;
+  const inviteBlockedReason = membersQuery.data?.meta.invite_blocked_reason;
+  const showInviteButton = membersLoaded && (canManage || canInvite);
   const defaultMemberRole = membersQuery.data?.meta.default_member_role ?? 'developer';
   const invitationsQuery = useTeamInvitations(
     membersQuery.isSuccess && canManage ? workspaceId : null,
@@ -80,6 +85,11 @@ export default function Teams() {
   }, [members, search]);
 
   async function handleInvite(payload: { emails: string[]; role: string }) {
+    if (!canInvite) {
+      toastError(null, inviteBlockedReason ?? 'Inviting members is not available on your current plan.');
+      return;
+    }
+
     try {
       const result = await invite.mutateAsync(payload);
       toastSuccess(result.message);
@@ -151,15 +161,35 @@ export default function Teams() {
         title="Team"
         description="Invite collaborators. Assign granular roles. Track activity."
         actions={
-          canInvite ? (
-            <button
-              type="button"
-              data-testid="team-invite"
-              onClick={() => setShowInvite(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              <UserPlus className="h-3 w-3" /> Invite member
-            </button>
+          !membersLoaded ? null : showInviteButton ? (
+            canInvite ? (
+              <button
+                type="button"
+                data-testid="team-invite"
+                onClick={() => setShowInvite(true)}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <UserPlus className="h-3 w-3" /> Invite member
+              </button>
+            ) : (
+              <DisabledWithTooltip
+                tooltip={inviteBlockedReason ?? 'Inviting members is not available on your current plan.'}
+              >
+                <button
+                  type="button"
+                  data-testid="team-invite"
+                  disabled
+                  aria-disabled="true"
+                  title={inviteBlockedReason ?? undefined}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground',
+                    'cursor-not-allowed opacity-60',
+                  )}
+                >
+                  <UserPlus className="h-3 w-3" /> Invite member
+                </button>
+              </DisabledWithTooltip>
+            )
           ) : null
         }
       />
@@ -197,7 +227,21 @@ export default function Teams() {
           </div>
 
           <div className="border border-border bg-card">
-            {membersQuery.isLoading ? (
+            {!workspaceId ? (
+              workspacesLoading ? (
+                <div className="flex items-center justify-center gap-2 p-8 text-[13px] text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading workspace…
+                </div>
+              ) : workspacesError ? (
+                <div className="p-8 text-center text-[13px] text-destructive">
+                  Could not load your workspace. Refresh the page or switch workspace from the sidebar.
+                </div>
+              ) : (
+                <div className="p-8 text-center text-[13px] text-muted-foreground">
+                  No workspace selected. Choose one from the sidebar switcher.
+                </div>
+              )
+            ) : membersQuery.isLoading ? (
               <div className="flex items-center justify-center gap-2 p-8 text-[13px] text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading members…
               </div>
@@ -370,7 +414,7 @@ export default function Teams() {
       )}
 
       <TeamInviteDialog
-        open={showInvite}
+        open={showInvite && canInvite}
         onOpenChange={setShowInvite}
         roles={assignableRoles}
         defaultRole={defaultMemberRole}

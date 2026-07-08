@@ -74,6 +74,7 @@ export interface OwnedWorkspaceQuota {
   remaining: number | null;
   can_create: boolean;
   plan_slug: string;
+  blocked_reason?: string | null;
 }
 
 export interface UserSummary {
@@ -124,6 +125,7 @@ export interface TeamMemberListResponse {
     meta: {
     can_manage: boolean;
     can_invite: boolean;
+    invite_blocked_reason?: string | null;
     default_member_role: string;
     roles_enabled: boolean;
     assignable_roles: WorkspaceRoleOption[];

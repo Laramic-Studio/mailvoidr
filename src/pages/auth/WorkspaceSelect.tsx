@@ -1,6 +1,7 @@
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SubmitButton } from "@/components/SubmitButton";
+import { DisabledWithTooltip } from "@/components/DisabledWithTooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import {
@@ -19,7 +20,7 @@ export default function WorkspaceSelect() {
   const { logout } = useAuth();
   const { workspaces, isLoading, isError, data } = useWorkspaces();
   const quota = data?.meta?.owned_workspaces;
-  const canCreate = quota?.can_create ?? true;
+  const canCreate = !isLoading && (quota?.can_create ?? false);
   const { switchWorkspace, createWorkspace } = useWorkspaceMutations();
   const { loading: switching, run } = useAsyncAction();
   const [creating, setCreating] = useState(false);
@@ -39,7 +40,7 @@ export default function WorkspaceSelect() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!canCreate || !newName.trim()) return;
 
     setCreating(true);
     try {
@@ -105,30 +106,30 @@ export default function WorkspaceSelect() {
               </button>
             ))}
 
-            {canCreate ? (
-              <form onSubmit={handleCreate} className="p-4 space-y-3" data-testid="workspace-create-form">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-md border border-dashed border-border inline-flex items-center justify-center shrink-0">
-                    <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <label className="label-mono block mb-1.5" htmlFor="new-workspace-name">New workspace</label>
-                    <input
-                      id="new-workspace-name"
-                      data-testid="workspace-create-name"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Team or project name"
-                      disabled={creating || switching}
-                      className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60"
-                    />
-                  </div>
+            <form onSubmit={handleCreate} className="p-4 space-y-3" data-testid="workspace-create-form">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-md border border-dashed border-border inline-flex items-center justify-center shrink-0">
+                  <Plus className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                {quota?.limit != null && (
-                  <p className="text-[11.5px] text-muted-foreground">
-                    {quota.used} of {quota.limit} workspaces used on your {quota.plan_slug} plan.
-                  </p>
-                )}
+                <div className="flex-1 min-w-0">
+                  <label className="label-mono block mb-1.5" htmlFor="new-workspace-name">New workspace</label>
+                  <input
+                    id="new-workspace-name"
+                    data-testid="workspace-create-name"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Team or project name"
+                    disabled={!canCreate || creating || switching}
+                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </div>
+              </div>
+              {quota?.limit != null && canCreate && (
+                <p className="text-[11.5px] text-muted-foreground">
+                  {quota.used} of {quota.limit} workspaces used on your {quota.plan_slug} plan.
+                </p>
+              )}
+              {canCreate ? (
                 <SubmitButton
                   type="submit"
                   data-testid="workspace-create"
@@ -139,23 +140,31 @@ export default function WorkspaceSelect() {
                 >
                   Create workspace
                 </SubmitButton>
-              </form>
-            ) : (
-              <div className="p-4 space-y-2" data-testid="workspace-create-limit">
-                <p className="text-sm text-muted-foreground">
-                  {quota?.plan_slug === "starter"
-                    ? "You've reached the Starter plan limit of 3 workspaces."
-                    : "You've reached your workspace limit for this plan."}
-                </p>
+              ) : (
+                <DisabledWithTooltip
+                  tooltip={quota?.blocked_reason ?? "You cannot create another workspace on your current plan."}
+                >
+                  <button
+                    type="submit"
+                    data-testid="workspace-create"
+                    disabled
+                    aria-disabled
+                    className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground cursor-not-allowed opacity-60"
+                  >
+                    Create workspace
+                  </button>
+                </DisabledWithTooltip>
+              )}
+              {!canCreate && !isLoading && (
                 <Link
                   to="/dashboard/billing"
                   className="inline-flex items-center gap-1.5 text-[12.5px] text-primary hover:underline"
                 >
-                  Upgrade to Growth for unlimited workspaces
+                  View upgrade options
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
-              </div>
-            )}
+              )}
+            </form>
           </div>
         )}
       </div>
