@@ -48,7 +48,7 @@ export const DOCS_NAV: DocsNavSection[] = [
       { slug: 'api-reference', title: 'API reference' },
       { slug: 'smtp', title: 'SMTP' },
       { slug: 'webhooks', title: 'Webhooks' },
-      // { slug: 'sdks', title: 'SDKs' }, // uncomment when official SDKs publish
+      { slug: 'sdks', title: 'SDKs' },
       { slug: 'errors', title: 'Errors & rate limits' },
     ],
   },

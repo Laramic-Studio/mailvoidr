@@ -29,6 +29,16 @@ function code(id: string, title: string, language: string, codeText: string, bod
   return { id, title, kind: 'code', language, code: codeText, body };
 }
 
+function table(
+  id: string,
+  title: string,
+  columns: string[],
+  rows: string[][],
+  body?: string,
+): DocsSection {
+  return { id, title, kind: 'table', columns, rows, body };
+}
+
 const DOMAIN_CALLOUT = {
   title: 'Heads up',
   body: "You'll need a verified sending domain before live sending.",
@@ -83,7 +93,7 @@ export const DOCS_PAGES: Record<string, DocsPage> = {
         'auth',
         'Authenticate',
         'bash',
-        'export MAILVOIDR_API_KEY="mv_live_your_key_here"',
+        'export MAILVOIDR_API_KEY="mvdr_live_your_key_here"',
         'Every request uses Authorization: Bearer with a scoped API key from the dashboard.',
       ),
       {
@@ -116,10 +126,25 @@ export const DOCS_PAGES: Record<string, DocsPage> = {
     sections: [
       prose('intro', 'Two auth paths', [
         'The dashboard SPA uses JWT bearer tokens obtained from POST /api/v1/auth/login. Tokens refresh silently while you work.',
-        'The public mail API uses workspace API keys — create them under Dashboard → API keys. Pass Authorization: Bearer mv_live_… on every send request.',
+        'The public mail API uses workspace API keys. Create them under Dashboard → API keys. Pass Authorization: Bearer mvdr_live_… or mvdr_test_… on every request.',
       ]),
-      prose('scopes', 'Scopes and rotation', [
-        'Keys can be scoped to send mail, read logs, manage domains, templates, and more. Rotate or revoke a key instantly if it leaks — the old token stops working immediately.',
+      prose('environments', 'Live vs test keys', [
+        'Live keys (mvdr_live_…) send real mail and require a verified domain. Test keys (mvdr_test_…) route POST /api/v1/mail/send to your sandbox inbox — same endpoint, no credits consumed.',
+        'Use test keys in CI and staging. Swap to a live key only when you are ready for production delivery.',
+      ]),
+      table('scopes', 'API key scopes', ['Scope', 'Environment', 'Grants'], [
+        ['send.write', 'Live', 'Queue mail via POST /api/v1/mail/send'],
+        ['logs.read', 'Live', 'Read send status via GET /api/v1/mail/sends/{id}'],
+        ['domains.read', 'Live', 'List verified domains (read-only)'],
+        ['templates.read', 'Live', 'List workspace templates (read-only)'],
+        ['analytics.read', 'Live', 'Read delivery analytics (read-only)'],
+        ['sandbox.send', 'Test', 'Capture mail via POST /api/v1/mail/send'],
+        ['sandbox.messages.read', 'Test', 'Read captured sandbox messages'],
+        ['sandbox.messages.write', 'Test', 'Delete or mutate sandbox messages'],
+      ]),
+      prose('rotation', 'Rotation and security', [
+        'Keys are shown once at creation — store them in a secrets manager. Revoke a compromised key immediately; the token stops working on the next request.',
+        'Scope keys to the minimum permissions your service needs. A worker that only sends mail needs send.write, not analytics.read.',
       ]),
       code('example', 'Example header', 'bash', 'curl -H "Authorization: Bearer $MAILVOIDR_API_KEY" ...'),
       links('next', 'Next steps', [
@@ -135,20 +160,36 @@ export const DOCS_PAGES: Record<string, DocsPage> = {
     title: 'Send your first email',
     description: 'Request body, headers, and response fields for POST /api/v1/mail/send.',
     sections: [
-      prose('intro', 'Endpoint', [`POST ${SEND_URL}`, 'Requires a send-scoped API key. Returns 202 when the message is accepted into the queue.'], DOMAIN_CALLOUT),
-      prose('fields', 'Required fields', [
-        'from — verified sending address on your domain.',
-        'to — array of recipient addresses (max 50).',
-        'subject — up to 998 characters.',
-        'html or text — at least one body part is required.',
+      prose('intro', 'Endpoint', [`POST ${SEND_URL}`, 'Requires a send-scoped API key (send.write for live, sandbox.send for test). Returns 202 when the message is accepted into the queue.'], DOMAIN_CALLOUT),
+      table('headers', 'Headers', ['Header', 'Required', 'Value'], [
+        ['Authorization', 'Yes', 'Bearer {api_key}'],
+        ['Content-Type', 'Yes', 'application/json'],
       ]),
-      prose('optional', 'Optional fields', [
-        'cc, bcc — additional recipient arrays.',
-        'reply_to — override the Reply-To header.',
-        'track_opens, track_clicks — enable engagement tracking on HTML sends.',
+      table('body', 'Request body', ['Field', 'Type', 'Required', 'Description'], [
+        ['from', 'string', 'Yes', 'Sender email on a verified domain (live) or any address (test). Max 255 chars.'],
+        ['from_name', 'string', 'No', 'Display name shown to recipients. Max 255 chars.'],
+        ['to', 'string[]', 'Yes', 'Recipient addresses. Min 1, max 50.'],
+        ['cc', 'string[]', 'No', 'Carbon-copy recipients. Max 50 combined with to and bcc.'],
+        ['bcc', 'string[]', 'No', 'Blind carbon-copy recipients. Max 50 combined.'],
+        ['subject', 'string', 'Yes*', 'Email subject. Optional when template_id is set — uses rendered template subject.'],
+        ['html', 'string', 'One of html/text', 'HTML body. Required if text is omitted.'],
+        ['text', 'string', 'One of html/text', 'Plain-text body. Required if html is omitted.'],
+        ['reply_to', 'string', 'No', 'Reply-To header override. Valid email, max 255 chars.'],
+        ['template_id', 'string', 'One of body/template', 'Workspace template ID — renders HTML instead of html/text.'],
+        ['template_version_id', 'string', 'No', 'Pin a template version. Defaults to current.'],
+        ['variables', 'object', 'No', 'Values for {{placeholders}} when using template_id.'],
+        ['track_opens', 'boolean', 'No', 'Embed a tracking pixel in HTML sends. Default false.'],
+        ['track_clicks', 'boolean', 'No', 'Rewrite links for click tracking in HTML sends. Default false.'],
       ]),
       { id: 'example', title: 'Example request', kind: 'send-tabs' },
-      code('response', 'Response', 'json', JSON.stringify(DOCS_SEND_RESPONSE_SAMPLE, null, 2)),
+      table('response-fields', 'Response fields', ['Field', 'Type', 'Description'], [
+        ['success', 'boolean', 'true on acceptance.'],
+        ['id', 'integer', 'Send ID — use with GET /api/v1/mail/sends/{id} or webhooks.'],
+        ['message_id', 'string', 'RFC Message-ID assigned to the outbound message.'],
+        ['status', 'string', 'Initial status, typically queued.'],
+        ['email_usage', 'object', 'used, limit, and remaining counts for the workspace plan (live only).'],
+      ]),
+      code('response', 'Example response', 'json', JSON.stringify(DOCS_SEND_RESPONSE_SAMPLE, null, 2)),
       links('next', 'Next steps', [
         { href: '/docs/templates', label: 'Use a template' },
         { href: '/docs/webhooks', label: 'Subscribe to events' },
@@ -159,21 +200,46 @@ export const DOCS_PAGES: Record<string, DocsPage> = {
 
   templates: {
     title: 'Templates',
-    description: 'Versioned HTML templates with variables in your workspace library.',
+    description: 'Send versioned HTML templates with dynamic variables through POST /api/v1/mail/send.',
     sections: [
-      prose('intro', 'Workspace library', [
-        'Create templates in Dashboard → Templates. Each template keeps a version history so you can roll back HTML changes.',
-        'Use {{variable}} placeholders in HTML and pass values when sending from the dashboard compose form.',
+      prose('intro', 'Overview', [
+        'Templates are reusable HTML designs stored in your workspace. Each template has a version history — publish a new version without breaking sends that pin an older one.',
+        'Create and edit templates in Dashboard → Templates, or copy a starter from the Template marketplace. Send them with your API key on the same endpoint as regular mail.',
+      ]),
+      prose('variables', 'Variables', [
+        'Use {{variable_name}} placeholders in the subject and HTML body. Define defaults when creating the template in the dashboard; override per send with the variables object.',
+        'Unknown placeholders are left as-is. Required variables without a default must be supplied at send time or validation fails.',
+      ]),
+      table('send-fields', 'Send with a template', ['Field', 'Type', 'Required', 'Description'], [
+        ['template_id', 'string', 'Yes', 'Template ID from Dashboard → Templates.'],
+        ['variables', 'object', 'No', 'Key/value pairs merged into {{placeholders}}. Keys match variable names.'],
+        ['template_version_id', 'string', 'No', 'Pin a specific version. Omit to use the current published version.'],
+        ['subject', 'string', 'No', 'Override the template subject. Defaults to the rendered template subject.'],
+        ['from', 'string', 'Yes', 'Sender on a verified domain (same as a normal send).'],
+        ['to', 'string[]', 'Yes', 'Recipients — up to 50.'],
+        ['html / text', '—', 'No', 'Do not send body fields when using template_id.'],
+      ]),
+      code('example', 'Example request', 'json', JSON.stringify({
+        from: 'hello@mail.yourdomain.com',
+        to: ['riya@example.com'],
+        template_id: '01HXYZ…',
+        variables: {
+          name: 'Riya',
+          reset_url: 'https://app.acme.com/reset/abc123',
+        },
+        track_opens: true,
+      }, null, 2), `POST ${SEND_URL} with Authorization: Bearer {api_key}. Returns 202 with the same response shape as a regular send.`),
+      prose('versions', 'Versioning', [
+        'Every HTML edit publishes a new version. Sends without template_version_id always use the latest current version.',
+        'Pin template_version_id when you need a stable render — for example during a gradual rollout or A/B test.',
       ]),
       prose('marketplace', 'Marketplace', [
-        'Browse free starter designs under Template marketplace. Copy a template into your workspace and customize from there.',
+        'Browse starter designs under Dashboard → Template marketplace. Adding one copies it into your workspace library where you can customize HTML and variables before sending.',
       ]),
-      code('preview', 'Preview from the API', 'bash', `# Dashboard JWT routes
-GET  /api/v1/templates
-POST /api/v1/templates/{id}/preview`),
       links('next', 'Next steps', [
-        { href: '/docs/send-first-email', label: 'Send with a template' },
-        { href: '/docs/testing-overview', label: 'Test HTML in sandbox first' },
+        { href: '/docs/send-first-email', label: 'Send API reference' },
+        { href: '/docs/testing-overview', label: 'Test in sandbox first' },
+        { href: '/docs/webhooks', label: 'Track delivery events' },
       ]),
     ],
   },
@@ -204,6 +270,10 @@ POST /api/v1/templates/{id}/preview`),
         'Each workspace gets a sandbox inbox. Point your app at SMTP port 587 with the credentials shown in Dashboard → SMTP → Test.',
         'Messages appear in the dashboard instantly — no credits consumed, no external delivery.',
       ]),
+      prose('api-test', 'Test via the HTTP API', [
+        'Create a test API key (mvdr_test_…) under Dashboard → API keys → Test. POST to the same /api/v1/mail/send endpoint — mail lands in your sandbox inbox instead of being delivered.',
+        'No verified domain is required when using a test key. Use this path in CI pipelines where SMTP is unavailable.',
+      ]),
       prose('checks', 'What you can inspect', [
         'Full HTML and text bodies, headers, and raw source.',
         'Spam scoring and render previews on captured mail.',
@@ -212,6 +282,7 @@ POST /api/v1/templates/{id}/preview`),
       links('next', 'Next steps', [
         { href: '/docs/temporary-inboxes', label: 'Virtual inboxes for CI' },
         { href: '/docs/spam-checker', label: 'Spam checker' },
+        { href: '/docs/authentication', label: 'Test API keys' },
         { href: '/docs/quickstart', label: 'Switch to live sending' },
       ]),
     ],
@@ -317,21 +388,32 @@ CNAME mailvoidr._domainkey  dkim.mailvoidr.com`),
     description: 'Key HTTP routes grouped by area.',
     sections: [
       prose('base', 'Base URL', [
-        `All routes are under ${SEND_URL.replace('/mail/send', '')}.`,
-        'Dashboard routes require Authorization: Bearer {jwt}. The mail send route uses API keys.',
+        `Production: ${SEND_URL.replace('/mail/send', '')}`,
+        'Dashboard routes require Authorization: Bearer {jwt}. Mail routes use API keys.',
       ]),
-      code('send', 'Mail (API key)', 'text', `POST   /api/v1/mail/send
-GET    /api/v1/mail/sends/{id}`),
+      table('auth-summary', 'Authentication by route group', ['Route group', 'Auth', 'Notes'], [
+        ['POST /api/v1/mail/send', 'API key', 'Live (send.write) or test (sandbox.send) key'],
+        ['GET /api/v1/mail/sends/{id}', 'API key', 'Live key with logs.read scope'],
+        ['Dashboard routes below', 'JWT', 'Obtained from POST /api/v1/auth/login'],
+      ]),
+      code('send', 'Mail (API key)', 'text', `POST   /api/v1/mail/send          Queue or capture a message
+GET    /api/v1/mail/sends/{id}    Retrieve send status and timestamps`),
       code('workspace', 'Workspace (JWT)', 'text', `GET    /api/v1/workspaces
 GET    /api/v1/domains
-POST   /api/v1/send
+POST   /api/v1/domains
+GET    /api/v1/api-keys
+POST   /api/v1/api-keys
+GET    /api/v1/templates
+POST   /api/v1/templates/{id}/preview
 GET    /api/v1/sends
 GET    /api/v1/webhooks
+POST   /api/v1/webhooks
 GET    /api/v1/analytics/overview
 GET    /api/v1/virtual-emails
-GET    /api/v1/sandbox/messages`),
+GET    /api/v1/sandbox/messages
+GET    /api/v1/smtp-credentials`),
       links('next', 'Next steps', [
-        { href: '/docs/quickstart', label: 'Quickstart' },
+        { href: '/docs/send-first-email', label: 'Send API parameters' },
         { href: '/docs/authentication', label: 'Authentication' },
         { href: '/docs/errors', label: 'Errors and rate limits' },
       ]),
@@ -365,7 +447,13 @@ GET    /api/v1/sandbox/messages`),
     sections: [
       prose('intro', 'Register an endpoint', [
         'Dashboard → Webhooks → Add endpoint. Choose events or subscribe to all with the * wildcard.',
-        'Mailvoidr signs each delivery with HMAC-SHA256 in the Mailvoidr-Signature header. Failed deliveries can be replayed from the UI.',
+        'Mailvoidr signs each delivery with HMAC-SHA256. Failed deliveries can be replayed from the UI.',
+      ]),
+      table('headers', 'Delivery headers', ['Header', 'Description'], [
+        ['Mailvoidr-Signature', 't={unix_ts},v1={hex_hmac} — verify before processing'],
+        ['Mailvoidr-Event', 'Event type, e.g. email.delivered'],
+        ['Mailvoidr-Delivery-Id', 'Unique delivery ID for idempotency'],
+        ['Content-Type', 'application/json'],
       ]),
       code('events', 'Event types', 'text', `email.queued
 email.sent
@@ -376,6 +464,27 @@ email.bounced
 email.deferred
 email.failed
 email.complained`),
+      code('verify', 'Verify signatures', 'javascript', `import crypto from 'node:crypto';
+
+function verifyWebhook(rawBody, signatureHeader, secret, toleranceSec = 300) {
+  const parts = Object.fromEntries(
+    signatureHeader.split(',').map((p) => p.trim().split('=')),
+  );
+  const timestamp = Number(parts.t);
+  const signature = parts.v1;
+
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - timestamp) > toleranceSec) return false;
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(\`\${timestamp}.\${rawBody}\`)
+    .digest('hex');
+
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}`,
+        'Use the raw request body (not re-serialized JSON). The signed payload is {timestamp}.{body}.',
+      ),
       code('payload', 'Example payload', 'json', JSON.stringify({
         id: 'whd_abc123',
         event: 'email.delivered',
@@ -397,22 +506,62 @@ email.complained`),
     title: 'Errors & rate limits',
     description: 'HTTP status codes and common failure responses.',
     sections: [
-      prose('codes', 'HTTP status codes', [
-        '202 — send accepted and queued.',
-        '401 — missing or invalid API key / JWT.',
-        '402 — plan email limit reached.',
-        '403 — live sending disabled for the workspace.',
-        '422 — validation error (check the errors object).',
-        '429 — rate limit exceeded — back off and retry.',
+      table('codes', 'HTTP status codes', ['Status', 'Meaning', 'Action'], [
+        ['202', 'Send accepted and queued', 'Store id for status lookups and webhooks'],
+        ['401', 'Missing or invalid API key / JWT', 'Check Authorization header and key prefix'],
+        ['402', 'Plan email limit reached', 'Upgrade plan or wait for quota reset'],
+        ['403', 'Live sending disabled', 'Enable live sending in Dashboard → Settings'],
+        ['422', 'Validation error', 'Inspect the errors object for field details'],
+        ['429', 'Rate limit exceeded', 'Back off and retry with exponential delay'],
       ]),
       code('example', 'Validation error', 'json', JSON.stringify(DOCS_SEND_ERROR_SAMPLE, null, 2)),
-      prose('limits', 'Rate limits', [
-        'POST /api/v1/mail/send is throttled per API key (120 requests per minute by default).',
-        'Contact support if you need higher throughput on a dedicated deployment.',
-      ]),
+      table('limits', 'Rate limits', ['Key type', 'Limit', 'Window'], [
+        ['Live API key', '120 requests', 'Per minute per key'],
+        ['Test API key', '300 requests', 'Per minute per key'],
+      ], 'Contact support if you need higher throughput on a dedicated deployment.'),
       links('next', 'Next steps', [
         { href: '/docs/verify-domain', label: 'Fix domain errors' },
         { href: '/docs/authentication', label: 'Rotate compromised keys' },
+      ]),
+    ],
+  },
+
+  sdks: {
+    title: 'SDKs',
+    description: 'Official client libraries for common runtimes.',
+    sections: [
+      prose('intro', 'Official SDKs', [
+        'SDKs wrap POST /api/v1/mail/send with typed request/response objects, automatic retries on transient failures, and environment-aware defaults.',
+        'All SDKs read MAILVOIDR_API_KEY from the environment. Live and test keys use the same client — routing is determined by the key prefix.',
+      ]),
+      table('packages', 'Available packages', ['Runtime', 'Package', 'Install'], [
+        ['Node.js', '@mailvoidr/node', 'npm install @mailvoidr/node'],
+        ['NestJS', '@mailvoidr/nestjs', 'npm install @mailvoidr/nestjs'],
+        ['Laravel', 'mailvoidr/laravel', 'composer require mailvoidr/laravel'],
+        ['Spring Boot', 'com.mailvoidr:springboot', 'See GitHub for Maven coordinates'],
+      ]),
+      code('node', 'Node.js', 'typescript', `import { MailvoidrClient } from '@mailvoidr/node';
+
+const mailvoidr = new MailvoidrClient(process.env.MAILVOIDR_API_KEY!);
+
+const { id, status } = await mailvoidr.send({
+  to: ['riya@example.com'],
+  subject: 'Welcome to Acme',
+  html: '<h1>Hey Riya</h1>',
+  track_opens: true,
+});`),
+      code('laravel', 'Laravel', 'php', `// .env
+MAIL_MAILER=mailvoidr
+MAILVOIDR_API_KEY=mvdr_live_your_key_here
+
+// Anywhere in your app
+Mail::to('riya@example.com')->send(new WelcomeMail());`,
+        'The Laravel mail transport sends via the HTTP API. Swap to a test key in phpunit.xml to capture mail in sandbox.',
+      ),
+      links('next', 'Next steps', [
+        { href: '/docs/quickstart', label: 'Quickstart without an SDK' },
+        { href: '/docs/send-first-email', label: 'Raw API parameters' },
+        { href: '/docs/testing-overview', label: 'Test keys in CI' },
       ]),
     ],
   },

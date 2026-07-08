@@ -1,13 +1,26 @@
 import { mailSendUrl } from '@/content/marketing/home';
 
+import { mailSendUrl } from '@/content/marketing/home';
+import type { LanguageTab } from '@/components/ui/code-block';
+
 export type DocsCodeSampleId = 'send_curl' | 'send_node' | 'send_python' | 'send_go';
 
-export const DOCS_CODE_LANGS: { id: DocsCodeSampleId; label: string }[] = [
-  { id: 'send_node', label: 'Node.js' },
-  { id: 'send_python', label: 'Python' },
-  { id: 'send_curl', label: 'cURL' },
-  { id: 'send_go', label: 'Go' },
+export const DOCS_CODE_LANGS: { id: DocsCodeSampleId; label: string; filename: string; language: string }[] = [
+  { id: 'send_node', label: 'Node.js', filename: 'send.ts', language: 'typescript' },
+  { id: 'send_python', label: 'Python', filename: 'send.py', language: 'python' },
+  { id: 'send_curl', label: 'cURL', filename: 'request.sh', language: 'bash' },
+  { id: 'send_go', label: 'Go', filename: 'main.go', language: 'go' },
 ];
+
+export function buildDocsLanguageTabs(sendUrl: string = mailSendUrl()): LanguageTab[] {
+  const samples = buildDocsCodeSamples(sendUrl);
+  return DOCS_CODE_LANGS.map(({ label, filename, language, id }) => ({
+    label,
+    filename,
+    language,
+    code: samples[id],
+  }));
+}
 
 export function buildDocsCodeSamples(sendUrl: string = mailSendUrl()): Record<DocsCodeSampleId, string> {
   return {

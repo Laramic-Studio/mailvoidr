@@ -3,9 +3,11 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DocsSearch, DocsSearchMobileLink } from "@/components/docs/DocsSearch";
 import { DOCS_NAV } from "@/content/docs/nav";
-import { Github, ChevronRight } from "lucide-react";
-
+import { ChevronRight, Github } from "lucide-react";
 import type { ReactNode } from "react";
+import { GitHubLight } from "developer-icons";
+
+
 
 interface DocsLayoutProps {
   children: ReactNode;
@@ -27,7 +29,9 @@ export function DocsLayout({ children, toc = [], title }: DocsLayoutProps) {
           </div>
           <div className="flex items-center gap-2">
             <DocsSearchMobileLink />
-            <a href="#" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><Github className="h-3.5 w-3.5" /> GitHub</a>
+            <div className="flex items-center gap-1.5">
+            <a href="https://github.com/mailvoidr" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><GitHubLight className="h-3.5 w-3.5" /></a>
+            </div>
             <ThemeToggle />
             <Link to="/login" className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-foreground px-2">Sign in</Link>
             <Link to="/register" className="inline-flex bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium">Get started</Link>

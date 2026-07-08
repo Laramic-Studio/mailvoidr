@@ -42,6 +42,14 @@ export type DocsSection =
       kind: 'links';
       body?: string;
       links: DocsLinkItem[];
+    }
+  | {
+      id: string;
+      title: string;
+      kind: 'table';
+      body?: string;
+      columns: string[];
+      rows: string[][];
     };
 
 export interface DocsPage {

@@ -19,6 +19,8 @@ function sectionText(section: DocsSection): string {
       return section.body ?? '';
     case 'links':
       return [section.body, ...section.links.map((l) => l.label)].filter(Boolean).join(' ');
+    case 'table':
+      return [section.body, ...section.columns, ...section.rows.flat()].filter(Boolean).join(' ');
     default:
       return '';
   }
