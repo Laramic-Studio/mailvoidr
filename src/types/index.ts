@@ -444,10 +444,11 @@ export interface EmailSendLogDetailResponse {
 }
 
 export interface SendLogFilters {
-  status?: string;
+  status?: string | string[];
   search?: string;
   domain?: string;
   period?: '24h' | '7d' | '30d';
+  page?: number;
 }
 
 export interface BillingUsageMetric {

@@ -10,25 +10,26 @@ import { useSendDetail, useSendLogMutations, useSends } from '@/hooks/useSends';
 import { downloadAnalyticsExport } from '@/lib/api/analytics';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailSendTimelineEvent } from '@/types';
-import { ChevronRight, Download, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw, Search, X } from 'lucide-react';
 
-const STATUS_FILTERS = ['all', 'queued', 'sent', 'delivered', 'bounced', 'failed'] as const;
+const STATUS_OPTIONS = ['queued', 'sent', 'delivered', 'bounced', 'failed'] as const;
 
 const PERIOD_OPTIONS = [
+  { label: 'All time', value: 'all' },
   { label: 'Last 24h', value: '24h' },
   { label: 'Last 7d', value: '7d' },
   { label: 'Last 30d', value: '30d' },
-  { label: 'All time', value: 'all' },
 ];
 
 export default function EmailLogs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeId, setActiveId] = useState<string | null>(() => searchParams.get('send'));
-  const [filter, setFilter] = useState<string>('all');
+  const [statuses, setStatuses] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [domain, setDomain] = useState('all');
-  const [period, setPeriod] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
+  const [period, setPeriod] = useState<'24h' | '7d' | '30d' | 'all'>('all');
+  const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -61,14 +62,19 @@ export default function EmailLogs() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [statuses, debouncedSearch, domain, period]);
+
   const filters = useMemo(
     () => ({
-      status: filter,
+      status: statuses.length > 0 ? statuses : undefined,
       search: debouncedSearch,
       domain,
       period: period === 'all' ? undefined : period,
+      page,
     }),
-    [filter, debouncedSearch, domain, period],
+    [statuses, debouncedSearch, domain, period, page],
   );
 
   const { data: domainsData } = useDomains();
@@ -76,8 +82,16 @@ export default function EmailLogs() {
 
   const logs = data?.data ?? [];
   const total = data?.meta.total ?? 0;
+  const currentPage = data?.meta.current_page ?? page;
+  const lastPage = data?.meta.last_page ?? 1;
 
   const verifiedDomains = domainsData?.data.filter((d) => d.status === 'verified') ?? [];
+
+  function toggleStatus(status: string) {
+    setStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
+    );
+  }
 
   async function handleExport() {
     const exportPeriod = period === 'all' ? '90d' : period;
@@ -147,14 +161,14 @@ export default function EmailLogs() {
           value={domain}
           onValueChange={setDomain}
           options={domainOptions}
-          triggerClassName="h-8 w-[min(100%,180px)] bg-background text-[12.5px] shadow-none"
+          triggerClassName="h-8 w-32 bg-background text-[12.5px] shadow-none"
         />
         <FormSelect
           data-testid="logs-date-filter"
           value={period}
           onValueChange={(value) => setPeriod(value as typeof period)}
           options={PERIOD_OPTIONS}
-          triggerClassName="h-8 w-[min(100%,140px)] bg-background text-[12.5px] shadow-none"
+          triggerClassName="h-8 w-32 bg-background text-[12.5px] shadow-none"
         />
         <div className="ml-auto flex items-center gap-1 font-mono text-[11.5px] text-muted-foreground">
           {isLoading ? 'Loading…' : `${logs.length} shown · ${total} total`}
@@ -162,19 +176,37 @@ export default function EmailLogs() {
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 mb-4">
-        {STATUS_FILTERS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setFilter(s)}
-            data-testid={`logs-status-${s}`}
-            className={`px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider border transition-colors ${
-              filter === s ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setStatuses([])}
+          data-testid="logs-status-all"
+          className={`px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider border transition-colors ${
+            statuses.length === 0
+              ? 'border-primary text-primary bg-primary/10'
+              : 'border-border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          all
+        </button>
+        {STATUS_OPTIONS.map((s) => {
+          const active = statuses.includes(s);
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => toggleStatus(s)}
+              data-testid={`logs-status-${s}`}
+              aria-pressed={active}
+              className={`px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider border transition-colors ${
+                active
+                  ? 'border-primary text-primary bg-primary/10'
+                  : 'border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {s}
+            </button>
+          );
+        })}
       </div>
 
       <div className="border border-border bg-card overflow-x-auto">
@@ -236,6 +268,36 @@ export default function EmailLogs() {
           </tbody>
         </table>
       </div>
+
+      {lastPage > 1 && (
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="font-mono text-[11.5px] text-muted-foreground">
+            Page {currentPage} of {lastPage}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              data-testid="logs-page-prev"
+              disabled={currentPage <= 1 || isFetching}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="inline-flex items-center gap-1.5 border border-border bg-card rounded-md px-3 py-1.5 text-[13px] hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Previous
+            </button>
+            <button
+              type="button"
+              data-testid="logs-page-next"
+              disabled={currentPage >= lastPage || isFetching}
+              onClick={() => setPage((p) => p + 1)}
+              className="inline-flex items-center gap-1.5 border border-border bg-card rounded-md px-3 py-1.5 text-[13px] hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {activeId && <LogDrawer id={activeId} onClose={closeSend} />}
     </DashboardLayout>

@@ -54,8 +54,24 @@ export const queryKeys = {
     twoFactor: ['settings', 'two-factor'] as const,
   },
   sends: {
-    list: (filters: Record<string, string | undefined>) =>
-      ['sends', 'list', filters.status ?? 'all', filters.search ?? '', filters.domain ?? 'all', filters.period ?? ''] as const,
+    list: (filters: {
+      status?: string | string[];
+      search?: string;
+      domain?: string;
+      period?: string;
+      page?: number;
+    }) =>
+      [
+        'sends',
+        'list',
+        Array.isArray(filters.status)
+          ? [...filters.status].sort().join(',')
+          : (filters.status ?? 'all'),
+        filters.search ?? '',
+        filters.domain ?? 'all',
+        filters.period ?? '',
+        filters.page ?? 1,
+      ] as const,
     detail: (id: string) => ['sends', 'detail', id] as const,
   },
   team: {

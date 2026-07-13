@@ -8,8 +8,11 @@ import { api } from '@/lib/api';
 export async function fetchSends(filters: SendLogFilters = {}): Promise<EmailSendLogListResponse> {
   const params = new URLSearchParams();
 
-  if (filters.status && filters.status !== 'all') {
-    params.set('status', filters.status);
+  const statuses = (Array.isArray(filters.status) ? filters.status : [filters.status])
+    .filter((status): status is string => Boolean(status) && status !== 'all');
+
+  if (statuses.length > 0) {
+    params.set('status', statuses.join(','));
   }
   if (filters.search?.trim()) {
     params.set('search', filters.search.trim());
@@ -19,6 +22,9 @@ export async function fetchSends(filters: SendLogFilters = {}): Promise<EmailSen
   }
   if (filters.period) {
     params.set('period', filters.period);
+  }
+  if (filters.page && filters.page > 1) {
+    params.set('page', String(filters.page));
   }
 
   const query = params.toString();
