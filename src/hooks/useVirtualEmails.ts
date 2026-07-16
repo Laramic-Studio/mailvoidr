@@ -181,34 +181,40 @@ export function useVirtualEmailMutations() {
   const create = useMutation({
     mutationFn: (payload: CreateVirtualEmailPayload) => createVirtualEmail(payload),
     onSuccess: (result) => {
-      queryClient.setQueriesData<VirtualEmailListResponse>(
-        { predicate: isVirtualEmailListQuery },
-        (old, query) => {
-          const searchTerm = String(query.queryKey[1] ?? '');
-          const item = result.virtual_email;
+      const item = result.virtual_email;
+      const entries = queryClient.getQueriesData<VirtualEmailListResponse>({
+        predicate: isVirtualEmailListQuery,
+      });
 
-          if (!virtualEmailMatchesSearch(item, searchTerm)) {
-            return old;
-          }
+      for (const [queryKey, old] of entries) {
+        const searchTerm = String(queryKey[1] ?? '');
 
-          if (!old) {
+        if (!virtualEmailMatchesSearch(item, searchTerm)) {
+          continue;
+        }
+
+        queryClient.setQueryData<VirtualEmailListResponse>(queryKey, (current) => {
+          const data = current ?? old;
+
+          if (!data) {
             return {
               data: [item],
               meta: { current_page: 1, last_page: 1, per_page: 50, total: 1 },
             };
           }
 
-          if (old.data.some((entry) => entry.id === item.id)) {
-            return old;
+          if (data.data.some((entry) => entry.id === item.id)) {
+            return data;
           }
 
           return {
-            ...old,
-            data: [item, ...old.data],
-            meta: { ...old.meta, total: old.meta.total + 1 },
+            ...data,
+            data: [item, ...data.data],
+            meta: { ...data.meta, total: data.meta.total + 1 },
           };
-        },
-      );
+        });
+      }
+
       invalidateLists();
     },
   });
