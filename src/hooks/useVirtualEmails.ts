@@ -24,12 +24,17 @@ import type {
   VirtualEmailListResponse,
 } from '@/types';
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** Virtual email + message IDs are ULIDs; keep UUID support for older rows. */
+const ENTITY_ID_RE =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[0-9A-HJKMNP-TV-Z]{26})$/i;
+
+function isEntityId(value: unknown): boolean {
+  return typeof value === 'string' && ENTITY_ID_RE.test(value);
+}
 
 function isVirtualEmailListQuery(query: Query): boolean {
   const key = query.queryKey;
-  return key.length === 2 && key[0] === 'virtual-emails' && !UUID_RE.test(String(key[1]));
+  return key.length === 2 && key[0] === 'virtual-emails' && !isEntityId(key[1]);
 }
 
 function isVirtualEmailMessagesListQuery(query: Query, inboxId: string): boolean {
@@ -39,7 +44,7 @@ function isVirtualEmailMessagesListQuery(query: Query, inboxId: string): boolean
     key[1] === inboxId &&
     key[2] === 'messages' &&
     key.length === 4 &&
-    !UUID_RE.test(String(key[3]))
+    !isEntityId(key[3])
   );
 }
 
@@ -53,7 +58,7 @@ function markVirtualEmailMessageReadInCache(
   queryClient.setQueriesData<EmailMessageListResponse>(
     { predicate: (query) => isVirtualEmailMessagesListQuery(query, inboxId) },
     (old) => {
-      if (!old) return old;
+      if (!old?.data) return old;
 
       return {
         ...old,
@@ -85,7 +90,7 @@ function markVirtualEmailMessageReadInCache(
   queryClient.setQueriesData<VirtualEmailListResponse>(
     { predicate: isVirtualEmailListQuery },
     (old) => {
-      if (!old) return old;
+      if (!old?.data) return old;
       return {
         ...old,
         data: old.data.map((item) =>
@@ -154,7 +159,7 @@ export function useVirtualEmailMessage(
     },
     enabled: Boolean(user?.onboarding_completed && inboxId && messageId),
     staleTime: 60_000,
-    retry: false,
+    retry: 1,
   });
 }
 
@@ -231,7 +236,7 @@ export function useVirtualEmailMutations() {
       queryClient.setQueriesData<VirtualEmailListResponse>(
         { predicate: isVirtualEmailListQuery },
         (old) => {
-          if (!old) return old;
+          if (!old?.data) return old;
 
           return {
             ...old,
@@ -280,7 +285,7 @@ export function useVirtualEmailMessageMutations(inboxId: string) {
       queryClient.setQueriesData<EmailMessageListResponse>(
         { predicate: (query) => isVirtualEmailMessagesListQuery(query, inboxId) },
         (old) => {
-          if (!old) return old;
+          if (!old?.data) return old;
           return { ...old, data: old.data.filter((m) => m.id !== messageId) };
         },
       );

@@ -167,7 +167,7 @@ export function DashboardLayout({
             )}
             data-testid="dashboard-main"
           >
-            <div className={flush ? 'px-4 pt-4' : undefined}>
+            <div className={flush ? 'px-4 ' : undefined}>
               <WorkspaceTwoFactorBanner />
             </div>
             {children}

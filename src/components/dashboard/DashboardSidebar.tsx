@@ -131,7 +131,11 @@ export function DashboardSidebar({
           expanded ? 'justify-between px-2.5' : 'justify-center px-0',
         )}
       >
-        <Logo small={!expanded} />
+        <Logo
+          small={!expanded}
+          onClick={!expanded ? toggleSidebar : undefined}
+          aria-label={!expanded ? 'Expand sidebar' : undefined}
+        />
         {showCollapseToggle && expanded && (
           <button
             type="button"

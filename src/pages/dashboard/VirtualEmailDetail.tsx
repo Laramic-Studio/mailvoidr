@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { CodeBlock } from '@/components/CodeBlock';
@@ -6,6 +6,7 @@ import { HtmlCheckPanel, SpamPanel } from '@/components/email/EmailAnalysisPanel
 import { StatusBadge } from '@/components/StatusBadge';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
 import { formatVirtualEmailTtl } from '@/constants/virtual-emails';
+import { useAuth } from '@/hooks/useAuth';
 import {
   useVirtualEmail,
   useVirtualEmailMessage,
@@ -14,6 +15,7 @@ import {
   useVirtualEmailMessages,
   useVirtualEmailMutations,
 } from '@/hooks/useVirtualEmails';
+import { useVirtualEmailRealtime } from '@/hooks/useVirtualEmailRealtime';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { downloadAttachment } from '@/lib/api/virtual-emails';
 import { formatRelativeInboxTime } from '@/lib/email-utils';
@@ -49,6 +51,7 @@ type PreviewMode = 'desktop' | 'mobile';
 export default function VirtualEmailDetail() {
   const { id } = useParams();
   const nav = useNavigate();
+  const { user } = useAuth();
   const { currentWorkspace } = useWorkspaces();
   const virtualEmailId = id ?? '';
 
@@ -93,6 +96,19 @@ export default function VirtualEmailDetail() {
 
   const inbox = inboxData?.virtual_email;
   const messages = messagesData?.data ?? [];
+
+  const handleRealtimeMessage = useCallback(() => {
+    if (!selectedIdRef.current) {
+      setMobilePane('list');
+    }
+  }, []);
+
+  useVirtualEmailRealtime({
+    userId: user?.id,
+    virtualEmailId,
+    enabled: Boolean(inbox && user?.onboarding_completed),
+    onNewMessage: handleRealtimeMessage,
+  });
 
   useEffect(() => {
     if (messages.length === 0) {
