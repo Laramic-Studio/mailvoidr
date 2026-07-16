@@ -51,6 +51,10 @@ export async function fetchVirtualEmailMessage(
   inboxId: string,
   messageId: string,
 ): Promise<{ message: EmailMessage }> {
+  if (!inboxId || !messageId || messageId === 'undefined') {
+    throw new Error('Missing virtual email or message id');
+  }
+
   const { data } = await api.get<{ message: EmailMessage }>(
     `/virtual-emails/${inboxId}/messages/${messageId}`,
   );
@@ -61,6 +65,10 @@ export async function fetchVirtualEmailMessageRaw(
   inboxId: string,
   messageId: string,
 ): Promise<string> {
+  if (!inboxId || !messageId || messageId === 'undefined') {
+    throw new Error('Missing virtual email or message id');
+  }
+
   const { data } = await api.get<{ raw: string }>(
     `/virtual-emails/${inboxId}/messages/${messageId}/raw`,
   );

@@ -43,8 +43,7 @@ function isVirtualEmailMessagesListQuery(query: Query, inboxId: string): boolean
     key[0] === 'virtual-emails' &&
     key[1] === inboxId &&
     key[2] === 'messages' &&
-    key.length === 4 &&
-    !isEntityId(key[3])
+    key[3] === 'list'
   );
 }
 
@@ -149,15 +148,19 @@ export function useVirtualEmailMessage(
 ) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const canFetch = Boolean(user?.onboarding_completed && inboxId && messageId);
 
   return useQuery({
     queryKey: queryKeys.virtualEmails.message(inboxId ?? '', messageId ?? ''),
     queryFn: async () => {
-      const result = await fetchVirtualEmailMessage(inboxId!, messageId!);
-      markVirtualEmailMessageReadInCache(queryClient, inboxId!, result.message.id);
+      if (!inboxId || !messageId) {
+        throw new Error('Missing virtual email or message id');
+      }
+      const result = await fetchVirtualEmailMessage(inboxId, messageId);
+      markVirtualEmailMessageReadInCache(queryClient, inboxId, result.message.id);
       return result.message;
     },
-    enabled: Boolean(user?.onboarding_completed && inboxId && messageId),
+    enabled: canFetch,
     staleTime: 60_000,
     retry: 1,
   });
@@ -169,11 +172,17 @@ export function useVirtualEmailMessageRaw(
   enabled: boolean,
 ) {
   const { user } = useAuth();
+  const canFetch = Boolean(user?.onboarding_completed && inboxId && messageId && enabled);
 
   return useQuery({
     queryKey: queryKeys.virtualEmails.messageRaw(inboxId ?? '', messageId ?? ''),
-    queryFn: () => fetchVirtualEmailMessageRaw(inboxId!, messageId!),
-    enabled: Boolean(user?.onboarding_completed && inboxId && messageId && enabled),
+    queryFn: () => {
+      if (!inboxId || !messageId) {
+        throw new Error('Missing virtual email or message id');
+      }
+      return fetchVirtualEmailMessageRaw(inboxId, messageId);
+    },
+    enabled: canFetch,
   });
 }
 

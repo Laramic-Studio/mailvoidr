@@ -16,11 +16,11 @@ export const queryKeys = {
     all: (search?: string) => ["virtual-emails", search ?? ""] as const,
     detail: (id: string) => ["virtual-emails", id] as const,
     messages: (inboxId: string, search?: string) =>
-      ["virtual-emails", inboxId, "messages", search ?? ""] as const,
+      ["virtual-emails", inboxId, "messages", "list", search ?? ""] as const,
     message: (inboxId: string, messageId: string) =>
-      ["virtual-emails", inboxId, "messages", messageId] as const,
+      ["virtual-emails", inboxId, "messages", "detail", messageId] as const,
     messageRaw: (inboxId: string, messageId: string) =>
-      ["virtual-emails", inboxId, "messages", messageId, "raw"] as const,
+      ["virtual-emails", inboxId, "messages", "detail", messageId, "raw"] as const,
   },
   sandbox: {
     all: ['sandbox'] as const,

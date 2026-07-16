@@ -28,7 +28,7 @@ export function useVirtualEmailRealtime(options: {
       }
 
       void queryClient.invalidateQueries({
-        queryKey: ['virtual-emails', virtualEmailId, 'messages'],
+        queryKey: ['virtual-emails', virtualEmailId, 'messages', 'list'],
       });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.virtualEmails.detail(virtualEmailId),
