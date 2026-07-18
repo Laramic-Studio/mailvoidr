@@ -44,15 +44,16 @@ export default function Contact() {
               Let's talk shipping<br /> email at scale.
             </h1>
             <p className="mt-5 text-muted-foreground max-w-md">
-              Migrating from SendGrid, Mailgun, or Postmark? Send us a note — we'll help you plan the cutover.
+              Have questions or need help getting started? Send us a note — we’re here to help.
+         
             </p>
             <div className="mt-10 space-y-5 text-[13.5px]">
               {(
                 [
-                  [Mail, 'sales@mailvoidr.io', 'Sales & migrations'],
-                  [MessageSquare, 'support@mailvoidr.io', 'Customer support'],
-                  [Phone, '+1 (415) 555-0142', 'Mon–Fri · 9–6 PT'],
-                  [MapPin, '548 Market St · San Francisco · CA 94104', 'HQ'],
+                  [Mail, 'mailvoidr-sales@gmail.com', 'Sales & migrations'],
+                  [MessageSquare, 'mailvoidr-support@gmail.com', 'Customer support'],
+                  [Phone, '+234 810 7131 225', 'Mon–Sat · 9–6 WAT'],
+                  [MapPin, '283 Herbert Macaulay Way, Sabo, Yaba, Lagos, Nigeria', 'HQ'],
                 ] as const
               ).map(([Icon, val, sub]) => (
                 <div key={val} className="flex items-start gap-3">
@@ -99,7 +100,7 @@ export default function Contact() {
                 rows={4}
                 required
                 className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="Tell us about your stack and timeline…"
+                placeholder="Your message here..."
               />
             </div>
             <button

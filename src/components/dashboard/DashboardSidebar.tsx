@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Send, Inbox, Mail, Globe, BarChart3,
@@ -7,11 +8,20 @@ import {
 import { Logo } from '@/components/Logo';
 import { WorkspaceSwitcher } from '@/components/dashboard/WorkspaceSwitcher';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePlanFeature } from '@/hooks/useBilling';
 import { useUiStore } from '@/stores/ui-store';
 import { SIDEBAR_EASE, SIDEBAR_TRANSITION_MS } from '@/components/dashboard/sidebar-constants';
 import { cn } from '@/lib/utils';
 
-const NAV_GROUPS = [
+type NavItemConfig = {
+  to: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  end?: boolean;
+  feature?: string;
+};
+
+const NAV_GROUPS: { label: string; items: NavItemConfig[] }[] = [
   {
     label: 'Workspace',
     items: [
@@ -26,9 +36,9 @@ const NAV_GROUPS = [
     items: [
       { to: '/dashboard/domains', icon: Globe, label: 'Domains' },
       { to: '/dashboard/ip-whitelist', icon: Shield, label: 'IP whitelist' },
-      { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+      { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics', feature: 'analytics' },
       { to: '/dashboard/logs', icon: ListChecks, label: 'Email Logs' },
-      { to: '/dashboard/templates', icon: FileCode2, label: 'Templates' },
+      { to: '/dashboard/templates', icon: FileCode2, label: 'Templates', feature: 'templates' },
     ],
   },
   {
@@ -36,7 +46,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/dashboard/api-keys', icon: KeyRound, label: 'API Keys' },
       { to: '/dashboard/smtp', icon: Server, label: 'SMTP' },
-      { to: '/dashboard/webhooks', icon: Webhook, label: 'Webhooks' },
+      { to: '/dashboard/webhooks', icon: Webhook, label: 'Webhooks', feature: 'webhooks' },
     ],
   },
   {
@@ -118,6 +128,30 @@ export function DashboardSidebar({
   className,
 }: DashboardSidebarProps) {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const hasAnalytics = usePlanFeature('analytics');
+  const hasTemplates = usePlanFeature('templates');
+  const hasWebhooks = usePlanFeature('webhooks');
+
+  const featureFlags = useMemo(
+    () => ({
+      analytics: hasAnalytics,
+      templates: hasTemplates,
+      webhooks: hasWebhooks,
+    }),
+    [hasAnalytics, hasTemplates, hasWebhooks],
+  );
+
+  const groups = useMemo(
+    () =>
+      NAV_GROUPS.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => {
+          if (!item.feature) return true;
+          return featureFlags[item.feature as keyof typeof featureFlags];
+        }),
+      })).filter((group) => group.items.length > 0),
+    [featureFlags],
+  );
 
   return (
     <div
@@ -162,7 +196,7 @@ export function DashboardSidebar({
       {/* Nav */}
       <nav className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-2">
         <div className={cn('space-y-3', !expanded && 'space-y-2')}>
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.label}>
               {/* Label animates in/out without layout jump */}
               <div

@@ -22,9 +22,15 @@ import { useHealth } from "@/hooks/useHealth";
 import { workspaceInitials } from "@/hooks/useWorkspaces";
 import { MARKETING_NAV, MARKETING_SOCIAL } from "@/content/marketing/nav";
 import { ArrowRight, Github, LayoutDashboard, Menu, Twitter } from "lucide-react";
+import { GitHubLight, LinkedIn, GitHubDark, XDark, XLight } from "developer-icons";
+import { useTheme } from "next-themes";
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const GithubIcon = !isDark ? GitHubDark : GitHubLight;
+  const XIcon = !isDark ? XDark : XLight;
   const nav = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -220,18 +226,27 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub"
-                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
+                className="inline-flex rounded-full h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
               >
-                <Github className="h-3.5 w-3.5" />
+                <GithubIcon className="h-3.5 w-3.5" />
               </a>
               <a
                 href={MARKETING_SOCIAL.x}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="X (Twitter)"
-                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
+                className="inline-flex rounded-full h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
               >
-                <Twitter className="h-3.5 w-3.5" />
+                <XIcon className="h-3.5 w-3.5" />
+              </a>
+              <a
+                href={MARKETING_SOCIAL.x}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="X (Twitter)"
+                className="inline-flex rounded-full h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
+              >
+                <LinkedIn className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>

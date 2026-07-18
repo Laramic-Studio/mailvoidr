@@ -12,7 +12,6 @@ export const ENTERPRISE_VOLUME_THRESHOLD = 1_000_000;
 
 export const VOLUME_STEPS = [
   3_000,
-  5_000,
   10_000,
   30_000,
   50_000,
@@ -24,6 +23,9 @@ export const VOLUME_STEPS = [
   750_000,
   1_000_000,
 ] as const;
+
+/** Default slider step — 50K / Starter anchor. */
+export const DEFAULT_VOLUME_STEP_INDEX = 3;
 
 export type PlanSlug = 'free' | 'starter' | 'growth' | 'scale' | 'enterprise';
 
@@ -49,11 +51,9 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 verified domain',
       '5 virtual inboxes',
       'Sandbox inbox + spam/HTML checks',
+      '3,000 sandbox tests / month',
       'SMTP + REST API',
-      'Templates + marketplace browse',
-      'Basic analytics + webhooks',
       '7-day email logs',
-      'Community support',
     ],
   },
   {
@@ -67,9 +67,10 @@ export const PRICING_TIERS: PricingTier[] = [
       '50,000 emails / month',
       '10 verified domains',
       '100 virtual inboxes',
-      'Unlimited sandbox testing',
+      '3,000 sandbox tests / month',
+      'Templates + marketplace',
+      'Webhooks + replay',
       'Advanced analytics + geo',
-      'Webhook replay',
       'Email search',
       '30-day log retention',
       '5 team members',
@@ -86,6 +87,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '250,000 emails / month',
       '100 verified domains',
       'Unlimited virtual inboxes',
+      'Unlimited sandbox testing',
       'Team workspaces + roles',
       'Deliverability insights',
       'API usage analytics',
@@ -136,19 +138,30 @@ const STARTER_ANCHOR = { volume: 50_000, price: 20 };
 const GROWTH_ANCHOR = { volume: 250_000, price: 89 };
 const SCALE_ANCHOR = { volume: 750_000, price: 199 };
 
+/** Starter band step prices (volume → monthly USD). */
+export const STARTER_STEP_PRICES: ReadonlyArray<{ volume: number; price: number }> = [
+  { volume: 10_000, price: 10 },
+  { volume: 30_000, price: 15 },
+  { volume: 50_000, price: 20 },
+];
+
+/** Exact-volume package prices that beat formula/overage quotes. */
+export const VOLUME_STEP_OVERRIDES: ReadonlyArray<{
+  volume: number;
+  price: number;
+  tier: PlanSlug;
+}> = [{ volume: 500_000, price: 150, tier: 'growth' }];
+
 export interface PricingQuote {
   price: number | null;
   tier: PlanSlug;
 }
 
-function starterRampPrice(volume: number): number {
-  return Math.max(
-    1,
-    Math.round(
-      ((volume - FREE_VOLUME_LIMIT) / (STARTER_ANCHOR.volume - FREE_VOLUME_LIMIT)) *
-        STARTER_ANCHOR.price,
-    ),
-  );
+function starterBandPrice(volume: number): number {
+  for (const step of STARTER_STEP_PRICES) {
+    if (volume <= step.volume) return step.price;
+  }
+  return STARTER_ANCHOR.price;
 }
 
 function overagePrice(base: number, fromVolume: number, volume: number): number {
@@ -157,13 +170,12 @@ function overagePrice(base: number, fromVolume: number, volume: number): number 
 
 /** Pick the cheapest valid plan quote — snaps up when the next tier is cheaper than overage. */
 export function resolvePricingQuote(volume: number): PricingQuote {
-  if (volume >= ENTERPRISE_VOLUME_THRESHOLD) return { price: null, tier: 'enterprise' };
   if (volume <= FREE_VOLUME_LIMIT) return { price: 0, tier: 'free' };
 
   const options: PricingQuote[] = [];
 
-  if (volume < STARTER_ANCHOR.volume) {
-    options.push({ tier: 'starter', price: starterRampPrice(volume) });
+  if (volume <= STARTER_ANCHOR.volume) {
+    options.push({ tier: 'starter', price: starterBandPrice(volume) });
   } else {
     options.push({
       tier: 'starter',
@@ -191,6 +203,12 @@ export function resolvePricingQuote(volume: number): PricingQuote {
     });
   }
 
+  for (const override of VOLUME_STEP_OVERRIDES) {
+    if (override.volume === volume) {
+      options.push({ tier: override.tier, price: override.price });
+    }
+  }
+
   return options.reduce((best, option) =>
     option.price !== null && best.price !== null && option.price < best.price ? option : best,
   );
@@ -202,18 +220,6 @@ export function priceForVolume(volume: number): number | null {
 
 export function tierForVolume(volume: number): PlanSlug {
   return resolvePricingQuote(volume).tier;
-}
-
-export function isCustomVolume(volume: number): boolean {
-  if (volume <= FREE_VOLUME_LIMIT || volume >= ENTERPRISE_VOLUME_THRESHOLD) return false;
-
-  const { price, tier } = resolvePricingQuote(volume);
-  const tierDef = PRICING_TIERS.find((t) => t.slug === tier);
-  if (!tierDef || price === null) return false;
-
-  if (volume < STARTER_ANCHOR.volume) return true;
-
-  return !(price === tierDef.priceMonthly && volume <= tierDef.includedEmails);
 }
 
 export function formatVolume(n: number): string {
@@ -239,14 +245,15 @@ export function displayPrice(monthly: number | null, annual: boolean): string {
 
 export const PRICING_COMPARE = [
   {
-    group: 'Platform (every plan)',
+    group: 'Platform',
     rows: [
       ['Production send (API + SMTP)', true, true, true, true, true],
       ['Sandbox inbox + spam/HTML checks', true, true, true, true, true],
+      ['Sandbox tests / month', '3K', '3K', 'Unlimited', 'Unlimited', 'Unlimited'],
       ['Virtual inboxes', true, true, true, true, true],
-      ['Templates + marketplace', true, true, true, true, true],
-      ['Webhooks', true, true, true, true, true],
       ['Domain verification', true, true, true, true, true],
+      ['Templates + marketplace', false, true, true, true, true],
+      ['Webhooks', false, true, true, true, true],
     ],
   },
   {
@@ -272,7 +279,7 @@ export const PRICING_COMPARE = [
     group: 'Reliability',
     rows: [
       ['Log retention', '7 days', '30 days', '90 days', '180 days', 'Custom'],
-      ['Analytics', 'Basic', 'Advanced', 'Advanced', 'Advanced', 'Advanced'],
+      ['Analytics', false, 'Advanced', 'Advanced', 'Advanced', 'Advanced'],
       ['SLA', false, false, false, '99.9%', 'Custom'],
       ['SAML SSO', false, false, false, true, true],
     ],
@@ -282,7 +289,7 @@ export const PRICING_COMPARE = [
 export const PRICING_FAQ = [
   [
     'Why one pricing page instead of separate send / sandbox tabs?',
-    'Mailvoidr bundles production delivery, sandbox testing, and virtual inboxes on every plan. Competitors like Mailtrap split those into separate products — we include them so you do not pay twice.',
+    'Mailvoidr bundles production delivery, sandbox testing, and virtual inboxes. Competitors like Mailtrap split those into separate products — we include sandbox and virtual inboxes so you do not pay twice.',
   ],
   [
     'What counts as an email?',
@@ -290,15 +297,15 @@ export const PRICING_FAQ = [
   ],
   [
     'How does the volume slider work?',
-    'Pick your monthly send volume. Price scales with the slider. When overage would cost more than the next tier, we automatically quote the cheaper plan (e.g. 500K → Scale at $199, not Growth overage at $289).',
+    'Pick your monthly send volume. 3K is Free. Starter steps are 10K ($10), 30K ($15), and 50K ($20). Package steps like 500K ($150) beat overage math when cheaper. Otherwise overage is $8 per 10K, with snap-up to the next tier when that wins.',
   ],
   [
-    'Can I buy a custom volume?',
-    'Yes. Slide to any step between 3K and 750K for an instant quote. Enterprise (1M+) is custom — contact sales.',
+    'Can I pick a volume between plan anchors?',
+    'Yes. The slider quotes an exact monthly price for every step — including overage volumes. Enterprise features (private clusters, custom SLAs) are still via sales.',
   ],
   [
     'Is sandbox testing metered separately?',
-    'No. Sandbox capture, spam analysis, and HTML preview are included on every plan. Only outbound production sends drive the slider.',
+    'Yes on Free and Starter — each plan includes 3,000 sandbox captures per month (API test sends and SMTP test inbox). Growth and above are unlimited. Production sends still drive the volume slider.',
   ],
   [
     'What about marketing / broadcast email?',

@@ -26,6 +26,15 @@ export function useEmailSearchEnabled() {
   return planHasFeature(data?.plan?.limits ?? null, 'email_search');
 }
 
+export function usePlanFeature(feature: string) {
+  const { data, isFetched } = useBilling();
+
+  // Avoid hiding paid-plan nav while billing is still loading.
+  if (!isFetched) return true;
+
+  return planHasFeature(data?.plan?.limits ?? null, feature);
+}
+
 export function useBillingMutations() {
   const queryClient = useQueryClient();
   const workspaceId = useWorkspaceStore((s) => s.selectedWorkspaceId);

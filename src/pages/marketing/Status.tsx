@@ -148,7 +148,7 @@ export default function Status() {
     <MarketingLayout>
       <TooltipProvider delayDuration={0} skipDelayDuration={0}>
       <section className="border-b border-border">
-        <div className="mx-auto max-w-5xl px-6 py-16">
+        <div className="mx-auto max-w-7xl px-6 py-16">
           <span className="label-mono">Status</span>
           <div className="mt-3 flex items-center gap-3">
             {apiDown ? (

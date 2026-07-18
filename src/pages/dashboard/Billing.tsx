@@ -1,24 +1,28 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { VolumeStepSlider } from '@/components/billing/VolumeStepSlider';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Slider } from '@/components/ui/slider';
 import { useBilling, useBillingMutations } from '@/hooks/useBilling';
 import { useCreditMutations } from '@/hooks/useCredits';
 import { usePlans } from '@/hooks/usePlans';
+import {
+  clearBillingIntent,
+  readBillingIntent,
+} from '@/lib/billing-intent';
 import {
   billingPriceIsCustom,
   formatBillingPrice,
   formatVolumeLabel,
 } from '@/lib/billing-display';
 import type { PricingCurrency } from '@/types';
-import { VOLUME_STEPS } from '@/content/marketing/pricing';
+import { DEFAULT_VOLUME_STEP_INDEX, VOLUME_STEPS } from '@/content/marketing/pricing';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { ArrowUpRight, Loader2 } from 'lucide-react';
 
 function defaultStepIndex(volume: number | null | undefined): number {
-  if (!volume) return 4;
+  if (!volume) return DEFAULT_VOLUME_STEP_INDEX;
   const idx = VOLUME_STEPS.findIndex((step) => step === volume);
   if (idx >= 0) return idx;
   const closest = VOLUME_STEPS.reduce((best, step, index) => {
@@ -29,18 +33,35 @@ function defaultStepIndex(volume: number | null | undefined): number {
   return closest;
 }
 
+function initialStepIndex(searchParams: URLSearchParams): number {
+  const volumeParam = Number(searchParams.get('volume'));
+  if (Number.isFinite(volumeParam) && volumeParam > 0) {
+    return defaultStepIndex(volumeParam);
+  }
+
+  const intent = readBillingIntent();
+  if (intent) {
+    return defaultStepIndex(intent.volume);
+  }
+
+  return DEFAULT_VOLUME_STEP_INDEX;
+}
+
 export default function Billing() {
   const [tab, setTab] = useState('overview');
-  const [annual, setAnnual] = useState(false);
-  const [currency, setCurrency] = useState<PricingCurrency>('USD');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [annual, setAnnual] = useState(
+    () => searchParams.get('annual') === '1' || Boolean(readBillingIntent()?.annual),
+  );
+  const [currency, setCurrency] = useState<PricingCurrency>('USD');
   const confirmedRef = useRef<string | null>(null);
+  const hydratedVolumeRef = useRef(false);
 
   const { data: billing, isLoading: billingLoading } = useBilling();
   const { enableSending } = useCreditMutations();
   const { checkout, confirmCheckout } = useBillingMutations();
 
-  const [stepIndex, setStepIndex] = useState(4);
+  const [stepIndex, setStepIndex] = useState(() => initialStepIndex(searchParams));
   const volume = VOLUME_STEPS[stepIndex];
 
   const { data: plansData, isLoading: plansLoading } = usePlans(currency, volume);
@@ -53,10 +74,30 @@ export default function Billing() {
   const liveSendingEnabled = billing?.live_sending_enabled ?? false;
 
   useEffect(() => {
+    if (hydratedVolumeRef.current) return;
+
+    const volumeParam = Number(searchParams.get('volume'));
+    if (Number.isFinite(volumeParam) && volumeParam > 0) {
+      setStepIndex(defaultStepIndex(volumeParam));
+      hydratedVolumeRef.current = true;
+      clearBillingIntent();
+      return;
+    }
+
+    const intent = readBillingIntent();
+    if (intent) {
+      setStepIndex(defaultStepIndex(intent.volume));
+      setAnnual(intent.annual);
+      hydratedVolumeRef.current = true;
+      clearBillingIntent();
+      return;
+    }
+
     if (billing?.subscription?.monthly_volume) {
       setStepIndex(defaultStepIndex(billing.subscription.monthly_volume));
+      hydratedVolumeRef.current = true;
     }
-  }, [billing?.subscription?.monthly_volume]);
+  }, [billing?.subscription?.monthly_volume, searchParams]);
 
   useEffect(() => {
     const checkoutState = searchParams.get('checkout');
@@ -269,13 +310,10 @@ export default function Billing() {
                 </div>
               </div>
 
-              <Slider
+              <VolumeStepSlider
                 className="mt-6"
-                min={0}
-                max={VOLUME_STEPS.length - 1}
-                step={1}
-                value={[stepIndex]}
-                onValueChange={([value]) => setStepIndex(value)}
+                stepIndex={stepIndex}
+                onStepChange={setStepIndex}
                 data-testid="billing-volume-slider"
               />
 

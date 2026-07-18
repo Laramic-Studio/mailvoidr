@@ -20,9 +20,23 @@ export default function Login() {
     inviteAcceptPath(inviteToken) ??
     (location.state as { from?: string } | null)?.from ??
     null;
-  const registerHref = inviteToken
-    ? `/register?invite_token=${encodeURIComponent(inviteToken)}`
-    : "/register";
+  const registerHref = (() => {
+    const params = new URLSearchParams();
+    if (inviteToken) params.set("invite_token", inviteToken);
+    if (redirectTo?.startsWith("/dashboard/billing")) {
+      try {
+        const billingUrl = new URL(redirectTo, "http://localhost");
+        const volume = billingUrl.searchParams.get("volume");
+        const annual = billingUrl.searchParams.get("annual");
+        if (volume) params.set("volume", volume);
+        if (annual) params.set("annual", annual);
+      } catch {
+        // ignore malformed redirect
+      }
+    }
+    const query = params.toString();
+    return query ? `/register?${query}` : "/register";
+  })();
   const { login } = useAuth();
   const { loading, run } = useAsyncAction();
   const { theme } = useTheme();

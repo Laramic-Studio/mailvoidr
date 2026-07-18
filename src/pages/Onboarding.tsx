@@ -4,6 +4,7 @@ import { CodeBlock } from "@/components/CodeBlock";
 import { ReferralSourceSelect } from "@/components/onboarding/ReferralSourceSelect";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboardingMutations, useOnboardingStatus } from "@/hooks/useOnboarding";
+import { billingPathFromIntent, readBillingIntent } from "@/lib/billing-intent";
 import { toastError } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -112,7 +113,8 @@ export default function Onboarding() {
 
     try {
       const result = await complete.mutateAsync();
-      nav(result.redirect || "/dashboard");
+      const intent = readBillingIntent();
+      nav(intent ? billingPathFromIntent(intent) : (result.redirect || "/dashboard"));
     } catch (err) {
       toastError(err, "Could not complete onboarding");
     } finally {

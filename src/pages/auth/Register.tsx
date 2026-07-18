@@ -8,6 +8,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useInvitationByToken } from "@/hooks/useWorkspaces";
+import { writeBillingIntent } from "@/lib/billing-intent";
 import { storePendingInviteToken, verifyEmailPath } from "@/lib/invite-flow";
 import { startOAuth } from "@/lib/oauth";
 import { GitHubLight, Google, GitHubDark } from "developer-icons";
@@ -18,6 +19,8 @@ export default function Register() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get("invite_token");
+  const volumeParam = Number(searchParams.get("volume"));
+  const annualParam = searchParams.get("annual") === "1";
   const invitePreview = useInvitationByToken(inviteToken);
   const { register } = useAuth();
   const { loading, run } = useAsyncAction();
@@ -30,6 +33,12 @@ export default function Register() {
       storePendingInviteToken(inviteToken);
     }
   }, [inviteToken]);
+
+  useEffect(() => {
+    if (Number.isFinite(volumeParam) && volumeParam > 0) {
+      writeBillingIntent({ volume: volumeParam, annual: annualParam });
+    }
+  }, [volumeParam, annualParam]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

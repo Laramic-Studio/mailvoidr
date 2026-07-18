@@ -121,7 +121,7 @@ function TestSmtpPanel() {
       <ModeCallout
         tone="test"
         title="Sandbox capture"
-        description="Point staging or local apps here. Mail appears in your sandbox inbox instantly — no plan quota used for capture."
+        description="Point staging or local apps here. Mail appears in your sandbox inbox instantly. Free and Starter include 3,000 sandbox captures per month."
         action={
           <Link
             to="/dashboard/inbox"

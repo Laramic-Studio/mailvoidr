@@ -1,10 +1,15 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import gsap from 'gsap';
 import { Check, X } from 'lucide-react';
+import { VolumeStepSlider } from '@/components/billing/VolumeStepSlider';
 import { MarketingLayout } from '@/components/layouts/MarketingLayout';
-import { Slider } from '@/components/ui/slider';
 import { usePlans } from '@/hooks/usePlans';
-import type { PricingCurrency } from '@/lib/api/plans';
+import type { PricingCurrency } from '@/types';
+import {
+  billingPathFromIntent,
+  writeBillingIntent,
+} from '@/lib/billing-intent';
 import {
   billingPriceIsCustom,
   billingPriceIsFree,
@@ -14,8 +19,8 @@ import {
 } from '@/lib/billing-display';
 import type { BillingPlan } from '@/types';
 import {
+  DEFAULT_VOLUME_STEP_INDEX,
   formatVolumeLabel,
-  isCustomVolume,
   PRICING_ADDONS,
   PRICING_COMPARE,
   PRICING_FAQ,
@@ -38,7 +43,7 @@ function planCardPrice(plan: BillingPlan, annual: boolean) {
 
 export default function Pricing() {
   const [annual, setAnnual] = useState(false);
-  const [stepIndex, setStepIndex] = useState(2);
+  const [stepIndex, setStepIndex] = useState(DEFAULT_VOLUME_STEP_INDEX);
   const [currency, setCurrency] = useState<PricingCurrency>(() => readPricingCurrency());
 
   const volume = VOLUME_STEPS[stepIndex];
@@ -46,17 +51,49 @@ export default function Pricing() {
 
   const activeSlug = data?.quote?.tier_slug;
   const quotePrice = data?.quote?.price;
-  const custom = isCustomVolume(volume);
   const plans = data?.plans ?? [];
 
-  const sliderLabels = useMemo(
-    () => VOLUME_STEPS.map((v) => formatVolumeLabel(v)),
-    [],
+  const volumeRef = useRef<HTMLParagraphElement>(null);
+  const priceRef = useRef<HTMLParagraphElement>(null);
+  const priceLabel = useMemo(
+    () => (isLoading ? '…' : formatBillingPrice(quotePrice, annual)),
+    [isLoading, quotePrice, annual],
   );
+
+  useEffect(() => {
+    const targets = [volumeRef.current, priceRef.current].filter(Boolean);
+    if (!targets.length) return;
+
+    gsap.fromTo(
+      targets,
+      { y: 10, opacity: 0.35 },
+      { y: 0, opacity: 1, duration: 0.32, ease: 'power2.out', stagger: 0.04 },
+    );
+  }, [volume, priceLabel]);
 
   function handleCurrencyPreview(next: PricingCurrency) {
     setCurrency(next);
     writePricingCurrency(next);
+  }
+
+  function planCta(plan: { slug: string; price: BillingPlan['price'] }, active: boolean, includedEmails: number) {
+    if (billingPriceIsCustom(plan.price)) {
+      return { to: '/contact', label: 'Contact sales' };
+    }
+
+    if (billingPriceIsFree(plan.price)) {
+      return { to: '/register', label: 'Start free' };
+    }
+
+    // Non-active cards subscribe at that plan's included volume so checkout matches the tier.
+    const ctaVolume = active ? volume : includedEmails;
+    const intent = { volume: ctaVolume, annual };
+    writeBillingIntent(intent);
+
+    return {
+      to: billingPathFromIntent(intent),
+      label: 'Get started',
+    };
   }
 
   return (
@@ -116,22 +153,26 @@ export default function Pricing() {
             </div>
           </div>
 
-       
-
           <div className="mx-auto mt-12 max-w-2xl text-left">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="label-mono text-muted-foreground">Monthly production sends</p>
-                <p className="mt-1 text-3xl font-medium tracking-tight" data-testid="volume-display">
+                <p
+                  ref={volumeRef}
+                  className="mt-1 text-3xl font-medium tracking-tight"
+                  data-testid="volume-display"
+                >
                   {formatVolumeLabel(volume)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="label-mono text-muted-foreground">Estimated price</p>
-                <p className="mt-1 text-3xl font-medium tracking-tight text-primary" data-testid="price-display">
-                  {isLoading
-                    ? '…'
-                    : formatBillingPrice(quotePrice, annual)}
+                <p
+                  ref={priceRef}
+                  className="mt-1 text-3xl font-medium tracking-tight text-primary"
+                  data-testid="price-display"
+                >
+                  {priceLabel}
                   {!isLoading && quotePrice && !billingPriceIsCustom(quotePrice) && !billingPriceIsFree(quotePrice) && (
                     <span className="ml-1 text-sm font-normal text-muted-foreground">
                       /{annual ? 'yr' : 'mo'}
@@ -141,34 +182,16 @@ export default function Pricing() {
               </div>
             </div>
 
-            <Slider
+            <VolumeStepSlider
               className="mt-6"
-              min={0}
-              max={VOLUME_STEPS.length - 1}
-              step={1}
-              value={[stepIndex]}
-              onValueChange={([v]) => setStepIndex(v)}
+              stepIndex={stepIndex}
+              onStepChange={setStepIndex}
               data-testid="volume-slider"
             />
-            <div
-              className="mt-2 grid font-mono text-[9px] text-muted-foreground sm:text-[10px]"
-              style={{ gridTemplateColumns: `repeat(${VOLUME_STEPS.length}, minmax(0, 1fr))` }}
-            >
-              {sliderLabels.map((label, i) => (
-                <span key={`${label}-${i}`} className="truncate text-center">
-                  {label}
-                </span>
-              ))}
-            </div>
-
-            {custom && (
-              <p className="mt-4 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-[13px] text-muted-foreground">
-                Custom volume — tier base plus $8 per extra 10,000 emails above included quota.
-              </p>
-            )}
 
             <p className="mt-3 text-[12.5px] text-muted-foreground">
               Sandbox testing and virtual inboxes are included on every plan. Only production sends affect this slider.
+              Above a plan’s included quota, price includes $8 per extra 10,000 emails — always shown as a clear monthly total.
             </p>
           </div>
         </div>
@@ -197,17 +220,18 @@ export default function Pricing() {
               const active = plan.slug === activeSlug;
               const features = FEATURES_BY_SLUG[plan.slug] ?? [];
               const includedEmails = plan.included_emails ?? INCLUDED_BY_SLUG[plan.slug] ?? 0;
-              const priceLabel = isLoading && plans.length === 0
+              const displayPrice = isLoading && plans.length === 0
                 ? '…'
                 : planCardPrice(plan as BillingPlan, annual);
               const isCustom = billingPriceIsCustom(plan.price);
               const isFree = billingPriceIsFree(plan.price);
+              const cta = planCta(plan as BillingPlan, active, includedEmails);
 
               return (
                 <div
                   key={plan.slug}
                   data-testid={`plan-${plan.slug}`}
-                  className={`bg-card p-6 flex flex-col transition-shadow ${
+                  className={`bg-card p-6 flex flex-col transition-shadow duration-300 ${
                     active ? 'relative ring-2 ring-primary -m-px z-10' : ''
                   } ${plan.popular && !active ? 'relative ring-1 ring-primary/40 -m-px' : ''}`}
                 >
@@ -228,7 +252,7 @@ export default function Pricing() {
                       <span className="text-3xl font-medium">Custom</span>
                     ) : (
                       <>
-                        <span className="text-3xl font-medium tracking-tight">{priceLabel}</span>
+                        <span className="text-3xl font-medium tracking-tight">{displayPrice}</span>
                         {!isFree && (
                           <span className="text-[12.5px] text-muted-foreground">
                             /{annual ? 'yr' : 'mo'}
@@ -243,19 +267,23 @@ export default function Pricing() {
                       : `${formatVolumeLabel(includedEmails)} included`}
                   </p>
                   <Link
-                    to={
-                      isCustom
-                        ? '/contact'
-                        : `/register?plan=${plan.slug}&volume=${volume}${annual ? '&annual=1' : ''}`
-                    }
+                    to={cta.to}
                     data-testid={`plan-cta-${plan.slug}`}
+                    onClick={() => {
+                      if (!isCustom && !isFree) {
+                        writeBillingIntent({
+                          volume: active ? volume : includedEmails,
+                          annual,
+                        });
+                      }
+                    }}
                     className={`mt-5 inline-flex justify-center items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                       active || plan.popular
                         ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                         : 'border border-border bg-background hover:bg-accent'
                     }`}
                   >
-                    {isCustom ? 'Contact sales' : isFree ? 'Start free' : 'Get started'}
+                    {cta.label}
                   </Link>
                   <ul className="mt-6 space-y-2.5 text-[13px] flex-1">
                     {features.map((feature) => (

@@ -1,5 +1,4 @@
-import type { BillingPlanPrice } from '@/types';
-import type { PricingCurrency } from '@/lib/api/plans';
+import type { BillingPlanPrice, PricingCurrency } from '@/types';
 import { ANNUAL_MONTHS_CHARGED } from '@/content/marketing/pricing';
 
 export const PRICING_CURRENCY_STORAGE_KEY = 'mailvoidr_pricing_currency';

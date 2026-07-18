@@ -12,7 +12,7 @@ export default function About() {
   return (
     <MarketingLayout>
       <section className="border-b border-border">
-        <div className="mx-auto max-w-4xl px-6 py-24">
+        <div className="mx-auto max-w-7xl px-6 py-24">
           <span className="label-mono">About</span>
           <h1 className="mt-2 text-5xl md:text-6xl tracking-tight font-medium leading-[1] text-balance">
             {ABOUT_HERO.title}{' '}
