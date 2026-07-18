@@ -9,6 +9,23 @@ import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailTemplate, TemplateCategory, TemplateVisibility } from '@/types';
 import { Plus, Search, FileCode2, Loader2, Store } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'; // use shadcn/ui components as directed
+
+const CATEGORY_OPTIONS = [
+  { value: 'transactional', label: 'Transactional' },
+  { value: 'marketing', label: 'Marketing' },
+] as const;
+
+const VISIBILITY_OPTIONS = [
+  { value: 'public', label: 'Public (marketplace)' },
+  { value: 'private', label: 'Private (library only)' },
+] as const;
 
 function categoryLabel(category: TemplateCategory): string {
   return category === 'marketing' ? 'Marketing' : 'Transactional';
@@ -18,7 +35,6 @@ function formatUpdatedAt(value: string): string {
   const date = new Date(value);
   const diffMs = Date.now() - date.getTime();
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
-
   if (hours < 1) return 'Just now';
   if (hours < 24) return `${hours} hr ago`;
   const days = Math.floor(hours / 24);
@@ -207,27 +223,40 @@ export default function Templates() {
               </label>
               <label className="block space-y-1.5">
                 <span className="label-mono">Category</span>
-                <select
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value as TemplateCategory)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]"
-                >
-                  <option value="transactional">Transactional</option>
-                  <option value="marketing">Marketing</option>
-                </select>
+                <div>
+                  <Select
+                    value={category}
+                    onValueChange={(value) => setCategory(value as TemplateCategory)}
+                  >
+                    <SelectTrigger className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="transactional">Transactional</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </label>
               <label className="block space-y-1.5">
                 <span className="label-mono">Visibility</span>
-                <select
-                  value={visibility}
-                  onChange={(event) => setVisibility(event.target.value as TemplateVisibility)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]"
-                >
-                  <option value="public">Public (marketplace)</option>
-                  <option value="private">Private (library only)</option>
-                </select>
+                <div>
+                  <Select
+                    value={visibility}
+                    onValueChange={(value) => setVisibility(value as TemplateVisibility)}
+                  >
+                    <SelectTrigger className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]">
+                      <SelectValue placeholder="Visibility" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public (marketplace)</SelectItem>
+                      <SelectItem value="private">Private (library only)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </label>
             </div>
+
             <div className="flex justify-end gap-2 border-t border-border p-5">
               <button
                 type="button"
