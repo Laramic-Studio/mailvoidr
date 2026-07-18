@@ -13,7 +13,8 @@ export interface CreateTemplatePayload {
   name: string;
   category: TemplateCategory;
   description?: string;
-  subject: string;
+  /** Omit subject/body to create a draft shell; first Save creates v1. */
+  subject?: string;
   html?: string;
   text?: string;
   design_json?: TemplateDesign | null;

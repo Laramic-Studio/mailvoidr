@@ -4,10 +4,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { useTemplateMutations, useTemplates } from '@/hooks/useTemplates';
-import {
-  BLANK_TEMPLATE_HTML,
-  DEFAULT_TEMPLATE_VARIABLES,
-} from '@/lib/templates/editor';
+import { DEFAULT_TEMPLATE_VARIABLES } from '@/lib/templates/editor';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailTemplate, TemplateCategory, TemplateVisibility } from '@/types';
 import { Plus, Search, FileCode2, Loader2, Store } from 'lucide-react';
@@ -55,8 +52,6 @@ export default function Templates() {
         name: name.trim(),
         category,
         visibility,
-        subject: name.trim(),
-        html: BLANK_TEMPLATE_HTML,
         variables: DEFAULT_TEMPLATE_VARIABLES,
       });
       setShowCreate(false);

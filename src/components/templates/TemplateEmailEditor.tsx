@@ -19,13 +19,26 @@ interface TemplateEmailEditorProps {
   variables?: TemplateVariable[] | null;
 }
 
+const HEIGHT_REMOUNT_DELTA = 48;
+
+function unlayerProjectId(): number | undefined {
+  const raw = import.meta.env.VITE_UNLAYER_PROJECT_ID;
+  if (!raw) return undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 const TemplateEmailEditor = forwardRef<TemplateEmailEditorHandle, TemplateEmailEditorProps>(
   function TemplateEmailEditor({ design, variables }, ref) {
+    const projectId = unlayerProjectId();
     const containerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<EditorRef>(null);
     const readyRef = useRef(false);
     const designRef = useRef(design);
+    const heightRef = useRef(0);
+    const resizingRef = useRef(false);
     const [height, setHeight] = useState(0);
+    const [instanceKey, setInstanceKey] = useState(0);
 
     designRef.current = design;
 
@@ -33,9 +46,46 @@ const TemplateEmailEditor = forwardRef<TemplateEmailEditorHandle, TemplateEmailE
       const node = containerRef.current;
       if (!node) return;
 
+      const applyHeight = (next: number) => {
+        if (next <= 0) return;
+
+        const previous = heightRef.current;
+        const delta = Math.abs(next - previous);
+
+        // First measurement — mount editor.
+        if (previous === 0) {
+          heightRef.current = next;
+          setHeight(next);
+          return;
+        }
+
+        // Significant resize after ready — remount with preserved design so Unlayer fills.
+        if (readyRef.current && delta >= HEIGHT_REMOUNT_DELTA && !resizingRef.current) {
+          const editor = editorRef.current?.editor;
+          if (!editor) {
+            heightRef.current = next;
+            setHeight(next);
+            return;
+          }
+
+          resizingRef.current = true;
+          editor.exportHtml((data) => {
+            designRef.current = data.design as TemplateDesign;
+            readyRef.current = false;
+            heightRef.current = next;
+            setHeight(next);
+            setInstanceKey((key) => key + 1);
+            resizingRef.current = false;
+          });
+          return;
+        }
+
+        heightRef.current = next;
+        setHeight(next);
+      };
+
       const updateHeight = () => {
-        const next = Math.floor(node.getBoundingClientRect().height);
-        if (next > 0) setHeight(next);
+        applyHeight(Math.floor(node.getBoundingClientRect().height));
       };
 
       updateHeight();
@@ -69,7 +119,7 @@ const TemplateEmailEditor = forwardRef<TemplateEmailEditorHandle, TemplateEmailE
           const editor = editorRef.current?.editor;
 
           if (!editor || !readyRef.current) {
-            reject(new Error('Editor is not ready yet.'));
+            reject(new Error('Editor is still loading.'));
             return;
           }
 
@@ -87,10 +137,12 @@ const TemplateEmailEditor = forwardRef<TemplateEmailEditorHandle, TemplateEmailE
       <div ref={containerRef} className="h-full min-h-0 w-full">
         {height > 0 ? (
           <EmailEditor
+            key={instanceKey}
             ref={editorRef}
             minHeight={`${height}px`}
             onReady={handleReady}
             options={{
+              ...(projectId ? { projectId } : {}),
               displayMode: 'email',
               version: 'stable',
               devices: ['desktop', 'mobile'],
