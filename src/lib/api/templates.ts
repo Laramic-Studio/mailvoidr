@@ -1,6 +1,7 @@
 import type {
   EmailTemplate,
   TemplateCategory,
+  TemplateDesign,
   TemplateListResponse,
   TemplatePreview,
   TemplateVariable,
@@ -15,6 +16,7 @@ export interface CreateTemplatePayload {
   subject: string;
   html?: string;
   text?: string;
+  design_json?: TemplateDesign | null;
   variables?: TemplateVariable[];
   change_notes?: string;
   visibility?: TemplateVisibility;
@@ -33,6 +35,7 @@ export interface CreateTemplateVersionPayload {
   subject: string;
   html?: string;
   text?: string;
+  design_json?: TemplateDesign | null;
   variables?: TemplateVariable[] | null;
   change_notes?: string;
 }
@@ -66,6 +69,25 @@ export async function updateTemplate(
 ): Promise<{ template: EmailTemplate; message: string }> {
   const { data } = await api.patch<{ template: EmailTemplate; message: string }>(
     `/templates/${id}`,
+    payload,
+  );
+  return data;
+}
+
+export interface UpdateCurrentTemplateVersionPayload {
+  subject: string;
+  html?: string;
+  text?: string;
+  design_json?: TemplateDesign | null;
+  variables?: TemplateVariable[] | null;
+}
+
+export async function updateCurrentTemplateVersion(
+  id: string,
+  payload: UpdateCurrentTemplateVersionPayload,
+): Promise<{ template: EmailTemplate; message: string }> {
+  const { data } = await api.patch<{ template: EmailTemplate; message: string }>(
+    `/templates/${id}/current-version`,
     payload,
   );
   return data;

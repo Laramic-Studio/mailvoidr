@@ -4,6 +4,10 @@ import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { useTemplateMutations, useTemplates } from '@/hooks/useTemplates';
+import {
+  BLANK_TEMPLATE_HTML,
+  DEFAULT_TEMPLATE_VARIABLES,
+} from '@/lib/templates/editor';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailTemplate, TemplateCategory, TemplateVisibility } from '@/types';
 import { Plus, Search, FileCode2, Loader2, Store } from 'lucide-react';
@@ -34,8 +38,6 @@ export default function Templates() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<TemplateCategory>('transactional');
   const [visibility, setVisibility] = useState<TemplateVisibility>('public');
-  const [subject, setSubject] = useState('');
-  const [html, setHtml] = useState('<p>Hi {{name}},</p>\n<p>Your message here.</p>');
 
   const { data, isLoading, isError } = useTemplates(search.trim() || undefined);
   const { create, remove } = useTemplateMutations();
@@ -43,8 +45,8 @@ export default function Templates() {
   const templates = useMemo(() => data?.data ?? [], [data?.data]);
 
   async function handleCreate() {
-    if (!name.trim() || !subject.trim() || !html.trim()) {
-      toastError('Name, subject, and HTML body are required.');
+    if (!name.trim()) {
+      toastError('Name is required.');
       return;
     }
 
@@ -53,16 +55,12 @@ export default function Templates() {
         name: name.trim(),
         category,
         visibility,
-        subject: subject.trim(),
-        html,
-        variables: [
-          { key: 'name', label: 'Recipient name', default: 'there' },
-        ],
+        subject: name.trim(),
+        html: BLANK_TEMPLATE_HTML,
+        variables: DEFAULT_TEMPLATE_VARIABLES,
       });
       setShowCreate(false);
       setName('');
-      setSubject('');
-      setHtml('<p>Hi {{name}},</p>\n<p>Your message here.</p>');
       toastSuccess(result.message);
       navigate(`/dashboard/templates/${result.template.id}`);
     } catch (error) {
@@ -194,11 +192,11 @@ export default function Templates() {
 
       {showCreate ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-6 backdrop-blur">
-          <div className="w-full max-w-2xl border border-border bg-card">
+          <div className="w-full max-w-lg border border-border bg-card">
             <div className="border-b border-border p-5">
               <h3 className="text-base font-medium">New template</h3>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                Use {'{{variable}}'} placeholders in subject and HTML.
+                Name your template, then build it in the visual editor.
               </p>
             </div>
             <div className="space-y-4 p-5">
@@ -209,6 +207,7 @@ export default function Templates() {
                   onChange={(event) => setName(event.target.value)}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]"
                   placeholder="Password reset"
+                  autoFocus
                 />
               </label>
               <label className="block space-y-1.5">
@@ -233,24 +232,6 @@ export default function Templates() {
                   <option value="private">Private (library only)</option>
                 </select>
               </label>
-              <label className="block space-y-1.5">
-                <span className="label-mono">Subject</span>
-                <input
-                  value={subject}
-                  onChange={(event) => setSubject(event.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px]"
-                  placeholder="Reset your password, {{name}}"
-                />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="label-mono">HTML body</span>
-                <textarea
-                  value={html}
-                  onChange={(event) => setHtml(event.target.value)}
-                  rows={8}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-[12px]"
-                />
-              </label>
             </div>
             <div className="flex justify-end gap-2 border-t border-border p-5">
               <button
@@ -267,7 +248,7 @@ export default function Templates() {
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
               >
                 {create.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                Create template
+                Create &amp; open editor
               </button>
             </div>
           </div>

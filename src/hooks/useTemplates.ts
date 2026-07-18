@@ -6,9 +6,11 @@ import {
   fetchTemplate,
   fetchTemplates,
   previewTemplate,
+  updateCurrentTemplateVersion,
   updateTemplate,
   type CreateTemplatePayload,
   type CreateTemplateVersionPayload,
+  type UpdateCurrentTemplateVersionPayload,
   type UpdateTemplatePayload,
 } from '@/lib/api/templates';
 import { queryKeys } from '@/lib/query-keys';
@@ -55,6 +57,17 @@ export function useTemplateMutations() {
     onSuccess: (_, { id }) => invalidate(id),
   });
 
+  const saveCurrentVersion = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateCurrentTemplateVersionPayload;
+    }) => updateCurrentTemplateVersion(id, payload),
+    onSuccess: (_, { id }) => invalidate(id),
+  });
+
   const publishVersion = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: CreateTemplateVersionPayload }) =>
       createTemplateVersion(id, payload),
@@ -82,5 +95,5 @@ export function useTemplateMutations() {
     onSuccess: () => invalidate(),
   });
 
-  return { create, update, publishVersion, preview, remove };
+  return { create, update, saveCurrentVersion, publishVersion, preview, remove };
 }

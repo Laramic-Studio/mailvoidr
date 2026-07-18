@@ -10,7 +10,9 @@ import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useInvitationByToken } from "@/hooks/useWorkspaces";
 import { storePendingInviteToken, verifyEmailPath } from "@/lib/invite-flow";
 import { startOAuth } from "@/lib/oauth";
-import { Github, Mail } from "lucide-react";
+import { GitHubLight, Google, GitHubDark } from "developer-icons";
+import { useTheme } from "next-themes";
+
 
 export default function Register() {
   const nav = useNavigate();
@@ -20,7 +22,9 @@ export default function Register() {
   const { register } = useAuth();
   const { loading, run } = useAsyncAction();
   const [password, setPassword] = useState("");
-
+  const { theme } = useTheme();
+  const isDarkMode = theme === "dark";
+  const GithubIcon = isDarkMode ? GitHubDark : GitHubLight;
   useEffect(() => {
     if (inviteToken) {
       storePendingInviteToken(inviteToken);
@@ -71,7 +75,7 @@ export default function Register() {
           data-testid="social-github"
           className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Github className="h-3.5 w-3.5" /> Continue with GitHub
+          <GithubIcon className="h-3.5 w-3.5" /> Continue with GitHub
         </button>
         <button
           type="button"
@@ -80,7 +84,7 @@ export default function Register() {
           data-testid="social-google"
           className="w-full flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent rounded-md px-4 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Mail className="h-3.5 w-3.5" /> Continue with Google
+          <Google className="h-3.5 w-3.5" /> Continue with Google
         </button>
       </div>
       <div className="my-6 flex items-center gap-3">

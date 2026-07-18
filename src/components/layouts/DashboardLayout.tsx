@@ -34,9 +34,12 @@ import { WorkspaceTwoFactorBanner } from '@/components/dashboard/WorkspaceTwoFac
 export function DashboardLayout({
   children,
   flush = false,
+  chrome = 'default',
 }: {
   children: ReactNode;
   flush?: boolean;
+  /** `editor` hides sidebar + top nav so a page can own the full viewport. */
+  chrome?: 'default' | 'editor';
 }) {
   const nav = useNavigate();
   const { user, logout } = useAuth();
@@ -56,7 +59,7 @@ export function DashboardLayout({
     hydrate();
   }, [hydrate]);
 
-  useGlobalSearchShortcut(openSearch, emailSearchEnabled);
+  useGlobalSearchShortcut(openSearch, emailSearchEnabled && chrome !== 'editor');
 
   async function handleLogout() {
     await logout();
@@ -65,6 +68,20 @@ export function DashboardLayout({
 
   const collapsed = !hydrated || sidebarCollapsed;
   const expanded = !collapsed;
+  const isEditorChrome = chrome === 'editor';
+
+  if (isEditorChrome) {
+    return (
+      <TooltipProvider delayDuration={0}>
+        <div className="flex h-screen flex-col overflow-hidden bg-background">
+          <WorkspaceTwoFactorBanner />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden" data-testid="dashboard-main">
+            {children}
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider delayDuration={0}>

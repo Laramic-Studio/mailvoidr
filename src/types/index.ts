@@ -495,6 +495,8 @@ export type TemplateCategory = 'transactional' | 'marketing';
 
 export type TemplateVisibility = 'public' | 'private';
 
+export type TemplateDesign = Record<string, unknown>;
+
 export interface TemplateVariable {
   key: string;
   label?: string | null;
@@ -508,6 +510,7 @@ export interface TemplateVersion {
   subject: string;
   html_body?: string | null;
   text_body?: string | null;
+  design_json?: TemplateDesign | null;
   variables?: TemplateVariable[] | null;
   change_notes?: string | null;
   created_by?: {
