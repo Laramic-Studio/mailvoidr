@@ -45,3 +45,26 @@ export function formatMessageTime(iso: string | null): string {
 
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
+export const EMAIL_PREVIEW_SANDBOX = 'allow-popups allow-popups-to-escape-sandbox';
+
+export function prepareEmailPreviewHtml(html: string): string {
+  if (!html.trim() || typeof DOMParser === 'undefined') return html;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  doc.querySelectorAll('base').forEach((el) => el.remove());
+  const base = doc.createElement('base');
+  base.setAttribute('target', '_blank');
+  doc.head.prepend(base);
+
+  doc.querySelectorAll('a[href], area[href]').forEach((el) => {
+    el.setAttribute('target', '_blank');
+    const rel = new Set((el.getAttribute('rel') ?? '').split(/\s+/).filter(Boolean));
+    rel.add('noopener');
+    rel.add('noreferrer');
+    el.setAttribute('rel', [...rel].join(' '));
+  });
+
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}

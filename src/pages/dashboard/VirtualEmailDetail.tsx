@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { CodeBlock } from '@/components/CodeBlock';
@@ -18,7 +18,11 @@ import {
 import { useVirtualEmailRealtime } from '@/hooks/useVirtualEmailRealtime';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { downloadAttachment } from '@/lib/api/virtual-emails';
-import { formatRelativeInboxTime } from '@/lib/email-utils';
+import {
+  EMAIL_PREVIEW_SANDBOX,
+  formatRelativeInboxTime,
+  prepareEmailPreviewHtml,
+} from '@/lib/email-utils';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailMessage, EmailMessageSummary } from '@/types';
 import {
@@ -96,6 +100,10 @@ export default function VirtualEmailDetail() {
 
   const inbox = inboxData?.virtual_email;
   const messages = messagesData?.data ?? [];
+  const previewHtml = useMemo(
+    () => (message?.html_body ? prepareEmailPreviewHtml(message.html_body) : ''),
+    [message?.html_body],
+  );
 
   const handleRealtimeMessage = useCallback(() => {
     if (!selectedIdRef.current) {
@@ -545,8 +553,9 @@ export default function VirtualEmailDetail() {
                           {message?.html_body ? (
                             <iframe
                               title="Email HTML preview"
-                              sandbox=""
-                              srcDoc={message.html_body}
+                              sandbox={EMAIL_PREVIEW_SANDBOX}
+                              srcDoc={previewHtml}
+                              referrerPolicy="no-referrer"
                               className={`mx-auto min-h-[720px] w-full border border-border bg-white shadow-lg ${
                                 previewMode === 'mobile' ? 'max-w-[420px]' : 'max-w-none'
                               }`}

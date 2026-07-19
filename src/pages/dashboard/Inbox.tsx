@@ -13,7 +13,12 @@ import {
 import { useSandboxRealtime } from '@/hooks/useSandboxRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { formatRelativeInboxTime, parseEmailAddress } from '@/lib/email-utils';
+import {
+  EMAIL_PREVIEW_SANDBOX,
+  formatRelativeInboxTime,
+  parseEmailAddress,
+  prepareEmailPreviewHtml,
+} from '@/lib/email-utils';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailMessage, EmailMessageSummary } from '@/types';
 import {
@@ -95,6 +100,10 @@ export default function Inbox() {
   const messages = useMemo(
     () => messagesData?.pages.flatMap((page) => page.data) ?? [],
     [messagesData?.pages],
+  );
+  const previewHtml = useMemo(
+    () => (message?.html_body ? prepareEmailPreviewHtml(message.html_body) : ''),
+    [message?.html_body],
   );
   const selectedIdRef = useRef(selectedMessageId);
   selectedIdRef.current = selectedMessageId;
@@ -542,8 +551,9 @@ export default function Inbox() {
                           {message?.html_body ? (
                             <iframe
                               title="Email HTML preview"
-                              sandbox=""
-                              srcDoc={message.html_body}
+                              sandbox={EMAIL_PREVIEW_SANDBOX}
+                              srcDoc={previewHtml}
+                              referrerPolicy="no-referrer"
                               className={`mx-auto min-h-[720px] w-full border border-border bg-white shadow-lg ${
                                 previewMode === 'mobile' ? 'max-w-[420px]' : 'max-w-none'
                               }`}
