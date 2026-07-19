@@ -108,7 +108,7 @@ export default function Register() {
             name="name"
             type="text"
             required
-            placeholder="Riya Mehta"
+            placeholder="John Doe"
             data-testid="field-name"
             autoComplete="name"
           />
@@ -119,7 +119,7 @@ export default function Register() {
             required
             defaultValue={invitePreview.data?.email ?? ""}
             readOnly={Boolean(invitePreview.data?.email)}
-            placeholder="you@company.com"
+            placeholder="you@gmail.com"
             data-testid="field-email"
             autoComplete="email"
           />

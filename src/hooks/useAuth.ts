@@ -54,7 +54,8 @@ export function useAuth() {
 
   const meQuery = useMe();
   const user = meQuery.data ?? null;
-  const isLoading = !hydrated || (Boolean(accessToken) && (meQuery.isLoading || meQuery.isFetching));
+  const isLoading =
+    !hydrated || (Boolean(accessToken) && !user && (meQuery.isLoading || meQuery.isFetching));
   const isAuthenticated = Boolean(accessToken) && !meQuery.isError;
 
   const invalidateMe = async () => {
