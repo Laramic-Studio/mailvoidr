@@ -55,6 +55,7 @@ export default function SMTP() {
             </TabsTrigger>
           </TabsList>
 
+          {mode === 'test' ? <TestSmtpToolbar /> : null}
           {mode === 'live' ? <LiveSmtpToolbar /> : null}
         </div>
 
@@ -67,6 +68,55 @@ export default function SMTP() {
         </TabsContent>
       </Tabs>
     </DashboardLayout>
+  );
+}
+
+function TestSmtpToolbar() {
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const { data } = useSandbox();
+  const { regenerateCredentials } = useSandboxMutations();
+  const inbox = data?.inbox ?? null;
+
+  async function handleRegenerateConfirm() {
+    if (!inbox) return;
+
+    try {
+      const result = await regenerateCredentials.mutateAsync();
+      setShowRegenerateConfirm(false);
+      toastSuccess(result.message ?? 'Sandbox SMTP credentials regenerated.');
+    } catch (error) {
+      toastError(error, 'Could not regenerate sandbox credentials.');
+    }
+  }
+
+  if (!inbox) {
+    return null;
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        data-testid="smtp-test-regenerate"
+        onClick={() => setShowRegenerateConfirm(true)}
+        className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-accent"
+      >
+        <RefreshCw className="h-3 w-3" /> Regenerate credentials
+      </button>
+
+      <ConfirmDeleteDialog
+        open={showRegenerateConfirm}
+        onOpenChange={setShowRegenerateConfirm}
+        resourceName={inbox.username}
+        resourceLabel="SMTP username"
+        title="Regenerate SMTP credentials"
+        description="This creates a new username and password. Existing apps using the current credentials will stop working until you update them. Type the current SMTP username below to confirm."
+        confirmLabel="Regenerate credentials"
+        onConfirm={handleRegenerateConfirm}
+        isPending={regenerateCredentials.isPending}
+        testId="smtp-test-regenerate-dialog"
+      />
+    </>
   );
 }
 
@@ -141,7 +191,7 @@ function TestSmtpPanel() {
         rows={[
           { label: 'HOST', value: inbox.smtp_host },
           { label: 'PORT', value: inbox.smtp_port },
-          { label: 'USERNAME', value: inbox.username },
+          { label: 'USERNAME', value: inbox.username, onCopy: () => copyValue(inbox.username, 'Username') },
           {
             label: 'PASSWORD',
             value: showPassword ? inbox.password : '••••••••••••••',

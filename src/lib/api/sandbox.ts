@@ -17,6 +17,13 @@ export async function enableSandbox(): Promise<SandboxResponse> {
   return data;
 }
 
+export async function regenerateSandboxCredentials(): Promise<SandboxResponse & { message: string }> {
+  const { data } = await api.post<SandboxResponse & { message: string }>(
+    '/sandbox/regenerate-credentials',
+  );
+  return data;
+}
+
 export async function fetchSandboxMessages(
   filters: SandboxMessageFilters = {},
 ): Promise<EmailMessageListResponse> {

@@ -7,6 +7,7 @@ import {
   fetchSandboxMessageRaw,
   fetchSandboxMessages,
   markAllSandboxMessagesRead,
+  regenerateSandboxCredentials,
   type SandboxMessageFilters,
 } from '@/lib/api/sandbox';
 import { queryKeys } from '@/lib/query-keys';
@@ -158,6 +159,16 @@ export function useSandboxMutations(filters: SandboxMessageFilters = {}) {
     },
   });
 
+  const regenerateCredentials = useMutation({
+    mutationFn: regenerateSandboxCredentials,
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.sandbox.all, {
+        inbox: data.inbox,
+        stats: data.stats,
+      });
+    },
+  });
+
   const markAllRead = useMutation({
     mutationFn: markAllSandboxMessagesRead,
     onSuccess: () => {
@@ -211,5 +222,5 @@ export function useSandboxMutations(filters: SandboxMessageFilters = {}) {
     },
   });
 
-  return { enable, markAllRead, clearAll };
+  return { enable, regenerateCredentials, markAllRead, clearAll };
 }
