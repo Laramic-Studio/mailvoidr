@@ -48,6 +48,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceMonthly: 0,
     features: [
       '3,000 emails / month',
+      '5 sends / minute',
       '1 verified domain',
       '5 virtual inboxes',
       'Sandbox inbox + spam/HTML checks',
@@ -65,6 +66,7 @@ export const PRICING_TIERS: PricingTier[] = [
     popular: true,
     features: [
       '50,000 emails / month',
+      'No send rate limit',
       '10 verified domains',
       '100 virtual inboxes',
       '3,000 sandbox tests / month',
@@ -85,6 +87,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceMonthly: 89,
     features: [
       '250,000 emails / month',
+      'No send rate limit',
       '100 verified domains',
       'Unlimited virtual inboxes',
       'Unlimited sandbox testing',
@@ -105,6 +108,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceMonthly: 199,
     features: [
       '750,000 emails / month',
+      'No send rate limit',
       'Unlimited domains + inboxes',
       'Dedicated IP included',
       'Audit logs',
@@ -123,6 +127,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceMonthly: null,
     features: [
       '1M+ emails / month',
+      'No send rate limit',
       'Private SMTP clusters',
       'Multi-region routing',
       'SCIM + enterprise SSO',
@@ -260,6 +265,7 @@ export const PRICING_COMPARE = [
     group: 'Sending',
     rows: [
       ['Monthly email volume', '3K', '50K', '250K', '750K', '1M+'],
+      ['Send rate limit', '5 / min', 'None', 'None', 'None', 'None'],
       ['Verified domains', '1', '10', '100', 'Unlimited', 'Custom'],
       ['Virtual inbox limit', '5', '100', 'Unlimited', 'Unlimited', 'Unlimited'],
       ['Dedicated IP', false, 'Add-on', 'Add-on', true, true],
@@ -293,7 +299,11 @@ export const PRICING_FAQ = [
   ],
   [
     'What counts as an email?',
-    'Each unique recipient counts as one email. A message to three recipients counts as three.',
+    'Each unique recipient counts as one email. A message to three recipients counts as three. Failed and bounced attempts also count toward your monthly volume.',
+  ],
+  [
+    'Is there a send rate limit?',
+    'Free plans can send up to 5 messages per minute across the dashboard, API, and SMTP. Paid plans have no rate limit.',
   ],
   [
     'How does the volume slider work?',

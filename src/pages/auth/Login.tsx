@@ -59,7 +59,6 @@ export default function Login() {
     const form = new FormData(e.currentTarget);
     const recaptchaToken = recaptchaRef.current?.getValue() ?? null;
     if (isRecaptchaEnabled() && !recaptchaToken) {
-     
       toastFailure("Please complete the captcha");
       return;
     }
