@@ -8,7 +8,6 @@ export function Toaster() {
     <Sonner
       theme={theme as "light" | "dark" | "system"}
       position="top-center"
-      richColors
       closeButton
       expand={false}
       duration={4500}

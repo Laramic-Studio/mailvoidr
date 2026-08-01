@@ -7,11 +7,13 @@ export interface RegisterPayload {
   password: string;
   password_confirmation: string;
   invite_token?: string;
+  recaptcha_token?: string;
 }
 
 export interface LoginPayload {
   email: string;
   password: string;
+  recaptcha_token?: string;
 }
 
 export interface TwoFactorPayload {

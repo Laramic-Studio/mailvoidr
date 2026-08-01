@@ -1,13 +1,19 @@
-import { type FormEvent, useEffect } from "react";
+import { type FormEvent, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
 import { PasswordField } from "@/components/auth/PasswordField";
+import {
+  isRecaptchaEnabled,
+  RecaptchaField,
+  type RecaptchaFieldHandle,
+} from "@/components/auth/RecaptchaField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { inviteAcceptPath, postAuthDestination, storePendingInviteToken } from "@/lib/invite-flow";
 import { startOAuth, type OAuthProvider } from "@/lib/oauth";
+import { toastFailure } from "@/lib/toast";
 import { GitHubLight, Google, GitHubDark } from "developer-icons";
 import { useTheme } from "next-themes";
 
@@ -41,6 +47,7 @@ export default function Login() {
   const { loading, run } = useAsyncAction();
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
+  const recaptchaRef = useRef<RecaptchaFieldHandle>(null);
   useEffect(() => {
     if (inviteToken) {
       storePendingInviteToken(inviteToken);
@@ -50,27 +57,39 @@ export default function Login() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const recaptchaToken = recaptchaRef.current?.getValue() ?? null;
+    if (isRecaptchaEnabled() && !recaptchaToken) {
+     
+      toastFailure("Please complete the captcha");
+      return;
+    }
 
     await run(async () => {
-      const response = await login({
-        email: String(form.get("email")),
-        password: String(form.get("password")),
-      });
-
-      if (response.two_factor_required && response.login_token) {
-        nav("/2fa", {
-          state: {
-            login_token: response.login_token,
-            redirectTo: redirectTo ?? postAuthDestination({ email_verified: true, onboarding_completed: false }, { inviteToken }),
-          },
+      try {
+        const response = await login({
+          email: String(form.get("email")),
+          password: String(form.get("password")),
+          recaptcha_token: recaptchaToken ?? undefined,
         });
-        return;
-      }
 
-      nav(
-        redirectTo ??
-          postAuthDestination(response.user, { inviteToken }),
-      );
+        if (response.two_factor_required && response.login_token) {
+          nav("/2fa", {
+            state: {
+              login_token: response.login_token,
+              redirectTo: redirectTo ?? postAuthDestination({ email_verified: true, onboarding_completed: false }, { inviteToken }),
+            },
+          });
+          return;
+        }
+
+        nav(
+          redirectTo ??
+            postAuthDestination(response.user, { inviteToken }),
+        );
+      } catch (error) {
+        recaptchaRef.current?.reset();
+        throw error;
+      }
     }, { fallbackMessage: "Sign in failed" });
   }
 
@@ -121,6 +140,7 @@ export default function Login() {
             autoComplete="current-password"
             rightLabel={<Link to="/forgot-password" className="text-[11.5px] text-muted-foreground hover:text-foreground">Forgot?</Link>}
           />
+          <RecaptchaField ref={recaptchaRef} />
           <SubmitButton data-testid="login-submit" loading={loading} loadingText="Signing in…">
             Sign in
           </SubmitButton>

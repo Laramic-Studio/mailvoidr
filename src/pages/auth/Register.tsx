@@ -1,9 +1,14 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import {
+  isRecaptchaEnabled,
+  RecaptchaField,
+  type RecaptchaFieldHandle,
+} from "@/components/auth/RecaptchaField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
@@ -11,6 +16,7 @@ import { useInvitationByToken } from "@/hooks/useWorkspaces";
 import { writeBillingIntent } from "@/lib/billing-intent";
 import { storePendingInviteToken, verifyEmailPath } from "@/lib/invite-flow";
 import { startOAuth } from "@/lib/oauth";
+import { toastFailure } from "@/lib/toast";
 import { GitHubLight, Google, GitHubDark } from "developer-icons";
 import { useTheme } from "next-themes";
 
@@ -28,6 +34,7 @@ export default function Register() {
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
   const GithubIcon = isDarkMode ? GitHubDark : GitHubLight;
+  const recaptchaRef = useRef<RecaptchaFieldHandle>(null);
   useEffect(() => {
     if (inviteToken) {
       storePendingInviteToken(inviteToken);
@@ -44,21 +51,33 @@ export default function Register() {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const password = String(form.get("password"));
+    const recaptchaToken = recaptchaRef.current?.getValue() ?? null;
+
+    if (isRecaptchaEnabled() && !recaptchaToken) {
+      toastFailure("Please complete the captcha");
+      return;
+    }
 
     await run(async () => {
       if (inviteToken) {
         storePendingInviteToken(inviteToken);
       }
 
-      await register({
-        name: String(form.get("name")),
-        email: String(form.get("email")),
-        password,
-        password_confirmation: password,
-        invite_token: inviteToken ?? undefined,
-      });
+      try {
+        await register({
+          name: String(form.get("name")),
+          email: String(form.get("email")),
+          password,
+          password_confirmation: password,
+          invite_token: inviteToken ?? undefined,
+          recaptcha_token: recaptchaToken ?? undefined,
+        });
 
-      nav(verifyEmailPath(inviteToken));
+        nav(verifyEmailPath(inviteToken));
+      } catch (error) {
+        recaptchaRef.current?.reset();
+        throw error;
+      }
     }, { fallbackMessage: "Registration failed" });
   }
 
@@ -113,7 +132,7 @@ export default function Register() {
             autoComplete="name"
           />
           <AuthField
-            label="Work email"
+            label="email"
             name="email"
             type="email"
             required
@@ -137,6 +156,7 @@ export default function Register() {
             />
             <PasswordStrengthMeter password={password} />
           </div>
+          <RecaptchaField ref={recaptchaRef} />
           <SubmitButton data-testid="register-submit" loading={loading} loadingText="Creating account…">
             Create account
           </SubmitButton>
