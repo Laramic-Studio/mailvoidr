@@ -3,7 +3,7 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { useTheme } from 'next-themes';
 
 export const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY?.trim() ?? '';
-console.log("RECAPTCHA_SITE_KEY is", RECAPTCHA_SITE_KEY);
+
 
 export function isRecaptchaEnabled(): boolean {
   return RECAPTCHA_SITE_KEY.length > 0;
