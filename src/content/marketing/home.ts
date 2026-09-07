@@ -85,14 +85,14 @@ export const HOME_REVIEWS = [
       'We replaced three tools with Mailvoidr. Sandbox capture alone saved our QA team hours every sprint.',
     name: 'Riya Mehta',
     role: 'Staff engineer',
-    company: 'Acme',
+    company: 'Fronstac',
   },
   {
     quote:
       'The API is boring in the best way — predictable responses, clear webhooks, and logs that actually help debug bounces.',
     name: 'Marcus Chen',
     role: 'Backend lead',
-    company: 'Northline',
+    company: 'Stepra',
   },
   {
     quote:

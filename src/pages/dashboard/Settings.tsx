@@ -93,19 +93,17 @@ export default function Settings() {
 function GeneralSection({ snapshot }: { snapshot: import('@/types').SettingsSnapshot }) {
   const workspace = snapshot.workspace;
   const [name, setName] = useState(workspace?.name ?? '');
-  const [slug, setSlug] = useState(workspace?.slug ?? '');
   const { updateWorkspace } = useSettingsMutations();
 
   useEffect(() => {
     setName(workspace?.name ?? '');
-    setSlug(workspace?.slug ?? '');
-  }, [workspace?.name, workspace?.slug]);
+  }, [workspace?.name]);
 
   async function handleSave() {
     if (!workspace) return;
 
     try {
-      await updateWorkspace.mutateAsync({ workspaceId: workspace.id, name, slug });
+      await updateWorkspace.mutateAsync({ workspaceId: workspace.id, name });
       toastSuccess('Workspace updated.');
     } catch (error) {
       toastError(error, 'Could not save workspace.');
@@ -119,10 +117,6 @@ function GeneralSection({ snapshot }: { snapshot: import('@/types').SettingsSnap
   return (
     <Section title="General" desc="Workspace-wide preferences">
       <Field label="Workspace name" value={name} onChange={setName} />
-      <Field label="Workspace slug" value={slug} onChange={setSlug} mono />
-      <p className="text-[12px] text-muted-foreground">
-        Default region is fixed to a single Mailvoidr region in v1.
-      </p>
       <SaveButton onClick={handleSave} pending={updateWorkspace.isPending} />
     </Section>
   );

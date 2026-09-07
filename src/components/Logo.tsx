@@ -17,9 +17,9 @@ export function Logo({
 }: LogoProps) {
   const content = (
     <>
-      <img src="/logo/favicon-32x32.png" alt="Mailvoidr" className="h-6 w-6" />
+      <img src="/logo/favicon-32x32.png" alt="Mailvoidr" className="w-6 h-6" />
       {!small && (
-        <span className="font-medium text-[15px] tracking-tight tracking-[0.03em] font-display font-semibold">
+        <span className="text-[15px]  tracking-[0.03em] font-sora font-semibold">
           Mailvoidr<span className="text-primary">.</span>
         </span>
       )}

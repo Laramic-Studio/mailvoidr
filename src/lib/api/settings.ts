@@ -61,7 +61,6 @@ export async function updateWorkspace(
   workspaceId: string,
   payload: {
     name?: string;
-    slug?: string;
     description?: string | null;
     settings?: Partial<WorkspaceSettings>;
   },

@@ -92,7 +92,6 @@ export function useSettingsMutations() {
     }: {
       workspaceId: string;
       name?: string;
-      slug?: string;
     }) => updateWorkspace(workspaceId, payload),
     onSuccess: invalidate,
   });

@@ -33,7 +33,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
-  const GithubIcon = isDarkMode ? GitHubDark : GitHubLight;
+  const GithubIcon = !isDarkMode ? GitHubDark : GitHubLight;
   const recaptchaRef = useRef<RecaptchaFieldHandle>(null);
   useEffect(() => {
     if (inviteToken) {

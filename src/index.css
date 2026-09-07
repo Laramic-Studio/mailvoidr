@@ -1,9 +1,15 @@
-/* @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap"); */
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Geom:ital,wght@0,300..900;1,300..900&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Rowdies:wght@300;400;700&family=Sora:wght@100..800&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: 'introvert';
+  src: url('/fonts/Introvert-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 
 @layer base {
     :root {
@@ -39,6 +45,9 @@
         --font-headline: "Outfit", sans-serif;
         --font-subheadline: "Outfit", sans-serif;
         --font-caption: "Roboto", sans-serif;
+        --font-introvert: "introvert", sans-serif;
+        --font-sora: "sora", sans-serif;
+
     }
     .dark {
         --background: 0 0% 4%;
@@ -73,6 +82,7 @@
         --font-headline: "Outfit", sans-serif;
         --font-subheadline: "Outfit", sans-serif;
         --font-caption: "Roboto", sans-serif;
+        --font-introvert: "introvert", sans-serif;
     }
 }
 
@@ -116,7 +126,7 @@
 
 @layer utilities {
     .label-mono {
-        font-family: "Outfit", sans-serif;
+        font-family: var(--font-body), sans-serif;
         text-transform: uppercase;
         letter-spacing: 0.12em;
         font-size: 11px;
@@ -147,6 +157,16 @@
         box-shadow:
             0 0 0 1px hsl(var(--primary) / 0.4),
             0 0 32px -8px hsl(var(--primary) / 0.5);
+    }
+    .tilt-card {
+        transform-style: preserve-3d;
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .tilt-card {
+            transition: none;
+        }
     }
     .text-balance {
         text-wrap: balance;
@@ -183,6 +203,13 @@
         animation: reviews-marquee-reverse 65s linear infinite;
         will-change: transform;
     }
+
+    .reviews-marquee-track-reverse:hover,
+    .reviews-marquee-track:hover
+    {
+        animation: 0ms;
+    }
+
     @keyframes stack-marquee {
         from {
             transform: translateX(0);
@@ -191,6 +218,7 @@
             transform: translateX(-25%);
         }
     }
+    
     @keyframes reviews-marquee {
         from {
             transform: translateX(0);
@@ -213,6 +241,34 @@
         .reviews-marquee-track-reverse {
             animation: none;
         }
+    }
+    .text-gradient-primary {
+        background: linear-gradient(
+            115deg,
+            hsl(var(--foreground)) 20%,
+            hsl(var(--primary)) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .hero-planet {
+        background:
+            radial-gradient(circle at 30% 26%, hsl(var(--primary) / 0.85), transparent 45%),
+            radial-gradient(circle at 68% 70%, hsl(0 0% 0% / 0.5), transparent 55%),
+            radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.28), hsl(0 0% 4%) 68%);
+        box-shadow:
+            inset -50px -50px 90px hsl(0 0% 0% / 0.55),
+            inset 30px 30px 70px hsl(var(--primary) / 0.2),
+            0 0 140px -20px hsl(var(--primary) / 0.45);
+    }
+    .hero-nebula {
+        background: radial-gradient(
+            circle at 30% 30%,
+            hsl(var(--primary) / 0.18) 0%,
+            transparent 60%
+        );
+        filter: blur(40px);
     }
     .reviews-edge-mask {
         mask-image: linear-gradient(
@@ -294,3 +350,94 @@
         display: none;
     }
 }
+
+
+
+/* From Uiverse.io by juanpabl0svn */ 
+/* The switch - the box around the slider */
+.switch {
+  font-size: 11px;
+  position: relative;
+  display: inline-block;
+  width: 3.5em;
+  height: 2em;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.switch:hover {
+  transform: scale(1.08);
+}
+
+.switch:active {
+  transform: scale(0.92);
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  --background: #20262c;
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background);
+  transition: background-color 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 30px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 1.4em;
+  width: 1.4em;
+  border-radius: 50%;
+  left: 10%;
+  bottom: 15%;
+  box-shadow: inset 8px -4px 0px 0px #ececd9, -4px 1px 4px 0px #dadada;
+  background: var(--background);
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.decoration {
+  position: absolute;
+  content: "";
+  height: 2px;
+  width: 2px;
+  border-radius: 50%;
+  right: 20%;
+  top: 15%;
+  background: #e5f041e6;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: -7px 10px 0 #e5f041e6, 8px 15px 0 #e5f041e6, -17px 1px 0 #e5f041e6,
+    -20px 10px 0 #e5f041e6, -7px 23px 0 #e5f041e6, -15px 25px 0 #e5f041e6;
+}
+
+input:checked ~ .decoration {
+  transform: translateX(-20px);
+  width: 10px;
+  height: 10px;
+  background: white;
+  box-shadow: -12px 0 0 white, -6px 0 0 1.6px white, 5px 15px 0 1px white,
+    1px 17px 0 white, 10px 17px 0 white;
+}
+
+input:checked + .slider {
+  background-color: #5494de;
+}
+
+input:checked + .slider:before {
+  transform: translateX(100%);
+  box-shadow: inset 15px -4px 0px 15px #efdf2b, 0 0 10px 0px #efdf2b;
+}
+

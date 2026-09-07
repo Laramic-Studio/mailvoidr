@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,9 +21,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { useHealth } from "@/hooks/useHealth";
 import { workspaceInitials } from "@/hooks/useWorkspaces";
 import { MARKETING_NAV, MARKETING_SOCIAL } from "@/content/marketing/nav";
-import { ArrowRight, Github, LayoutDashboard, Menu, Twitter } from "lucide-react";
-import { GitHubLight, LinkedIn, GitHubDark, XDark, XLight } from "developer-icons";
+import {
+  ArrowRight,
+  LayoutDashboard,
+  Menu,
+} from "lucide-react";
+import {
+  GitHubLight,
+  GitHubDark,
+  XDark,
+  XLight,
+} from "developer-icons";
 import { useTheme } from "next-themes";
+import Footer from "./footer";
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -33,6 +43,16 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
   const XIcon = !isDark ? XDark : XLight;
   const nav = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function handleScroll() {
+      setScrolled(window.scrollY > 8);
+    }
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { data: apiHealthy, isLoading: healthLoading } = useHealth();
   const statusLabel = healthLoading
@@ -40,7 +60,11 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
     : apiHealthy
       ? "API operational"
       : "API unreachable";
-  const statusClass = apiHealthy ? "bg-primary" : healthLoading ? "bg-muted-foreground" : "bg-destructive";
+  const statusClass = apiHealthy
+    ? "bg-primary"
+    : healthLoading
+      ? "bg-muted-foreground"
+      : "bg-destructive";
 
   async function handleLogout() {
     await logout();
@@ -50,19 +74,31 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
   const showAuthenticatedNav = isAuthenticated && !isLoading;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/70 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <header
+        className={`sticky top-0 z-40 transition-colors duration-200 ${
+          scrolled
+            ? "bg-background/80 backdrop-blur-md border-b border-border"
+            : "border-b border-transparent"
+        }`}
+      >
+        <div className={
+          `
+          flex items-center justify-between mx-auto max-w-7xl
+          ${ scrolled ? 'my-3' : 'mt-7'}
+          `
+        }>
+          
           <div className="flex items-center gap-4 md:gap-8">
-            <Logo />
-            <nav className="hidden md:flex items-center gap-1">
+            <Logo className="text-lg" />
+            <nav className="items-center hidden gap-1 md:flex">
               {MARKETING_NAV.map((n) => (
                 <NavLink
                   key={n.to}
                   to={n.to}
                   data-testid={`nav-${n.label.toLowerCase()}`}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 text-sm transition-colors ${
+                    `px-3 py-1.5 text-base transition-colors ${
                       isActive || pathname.startsWith(n.to)
                         ? "text-foreground"
                         : "text-muted-foreground hover:text-foreground"
@@ -78,10 +114,10 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger
                 data-testid="nav-mobile-menu"
-                className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+                className="inline-flex items-center justify-center transition-colors border rounded-md cursor-pointer h-9 w-9 border-border text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
                 aria-label="Open menu"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="w-4 h-4" />
               </SheetTrigger>
               <SheetContent side="right" className="w-[min(88vw,320px)]">
                 <SheetHeader>
@@ -89,7 +125,7 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                     <Logo />
                   </SheetTitle>
                 </SheetHeader>
-                <nav className="mt-8 flex flex-col gap-1">
+                <nav className="flex flex-col gap-1 mt-8">
                   {MARKETING_NAV.map((n) => (
                     <NavLink
                       key={n.to}
@@ -107,13 +143,13 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                     </NavLink>
                   ))}
                 </nav>
-                <div className="mt-8 flex flex-col gap-2 border-t border-border pt-6">
+                <div className="flex flex-col gap-2 pt-6 mt-8 border-t border-border">
                   {showAuthenticatedNav ? (
                     <>
                       <Link
                         to="/dashboard"
                         onClick={() => setMobileOpen(false)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        className="inline-flex items-center justify-center gap-1.5 rounded bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                       >
                         <LayoutDashboard className="h-3.5 w-3.5" />
                         Dashboard
@@ -124,7 +160,7 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                           setMobileOpen(false);
                           handleLogout();
                         }}
-                        className="rounded-md border border-border px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        className="rounded border border-border px-4 py-2.5 text-sm text-muted-foreground transition-colors bg-accent hover:text-foreground"
                       >
                         Sign out
                       </button>
@@ -134,14 +170,14 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                       <Link
                         to="/login"
                         onClick={() => setMobileOpen(false)}
-                        className="rounded-md border border-border px-4 py-2.5 text-center text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        className="rounded h-10 bg-muted px-4 py-2.5 text-center text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       >
                         Sign in
                       </Link>
                       <Link
                         to="/register"
                         onClick={() => setMobileOpen(false)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                       >
                         Get started <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
@@ -156,14 +192,14 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                 <Link
                   to="/dashboard"
                   data-testid="nav-dashboard-btn"
-                  className="hidden sm:inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                  className="hidden sm:inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-1.5 text-sm font-medium rounded hover:bg-primary/90 transition-colors"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
                   Dashboard
                 </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger data-testid="nav-user-menu">
-                    <Avatar className="h-8 w-8 border border-border">
+                    <Avatar className="w-8 h-8 border border-border">
                       {user?.avatar_url ? (
                         <AvatarImage src={user.avatar_url} alt={user.name} />
                       ) : null}
@@ -174,8 +210,12 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-1.5">
-                      <div className="text-[13px]">{user?.name ?? "Account"}</div>
-                      <div className="font-mono text-[11px] text-muted-foreground">{user?.email}</div>
+                      <div className="text-[13px]">
+                        {user?.name ?? "Account"}
+                      </div>
+                      <div className="font-mono text-[11px] text-muted-foreground">
+                        {user?.email}
+                      </div>
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
@@ -185,7 +225,9 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                       <Link to="/dashboard/settings">Settings</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Sign out
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
@@ -194,14 +236,14 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
                 <Link
                   to="/login"
                   data-testid="nav-login-link"
-                  className="hidden sm:inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="hidden h-9 border border-accent sm:inline-flex items-center rounded px-4 py-1.5 text-sm text-muted-foreground bg-accent hover:text-foreground transition-colors"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
                   data-testid="nav-get-started-btn"
-                  className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                  className="inline-flex h-9 items-center gap-1.5 bg-primary text-primary-foreground px-4 py-1.5 text-sm font-medium rounded hover:bg-primary/90"
                 >
                   Get started <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -213,83 +255,7 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-border mt-24">
-        <div className="mx-auto max-w-7xl px-6 py-16 grid grid-cols-2 gap-10 md:grid-cols-5">
-          <div className="col-span-2">
-            <Logo />
-            <p className="mt-3 text-sm text-muted-foreground max-w-xs">
-              Email infrastructure for developers. Send, test, and inspect — without leaving your terminal.
-            </p>
-            <div className="mt-4 flex items-center gap-2">
-              <a
-                href={MARKETING_SOCIAL.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub"
-                className="inline-flex rounded-full h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
-              >
-                <GithubIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href={MARKETING_SOCIAL.x}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="X (Twitter)"
-                className="inline-flex rounded-full h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
-              >
-                <XIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href={MARKETING_SOCIAL.x}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="X (Twitter)"
-                className="inline-flex rounded-full h-8 w-8 cursor-pointer items-center justify-center border border-border transition-colors hover:bg-accent"
-              >
-                <LinkedIn className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          </div>
-          <FooterCol title="Product" links={[["Features","/features"],["Pricing","/pricing"],["Status","/status"]]} />
-          <FooterCol title="Developers" links={[["Documentation","/docs"],["API reference","/docs/api-reference"],["Webhooks","/docs/webhooks"],["Quickstart","/docs/quickstart"]]} />
-          <FooterCol title="Company" links={[["About","/about"],["Contact","/contact"],["Privacy","/privacy"],["Terms","/terms"]]} />
-        </div>
-        <div className="border-t border-border">
-          <div className="mx-auto max-w-7xl px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12.5px] text-muted-foreground">
-            <span>© 2026 Mailvoidr, Inc. — By developers, for developers.</span>
-
-            <div className="flex items-center gap-5 font-mono text-[11px]">
-              <Link to="/status" className="inline-flex items-center gap-1.5 hover:text-foreground">
-                <span className={`h-1.5 w-1.5 rounded-full ${statusClass} ${apiHealthy ? "animate-pulse" : ""}`} />
-                {statusLabel}
-              </Link>
-              <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
-              <Link to="/terms" className="hover:text-foreground">Terms</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function FooterCol({
-  title,
-  links,
-}: {
-  title: string;
-  links: [string, string][];
-}) {
-  return (
-    <div>
-      <h4 className="label-mono mb-3">{title}</h4>
-      <ul className="space-y-2">
-        {links.map(([label, href]) => (
-          <li key={label}>
-            <Link to={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{label}</Link>
-          </li>
-        ))}
-      </ul>
+      <Footer MARKETING_SOCIAL={MARKETING_SOCIAL} statusClass={statusClass} statusLabel={statusLabel} MARKETING_NAV={MARKETING_NAV} apiHealthy={apiHealthy}/>
     </div>
   );
 }
