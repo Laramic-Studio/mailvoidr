@@ -3,7 +3,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export function ThemeToggle({ className = "" }) {
+interface ThemeToggleProps {
+  className?: string;
+  /** `sm` matches the 32px icon buttons in the dashboard header. */
+  size?: "sm" | "md";
+}
+
+export function ThemeToggle({ className = "", size = "md" }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -29,8 +35,12 @@ export function ThemeToggle({ className = "" }) {
     };
   }, [open]);
 
+  const small = size === "sm";
+  const triggerSize = small ? "h-8 w-8" : "h-10 w-10";
+  const triggerIconSize = small ? "h-3.5 w-3.5" : "h-5 w-5";
+
   if (!mounted) {
-    return <div className={`h-10 w-10 ${className}`} />;
+    return <div className={`${triggerSize} ${className}`} />;
   }
 
   const themes = [
@@ -65,7 +75,7 @@ export function ThemeToggle({ className = "" }) {
           aria-expanded={open}
           onClick={() => setOpen((prev) => !prev)}
           whileTap={{ scale: 0.92 }}
-          className="flex items-center justify-center w-10 h-10 transition-colors border rounded-md border-border bg-background text-foreground hover:bg-muted"
+          className={`flex items-center justify-center transition-colors border rounded-md border-border bg-background text-foreground hover:bg-muted ${triggerSize}`}
         >
           <motion.div
             key={theme}
@@ -83,7 +93,7 @@ export function ThemeToggle({ className = "" }) {
               duration: 0.2,
             }}
           >
-            <ActiveIcon className="w-5 h-5" />
+            <ActiveIcon className={triggerIconSize} />
           </motion.div>
         </motion.button>
 
@@ -91,19 +101,24 @@ export function ThemeToggle({ className = "" }) {
         <AnimatePresence>
           {open && (
             <motion.div
+              // Framer Motion writes an inline `transform`, which would override a Tailwind
+              // translate class — so the horizontal centring lives in `x`.
               initial={{
                 opacity: 0,
                 scale: 0.9,
+                x: "-50%",
                 y: -6,
               }}
               animate={{
                 opacity: 1,
                 scale: 1,
+                x: "-50%",
                 y: 0,
               }}
               exit={{
                 opacity: 0,
                 scale: 0.9,
+                x: "-50%",
                 y: -6,
               }}
               transition={{
@@ -115,7 +130,6 @@ export function ThemeToggle({ className = "" }) {
                 left-1/2
                 top-[calc(100%+12px)]
                 z-[999999]
-                translate-x-1/2
                 rounded-md
                 border
                 border-border

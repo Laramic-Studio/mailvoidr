@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { CodeBlock } from '@/components/CodeBlock';
+import { SmtpConnectPanel } from '@/components/dashboard/SmtpConnectPanel';
 import { HtmlCheckPanel, SpamPanel } from '@/components/email/EmailAnalysisPanels';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
 import {
@@ -418,10 +419,7 @@ export default function Inbox() {
             }`}
           >
             {!selectedMessageId || !displayMessage ? (
-              <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-                Choose a message from the sidebar to inspect its rendered HTML, plain text, and raw
-                source.
-              </div>
+              <SmtpConnectPanel inbox={inbox} />
             ) : (
               <>
                 <div className="border-b border-border bg-card text-foreground">

@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -240,12 +241,17 @@ export default function Domains() {
         ) : isError ? (
           <p className="p-8 text-sm text-destructive">Could not load domains.</p>
         ) : domains.length === 0 ? (
-          <div className="p-12 text-center">
-            <Globe className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              No domains yet. Use @*.mailvoidr.com without verification, or add a custom domain.
-            </p>
-          </div>
+          <EmptyState
+            testId="domains-empty"
+            eyebrow="Domains"
+            title="Add your first domain"
+            description="Use @*.mailvoidr.com without verification, or add a custom domain to send from your own brand."
+            action={
+              <EmptyStateButton icon={Plus} onClick={() => setShowAdd(true)} testId="domain-empty-add">
+                Add domain
+              </EmptyStateButton>
+            }
+          />
         ) : (
           <table className="w-full text-[13px]">
             <thead>

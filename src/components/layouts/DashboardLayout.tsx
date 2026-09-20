@@ -73,9 +73,9 @@ export function DashboardLayout({
   if (isEditorChrome) {
     return (
       <TooltipProvider delayDuration={0}>
-        <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <div className="flex flex-col h-screen overflow-hidden bg-background">
           <WorkspaceTwoFactorBanner />
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden" data-testid="dashboard-main">
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden" data-testid="dashboard-main">
             {children}
           </div>
         </div>
@@ -100,18 +100,18 @@ export function DashboardLayout({
           <DashboardSidebar expanded={expanded} />
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <header className="z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-background/80 px-4 backdrop-blur lg:px-8">
-            <div className="flex max-w-md flex-1 items-center gap-3">
+        <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
+          <header className="z-30 flex items-center justify-between gap-4 px-4 border-b h-14 shrink-0 border-border bg-background/80 backdrop-blur lg:px-8">
+            <div className="flex items-center flex-1 max-w-md gap-3">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
                   <button
                     type="button"
                     data-testid="mobile-nav-toggle"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
+                    className="inline-flex items-center justify-center w-8 h-8 transition-colors border rounded-md border-border text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden"
                     aria-label="Open navigation"
                   >
-                    <Menu className="h-4 w-4" />
+                    <Menu className="w-4 h-4" />
                   </button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[280px] p-0">
@@ -131,18 +131,13 @@ export function DashboardLayout({
             </div>
 
             <div className="flex items-center gap-2">
-              <Link
-                to="/dashboard/send"
-                data-testid="topbar-send-btn"
-                className="hidden items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 md:inline-flex"
-              >
-                <Send className="h-3.5 w-3.5" />
-                Send email
-              </Link>
               <NotificationBell />
-              <ThemeToggle />
+              <ThemeToggle size="sm" />
               <DropdownMenu>
-                <DropdownMenuTrigger data-testid="user-menu-trigger">
+                <DropdownMenuTrigger
+                  data-testid="user-menu-trigger"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
                   <Avatar className="h-8 w-8 border border-border">
                     {user?.avatar_url ? (
                       <AvatarImage src={user.avatar_url} alt={user.name} />

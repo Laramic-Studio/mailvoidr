@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import {
@@ -8,7 +9,7 @@ import {
 } from '@/hooks/useTemplateMarketplace';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { TemplateCategory, TemplateMarketplaceItem, TemplatePreview } from '@/types';
-import { Download, Eye, Loader2, Search, Store } from 'lucide-react';
+import { Download, Eye, Loader2, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 function categoryLabel(category: TemplateCategory): string {
@@ -108,19 +109,14 @@ export default function TemplateMarketplace() {
           Could not load marketplace.
         </div>
       ) : listings.length === 0 ? (
-        <div className="border border-dashed border-border bg-card/30 p-16 text-center">
-          <Store className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h3 className="mt-4 text-base font-medium">No public templates yet</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create a template and keep it public to share it here.
-          </p>
-          <Link
-            to="/dashboard/templates"
-            className="mt-4 inline-flex text-[13px] text-primary hover:underline"
-          >
-            Go to My templates
-          </Link>
-        </div>
+        <EmptyState
+          framed
+          testId="marketplace-empty"
+          eyebrow="Marketplace"
+          title="No public templates yet"
+          description="Create a template and keep it public to share it here."
+          action={<EmptyStateButton to="/dashboard/templates">Go to my templates</EmptyStateButton>}
+        />
       ) : (
         <div className="grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((item) => (

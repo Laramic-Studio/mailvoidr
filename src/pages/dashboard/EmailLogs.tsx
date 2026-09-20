@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CodeBlock } from '@/components/CodeBlock';
@@ -10,7 +11,7 @@ import { useSendDetail, useSendLogMutations, useSends } from '@/hooks/useSends';
 import { downloadAnalyticsExport } from '@/lib/api/analytics';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { EmailSendTimelineEvent } from '@/types';
-import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw, Search, Send, X } from 'lucide-react';
 
 const STATUS_OPTIONS = ['queued', 'sent', 'delivered', 'bounced', 'failed'] as const;
 
@@ -86,6 +87,16 @@ export default function EmailLogs() {
   const lastPage = data?.meta.last_page ?? 1;
 
   const verifiedDomains = domainsData?.data.filter((d) => d.status === 'verified') ?? [];
+
+  const hasActiveFilters =
+    statuses.length > 0 || debouncedSearch !== '' || domain !== 'all' || period !== 'all';
+
+  function clearFilters() {
+    setStatuses([]);
+    setSearch('');
+    setDomain('all');
+    setPeriod('all');
+  }
 
   function toggleStatus(status: string) {
     setStatuses((prev) =>
@@ -209,6 +220,35 @@ export default function EmailLogs() {
         })}
       </div>
 
+      {!isLoading && logs.length === 0 ? (
+        hasActiveFilters ? (
+          <EmptyState
+            framed
+            testId="logs-empty-filtered"
+            eyebrow="Email logs"
+            title="No sends match your filters"
+            description="Try a different search term, status or date range."
+            action={
+              <EmptyStateButton variant="secondary" onClick={clearFilters} testId="logs-clear-filters">
+                Clear filters
+              </EmptyStateButton>
+            }
+          />
+        ) : (
+          <EmptyState
+            framed
+            testId="logs-empty"
+            eyebrow="Email logs"
+            title="No sends yet"
+            description="Every message that flows through Mailvoidr will be logged here so you can filter, drill down, and replay."
+            action={
+              <EmptyStateButton to="/dashboard/send" icon={Send} testId="logs-empty-send">
+                Send an email
+              </EmptyStateButton>
+            }
+          />
+        )
+      ) : (
       <div className="border border-border bg-card overflow-x-auto">
         <table className="w-full text-[12.5px] min-w-[900px]">
           <thead>
@@ -228,13 +268,6 @@ export default function EmailLogs() {
                 <td colSpan={7} className="p-8 text-center text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
                   Loading sends…
-                </td>
-              </tr>
-            )}
-            {!isLoading && logs.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                  No sends match your filters.
                 </td>
               </tr>
             )}
@@ -268,6 +301,7 @@ export default function EmailLogs() {
           </tbody>
         </table>
       </div>
+      )}
 
       {lastPage > 1 && (
         <div className="mt-4 flex items-center justify-between gap-3">

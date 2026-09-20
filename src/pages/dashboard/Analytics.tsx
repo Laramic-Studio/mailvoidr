@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { Calendar, Download, Loader2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { downloadAnalyticsExport } from '@/lib/api/analytics';
 import { toastError, toastSuccess } from '@/lib/toast';
@@ -58,11 +59,14 @@ function formatNumber(value: number): string {
   return value.toLocaleString();
 }
 
-function EmptyPanel({ message }: { message: string }) {
+function EmptyPanel({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="flex h-full min-h-[12rem] items-center justify-center p-8 text-center text-[13px] text-muted-foreground">
-      {message}
-    </div>
+    <EmptyState
+      size="compact"
+      title={title}
+      description={description}
+      className="flex h-full min-h-[12rem] flex-col justify-center"
+    />
   );
 }
 
@@ -103,7 +107,7 @@ function ErrorPanel() {
 
 function VolumeDeliveryChart({ data }: { data: Array<{ date: string; sent: number; delivered: number }> }) {
   if (data.length === 0) {
-    return <EmptyPanel message="No sends in this period yet." />;
+    return <EmptyPanel title="No sends in this period yet" />;
   }
 
   return (
@@ -136,7 +140,7 @@ function BounceFailureChart({
   data: Array<{ date: string; bounced: number; failed: number }>;
 }) {
   if (data.length === 0) {
-    return <EmptyPanel message="No bounces recorded in this period." />;
+    return <EmptyPanel title="No bounces recorded in this period" />;
   }
 
   return (
@@ -159,7 +163,7 @@ function DeliveryRateChart({
   data: Array<{ date: string; delivery_rate: number }>;
 }) {
   if (data.length === 0) {
-    return <EmptyPanel message="No delivery data in this period." />;
+    return <EmptyPanel title="No delivery data in this period" />;
   }
 
   return (
@@ -197,7 +201,7 @@ function DomainTable({ rows, limit }: { rows: NonNullable<ReturnType<typeof useA
   const visible = limit ? rows.slice(0, limit) : rows;
 
   if (visible.length === 0) {
-    return <EmptyPanel message="No domain sends in this period." />;
+    return <EmptyPanel title="No domain sends in this period" />;
   }
 
   return (
@@ -234,7 +238,7 @@ function TemplateTable({
   const visible = limit ? rows.slice(0, limit) : rows;
 
   if (visible.length === 0) {
-    return <EmptyPanel message="No template sends in this period." />;
+    return <EmptyPanel title="No template sends in this period" />;
   }
 
   return (
@@ -270,7 +274,7 @@ function EngagementPanel({
     <div className="grid gap-6 lg:grid-cols-2">
       <ChartCard title="Opens & clicks">
         {!data.available ? (
-          <EmptyPanel message="Engagement data appears after recipients open or click tracked emails." />
+          <EmptyPanel title="No engagement data yet" description="It appears after recipients open or click tracked emails." />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.engagement_chart}>
@@ -332,7 +336,7 @@ function EngagementPanel({
           <h3 className="text-sm font-medium">Geography</h3>
         </div>
         {!data.geography.available || data.geography.data.length === 0 ? (
-          <EmptyPanel message="Geo data appears when open or click events include a resolvable IP address." />
+          <EmptyPanel title="No location data yet" description="It appears when open or click events include a resolvable IP address." />
         ) : (
           <table className="w-full text-[13px]">
             <thead>

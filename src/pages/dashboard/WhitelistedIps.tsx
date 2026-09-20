@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -15,11 +16,10 @@ export default function WhitelistedIps() {
   const [label, setLabel] = useState('');
   const [entryToDelete, setEntryToDelete] = useState<WhitelistedSendingIp | null>(null);
 
-  const { data: smtpData } = useSmtpCredentials();
-  const { data, isLoading, isError } = useWhitelistedIps();
-  const { create, remove } = useWhitelistedIpMutations();
-
+  const { data: smtpData, isLoading: smtpLoading } = useSmtpCredentials();
   const liveSendingEnabled = smtpData?.live_sending_enabled ?? false;
+  const { data, isLoading, isError } = useWhitelistedIps(liveSendingEnabled);
+  const { create, remove } = useWhitelistedIpMutations();
   const entries = data?.data ?? [];
 
   async function handleSubmit(event: FormEvent) {
@@ -85,16 +85,19 @@ export default function WhitelistedIps() {
           </Link>
         </div>
 
-        {!liveSendingEnabled ? (
-          <div className="border border-dashed border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Enable live sending on the{' '}
-              <Link to="/dashboard/smtp" className="text-foreground underline">
-                SMTP page
-              </Link>{' '}
-              before whitelisting IPs.
-            </p>
+        {smtpLoading ? (
+          <div className="flex justify-center p-12 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
           </div>
+        ) : !liveSendingEnabled ? (
+          <EmptyState
+            framed
+            testId="ip-whitelist-live-required"
+            eyebrow="IP whitelist"
+            title="Enable live sending first"
+            description="IP whitelisting works with your live SMTP credentials. Enable live sending before whitelisting a server IP."
+            action={<EmptyStateButton to="/dashboard/smtp">Enable live sending</EmptyStateButton>}
+          />
         ) : (
           <form
             onSubmit={handleSubmit}
@@ -145,7 +148,15 @@ export default function WhitelistedIps() {
         ) : isError ? (
           <p className="text-sm text-destructive">Could not load whitelisted IPs.</p>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No whitelisted IPs yet.</p>
+          liveSendingEnabled ? (
+            <EmptyState
+              framed
+              testId="ip-whitelist-empty"
+              eyebrow="IP whitelist"
+              title="Add your first server IP"
+              description="Enter your app server's public IP above to send from any From address without verifying a domain."
+            />
+          ) : null
         ) : (
           <div className="space-y-3">
             {entries.map((entry) => (

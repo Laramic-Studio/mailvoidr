@@ -23,6 +23,7 @@ import {
   Webhook,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -164,9 +165,11 @@ export default function DashboardOverview() {
               </div>
               <div className="h-72 p-3">
                 {data.chart.series.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">
-                    No sends in this period yet.
-                  </div>
+                  <EmptyState
+                    size="compact"
+                    title="No sends in this period yet"
+                    className="flex h-full flex-col justify-center"
+                  />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data.chart.series} margin={{ left: 12, right: 12, top: 12, bottom: 0 }}>
@@ -245,9 +248,11 @@ export default function DashboardOverview() {
               </div>
               <div className="overflow-x-auto">
                 {data.recent_sends.length === 0 ? (
-                  <div className="p-8 text-center text-[13px] text-muted-foreground">
-                    No outbound sends yet.
-                  </div>
+                  <EmptyState
+                    size="compact"
+                    title="No outbound sends yet"
+                    description="Your latest sends will show up here."
+                  />
                 ) : (
                   <table className="w-full text-[12.5px]">
                     <thead>
@@ -290,9 +295,11 @@ export default function DashboardOverview() {
                 <h3 className="text-base font-medium">Activity feed</h3>
               </div>
               {data.activity.length === 0 ? (
-                <div className="p-8 text-center text-[13px] text-muted-foreground">
-                  Team and workspace activity will appear here.
-                </div>
+                <EmptyState
+                  size="compact"
+                  title="No activity yet"
+                  description="Team and workspace activity will appear here."
+                />
               ) : (
                 <ul className="divide-y divide-border">
                   {data.activity.map((item) => {
@@ -328,7 +335,7 @@ export default function DashboardOverview() {
                 </Link>
               </div>
               {data.top_domains.length === 0 ? (
-                <div className="p-8 text-center text-[13px] text-muted-foreground">No domain sends yet.</div>
+                <EmptyState size="compact" title="No domain sends yet" />
               ) : (
                 <table className="w-full text-[13px]">
                   <tbody>
@@ -362,9 +369,11 @@ export default function DashboardOverview() {
                 </Link>
               </div>
               {data.top_templates.length === 0 ? (
-                <div className="p-8 text-center text-[13px] text-muted-foreground">
-                  Template sends will rank here.
-                </div>
+                <EmptyState
+                  size="compact"
+                  title="No template sends yet"
+                  description="Template sends will rank here."
+                />
               ) : (
                 <table className="w-full text-[13px]">
                   <tbody>

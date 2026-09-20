@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CodeBlock } from '@/components/CodeBlock';
@@ -404,7 +405,12 @@ export default function SendEmail() {
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : history.length === 0 ? (
-            <p className="p-8 text-sm text-muted-foreground">No sends yet for this workspace.</p>
+            <EmptyState
+              size="compact"
+              testId="send-history-empty"
+              title="No sends yet"
+              description="Emails sent from this workspace will appear here."
+            />
           ) : (
             <table className="w-full text-[13px]">
               <thead>

@@ -7,13 +7,17 @@ import {
 import { queryKeys } from '@/lib/query-keys';
 import { useAuth } from '@/hooks/useAuth';
 
-export function useWhitelistedIps() {
+/**
+ * The API only serves the list once live sending is activated (403 otherwise),
+ * so callers pass `enabled: false` until then instead of surfacing that as a load error.
+ */
+export function useWhitelistedIps(enabled = true) {
   const { user } = useAuth();
 
   return useQuery({
     queryKey: queryKeys.whitelistedIps.all,
     queryFn: fetchWhitelistedIps,
-    enabled: Boolean(user?.onboarding_completed),
+    enabled: enabled && Boolean(user?.onboarding_completed),
   });
 }
 

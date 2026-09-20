@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { DisabledWithTooltip } from '@/components/DisabledWithTooltip';
@@ -314,7 +315,12 @@ export default function Teams() {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading invitations…
             </div>
           ) : invitations.length === 0 ? (
-            <div className="p-8 text-center text-[13px] text-muted-foreground">No pending invitations.</div>
+            <EmptyState
+              size="compact"
+              testId="team-invitations-empty"
+              title="No pending invitations"
+              description="Invitations you send will wait here until they are accepted."
+            />
           ) : (
             <table className="w-full text-[13px]">
               <thead>
@@ -396,7 +402,12 @@ export default function Teams() {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading activity…
             </div>
           ) : activities.length === 0 ? (
-            <div className="p-8 text-center text-[13px] text-muted-foreground">No team activity yet.</div>
+            <EmptyState
+              size="compact"
+              testId="team-activity-empty"
+              title="No team activity yet"
+              description="Team and workspace activity will appear here."
+            />
           ) : (
             activities.map((item) => (
               <div key={item.id} className="flex items-center gap-3 p-4">

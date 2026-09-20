@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CodeBlock } from '@/components/CodeBlock';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -155,7 +156,7 @@ function TestSmtpPanel() {
   if (!inbox) {
     return (
       <EmptyPanel
-        icon={FlaskConical}
+        eyebrow="Test SMTP"
         title="Enable sandbox SMTP"
         description="Get a dedicated test inbox and SMTP credentials on port 587. Messages stay in your workspace — nothing is delivered to real recipients."
         actionLabel={enable.isPending ? 'Enabling…' : 'Enable test SMTP'}
@@ -366,7 +367,7 @@ function LiveSmtpPanel() {
 
       {!liveSendingEnabled ? (
         <EmptyPanel
-          icon={Zap}
+          eyebrow="Live SMTP"
           title="Live sending is off"
           description="Enable live SMTP to get port 2525 credentials for production traffic. Use the Test tab for sandbox capture on port 587."
           actionLabel={enable.isPending ? 'Enabling…' : 'Enable live sending'}
@@ -542,7 +543,7 @@ function SnippetSection({
 }
 
 function EmptyPanel({
-  icon: Icon,
+  eyebrow,
   title,
   description,
   actionLabel,
@@ -550,7 +551,7 @@ function EmptyPanel({
   actionPending,
   onAction,
 }: {
-  icon: typeof Server;
+  eyebrow: string;
   title: string;
   description: string;
   actionLabel: string;
@@ -559,20 +560,17 @@ function EmptyPanel({
   onAction: () => void;
 }) {
   return (
-    <div className="border border-dashed border-border bg-card p-12 text-center">
-      <Icon className="mx-auto h-8 w-8 text-muted-foreground" />
-      <h3 className="mt-3 text-base font-medium">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{description}</p>
-      <button
-        type="button"
-        data-testid={actionTestId}
-        disabled={actionPending}
-        onClick={onAction}
-        className="mt-6 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-      >
-        {actionLabel}
-      </button>
-    </div>
+    <EmptyState
+      framed
+      eyebrow={eyebrow}
+      title={title}
+      description={description}
+      action={
+        <EmptyStateButton testId={actionTestId} disabled={actionPending} onClick={onAction}>
+          {actionLabel}
+        </EmptyStateButton>
+      }
+    />
   );
 }
 

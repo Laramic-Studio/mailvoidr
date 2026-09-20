@@ -91,6 +91,8 @@ export interface LanguageTab {
   label: string;
   filename: string;
   code: string;
+  /** Text placed on the clipboard when it differs from what is displayed (e.g. masked secrets). */
+  copyCode?: string;
   language?: string;
 }
 
@@ -278,6 +280,8 @@ export function MultiFileCodeBlock({
 
 interface LanguageTabsCodeBlockProps {
   tabs: LanguageTab[];
+  defaultLabel?: string;
+  onTabChange?: (label: string) => void;
   showLineNumbers?: boolean;
   scrollable?: boolean;
   maxHeight?: number;
@@ -287,13 +291,17 @@ interface LanguageTabsCodeBlockProps {
 
 export function LanguageTabsCodeBlock({
   tabs,
+  defaultLabel,
+  onTabChange,
   showLineNumbers = false,
   scrollable = false,
   maxHeight = 400,
   bodyClassName,
   className,
 }: LanguageTabsCodeBlockProps) {
-  const [active, setActive] = useState(tabs[0]?.label ?? "");
+  const [active, setActive] = useState(
+    defaultLabel && tabs.some((t) => t.label === defaultLabel) ? defaultLabel : (tabs[0]?.label ?? ""),
+  );
   const tab = tabs.find((t) => t.label === active) ?? tabs[0];
 
   return (
@@ -303,7 +311,10 @@ export function LanguageTabsCodeBlock({
           <button
             key={t.label}
             type="button"
-            onClick={() => setActive(t.label)}
+            onClick={() => {
+              setActive(t.label);
+              onTabChange?.(t.label);
+            }}
             className={cn(
               "h-10 px-3 text-sm font-medium shrink-0 border-b-2 transition-colors",
               active === t.label
@@ -322,7 +333,7 @@ export function LanguageTabsCodeBlock({
               <FileCode2 className="h-4 w-4 shrink-0" />
               <span className="truncate font-mono text-xs">{tab.filename}</span>
             </div>
-            <CopyBtn code={tab.code} />
+            <CopyBtn code={tab.copyCode ?? tab.code} />
           </div>
           <CodeRenderer
             code={tab.code}

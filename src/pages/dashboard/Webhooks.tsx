@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -190,12 +191,18 @@ export default function Webhooks() {
               Could not load webhook endpoints.
             </div>
           ) : endpoints.length === 0 ? (
-            <div className="border border-dashed border-border bg-card/30 p-16 text-center">
-              <h3 className="text-base font-medium">No webhook endpoints yet</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Create an HTTPS endpoint to receive signed event payloads.
-              </p>
-            </div>
+            <EmptyState
+              framed
+              testId="webhooks-empty"
+              eyebrow="Webhooks"
+              title="Add your first endpoint"
+              description="Create an HTTPS endpoint to receive signed event payloads."
+              action={
+                <EmptyStateButton icon={Plus} onClick={() => setShowCreate(true)} testId="webhook-empty-create">
+                  New endpoint
+                </EmptyStateButton>
+              }
+            />
           ) : (
             <div className="space-y-3">
               {endpoints.map((endpoint) => (
@@ -283,7 +290,12 @@ export default function Webhooks() {
               <Loader2 className="h-4 w-4 animate-spin" />
             </div>
           ) : deliveries.length === 0 ? (
-            <div className="p-16 text-center text-[13px] text-muted-foreground">No deliveries yet.</div>
+            <EmptyState
+              size="compact"
+              testId="webhook-deliveries-empty"
+              title="No deliveries yet"
+              description="Delivery attempts will show up here once an event is sent to your endpoints."
+            />
           ) : (
             <table className="w-full text-[12.5px]">
               <thead>

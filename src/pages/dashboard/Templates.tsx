@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -139,12 +140,18 @@ export default function Templates() {
           Could not load templates.
         </div>
       ) : templates.length === 0 ? (
-        <div className="border border-dashed border-border bg-card/30 p-16 text-center">
-          <h3 className="text-base font-medium">No templates yet</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create a reusable template for transactional or marketing sends.
-          </p>
-        </div>
+        <EmptyState
+          framed
+          testId="templates-empty"
+          eyebrow="Templates"
+          title="Create your first template"
+          description="Create a reusable template for transactional or marketing sends."
+          action={
+            <EmptyStateButton icon={Plus} onClick={() => setShowCreate(true)} testId="template-empty-create">
+              Create template
+            </EmptyStateButton>
+          }
+        />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border">
           {templates.map((template) => (

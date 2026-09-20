@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -34,14 +34,16 @@ interface KeyDialogState {
 
 const PANEL_COPY: Record<
   ApiKeyEnvironment,
-  { summary?: string; empty: string; emptyHint?: string }
+  { summary?: string; emptyTitle: string; empty: string; emptyHint?: string }
 > = {
   live: {
-    empty: 'No live keys yet. Enable live sending, then create your first production key.',
+    emptyTitle: 'Create your first live key',
+    empty: 'Enable live sending, then create a production key.',
     emptyHint: 'Need staging first? Switch to the Test tab — no live sending required.',
   },
   test: {
-    empty: 'No test keys yet. Create one for CI, staging, or local automation.',
+    emptyTitle: 'Create your first test key',
+    empty: 'Use test keys for CI, staging, or local automation.',
   },
 };
 
@@ -137,21 +139,22 @@ function ApiKeysPanel({ environment, showCreate, onShowCreateChange }: ApiKeysPa
         ) : isError ? (
           <p className="p-8 text-sm text-destructive">Could not load API keys.</p>
         ) : apiKeys.length === 0 ? (
-          <div className="p-12 text-center">
-            <KeyRound className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm text-muted-foreground">{copy.empty}</p>
-            {copy.emptyHint ? (
-              <p className="mt-2 text-[12px] text-muted-foreground">{copy.emptyHint}</p>
-            ) : null}
-            {environment === 'live' && data?.meta.can_create_live === false ? (
-              <Link
-                to="/dashboard/smtp"
-                className="mt-4 inline-block text-[13px] font-medium text-primary hover:underline"
-              >
-                Enable live sending →
-              </Link>
-            ) : null}
-          </div>
+          <EmptyState
+            testId={`apikeys-empty-${environment}`}
+            eyebrow="API keys"
+            title={copy.emptyTitle}
+            description={copy.empty}
+            hint={copy.emptyHint}
+            action={
+              environment === 'live' && data?.meta.can_create_live === false ? (
+                <EmptyStateButton to="/dashboard/smtp">Enable live sending</EmptyStateButton>
+              ) : (
+                <EmptyStateButton icon={Plus} onClick={() => onShowCreateChange(true)}>
+                  Create {environment} key
+                </EmptyStateButton>
+              )
+            }
+          />
         ) : (
           <table className="w-full text-[13px]">
             <thead>
