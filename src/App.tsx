@@ -8,6 +8,7 @@ import Onboarding from "@/pages/Onboarding";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
+import VerifyResetCode from "@/pages/auth/VerifyResetCode";
 import ResetPassword from "@/pages/auth/ResetPassword";
 import VerifyEmail from "@/pages/auth/VerifyEmail";
 import TwoFA from "@/pages/auth/TwoFA";
@@ -78,6 +79,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-reset-code" element={<VerifyResetCode />} />
             <Route path="/reset-password" element={<ResetPassword />} />
           </Route>
 

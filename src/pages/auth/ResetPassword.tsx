@@ -1,5 +1,5 @@
 import { type FormEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { AuthField } from "@/components/auth/AuthField";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -37,7 +37,16 @@ export default function ResetPassword() {
   return (
     <AuthLayout>
       <h1 className="text-2xl tracking-tight font-medium">Set a new password</h1>
-      <p className="mt-1.5 text-sm text-muted-foreground">Use at least 8 characters.</p>
+      <p className="mt-1.5 text-sm text-muted-foreground">
+        {token && email ? (
+          <>Choose a new password for <span className="font-mono text-foreground">{email}</span>. Use at least 8 characters.</>
+        ) : (
+          <>
+            Your reset session is missing or has expired.{" "}
+            <Link to="/forgot-password" className="text-foreground hover:underline">Request a new code</Link>
+          </>
+        )}
+      </p>
       <form data-testid="reset-form" onSubmit={handleSubmit} className="mt-8 space-y-4">
         <fieldset disabled={loading} className="space-y-4 border-0 p-0 m-0 min-w-0">
           <AuthField

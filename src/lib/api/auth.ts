@@ -75,6 +75,11 @@ export async function forgotPassword(email: string): Promise<void> {
   await api.post("/auth/forgot-password", { email });
 }
 
+export async function verifyPasswordResetCode(email: string, code: string): Promise<string> {
+  const { data } = await api.post<{ token: string }>("/auth/verify-reset-code", { email, code });
+  return data.token;
+}
+
 export async function resetPassword(payload: ResetPasswordPayload): Promise<void> {
   await api.post("/auth/reset-password", payload);
 }

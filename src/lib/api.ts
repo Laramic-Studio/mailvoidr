@@ -39,6 +39,7 @@ function isAuthRoute(url: string | undefined): boolean {
     || url.includes('/auth/two-factor')
     || url.includes('/auth/refresh')
     || url.includes('/auth/forgot-password')
+    || url.includes('/auth/verify-reset-code')
     || url.includes('/auth/reset-password')
   );
 }
