@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -18,7 +19,7 @@ export default function WhitelistedIps() {
 
   const { data: smtpData, isLoading: smtpLoading } = useSmtpCredentials();
   const liveSendingEnabled = smtpData?.live_sending_enabled ?? false;
-  const { data, isLoading, isError } = useWhitelistedIps(liveSendingEnabled);
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useWhitelistedIps(liveSendingEnabled);
   const { create, remove } = useWhitelistedIpMutations();
   const entries = data?.data ?? [];
 
@@ -146,7 +147,7 @@ export default function WhitelistedIps() {
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : isError ? (
-          <p className="text-sm text-destructive">Could not load whitelisted IPs.</p>
+          <QueryErrorState framed error={loadError} subject="whitelisted IPs" onRetry={() => void reload()} retrying={reloading} />
         ) : entries.length === 0 ? (
           liveSendingEnabled ? (
             <EmptyState

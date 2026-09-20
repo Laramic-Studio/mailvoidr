@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
       retry: (failureCount, error) => {
         if (axios.isAxiosError(error)) {
           const status = error.response?.status;
-          if (status === 429 || status === 401 || status === 403 || status === 404) {
+          if (status === 429 || status === 401 || status === 402 || status === 403 || status === 404) {
             return false;
           }
         }

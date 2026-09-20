@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -64,7 +65,7 @@ function ApiKeysPanel({ environment, showCreate, onShowCreateChange }: ApiKeysPa
   const [keyToRotate, setKeyToRotate] = useState<ApiKey | null>(null);
   const [keyDialog, setKeyDialog] = useState<KeyDialogState | null>(null);
 
-  const { data, isLoading, isError } = useApiKeys(environment);
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useApiKeys(environment);
   const { rotate, revoke } = useApiKeyMutations(environment);
 
   const apiKeys = data?.data ?? [];
@@ -137,7 +138,7 @@ function ApiKeysPanel({ environment, showCreate, onShowCreateChange }: ApiKeysPa
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : isError ? (
-          <p className="p-8 text-sm text-destructive">Could not load API keys.</p>
+          <QueryErrorState error={loadError} subject="API keys" onRetry={reload} retrying={reloading} />
         ) : apiKeys.length === 0 ? (
           <EmptyState
             testId={`apikeys-empty-${environment}`}

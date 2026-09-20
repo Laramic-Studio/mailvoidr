@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -53,7 +54,7 @@ export default function Templates() {
   const [category, setCategory] = useState<TemplateCategory>('transactional');
   const [visibility, setVisibility] = useState<TemplateVisibility>('public');
 
-  const { data, isLoading, isError } = useTemplates(search.trim() || undefined);
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useTemplates(search.trim() || undefined);
   const { create, remove } = useTemplateMutations();
 
   const templates = useMemo(() => data?.data ?? [], [data?.data]);
@@ -136,9 +137,7 @@ export default function Templates() {
           <Loader2 className="h-4 w-4 animate-spin" />
         </div>
       ) : isError ? (
-        <div className="border border-border bg-card p-8 text-[13px] text-destructive">
-          Could not load templates.
-        </div>
+        <QueryErrorState framed error={loadError} subject="templates" onRetry={reload} retrying={reloading} />
       ) : templates.length === 0 ? (
         <EmptyState
           framed

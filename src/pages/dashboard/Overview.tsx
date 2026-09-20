@@ -23,6 +23,7 @@ import {
   Webhook,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
@@ -71,7 +72,7 @@ function breakdownBarClass(tone: string): string {
 
 export default function DashboardOverview() {
   const [period, setPeriod] = useState<DashboardPeriod>('30d');
-  const { data, isLoading, isError, refetch, isFetching } = useDashboardOverview(period);
+  const { data, isLoading, isError, error: loadError, refetch, isFetching } = useDashboardOverview(period);
 
   const chartSummary = useMemo(() => {
     if (!data) return '';
@@ -117,9 +118,7 @@ export default function DashboardOverview() {
           <Loader2 className="h-4 w-4 animate-spin" />
         </div>
       ) : isError || !data ? (
-        <div className="border border-border bg-card p-8 text-[13px] text-destructive">
-          Could not load dashboard overview.
-        </div>
+        <QueryErrorState framed error={loadError} subject="dashboard overview" onRetry={() => void refetch()} retrying={isFetching} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-4">

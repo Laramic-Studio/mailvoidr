@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { PageHeader } from '@/components/PageHeader';
 import { VirtualEmailCreateDialog } from '@/components/dashboard/VirtualEmailCreateDialog';
 import { VirtualEmailsEmptyState } from '@/components/dashboard/VirtualEmailsEmptyState';
@@ -16,7 +17,7 @@ export default function VirtualEmails() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<VirtualEmail | null>(null);
-  const { data, isLoading, isError } = useVirtualEmails(search);
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useVirtualEmails(search);
   const { remove } = useVirtualEmailMutations();
 
   const virtualEmails = data?.data ?? [];
@@ -84,7 +85,7 @@ export default function VirtualEmails() {
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : isError ? (
-          <p className="p-8 text-sm text-destructive">Could not load virtual emails.</p>
+          <QueryErrorState error={loadError} subject="virtual emails" onRetry={reload} retrying={reloading} />
         ) : isSearchEmpty ? (
           <VirtualEmailsEmptyState variant="search" onCreate={() => setShowCreate(true)} />
         ) : isWorkspaceEmpty ? (

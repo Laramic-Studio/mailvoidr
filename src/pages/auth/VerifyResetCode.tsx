@@ -1,14 +1,17 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { OtpInput } from "@/components/auth/OtpInput";
 import { SubmitButton } from "@/components/SubmitButton";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { forgotPassword, verifyPasswordResetCode } from "@/lib/api/auth";
+import axios from "axios";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { ArrowLeft, Mail } from "lucide-react";
 
 const OTP_LENGTH = 6;
+// Matches the server-side cooldown between reset codes for one address.
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function VerifyResetCode() {
   const nav = useNavigate();
@@ -16,8 +19,16 @@ export default function VerifyResetCode() {
   const { loading, run } = useAsyncAction();
   const [resending, setResending] = useState(false);
   const [code, setCode] = useState("");
+  // A code was just sent by the previous step, so the cooldown is already running.
+  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
 
   const email = params.get("email") ?? "";
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
 
   if (!email) {
     return <Navigate to="/forgot-password" replace />;
@@ -81,11 +92,11 @@ export default function VerifyResetCode() {
       <button
         type="button"
         onClick={handleResend}
-        disabled={disabled}
+        disabled={disabled || cooldown > 0}
         data-testid="verify-reset-resend"
         className="mt-4 w-full border border-border bg-card rounded-md px-4 py-2.5 text-sm hover:bg-accent transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        {resending ? "Sending…" : "Resend code"}
+        {resending ? "Sending…" : cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
       </button>
     </AuthLayout>
   );

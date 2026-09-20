@@ -136,6 +136,15 @@ api.interceptors.response.use(
   },
 );
 
+export function getApiErrorStatus(error: unknown): number | undefined {
+  return axios.isAxiosError(error) ? error.response?.status : undefined;
+}
+
+/** True when the request never reached the API (offline, DNS, CORS, server down). */
+export function isNetworkError(error: unknown): boolean {
+  return axios.isAxiosError(error) && !error.response;
+}
+
 export function getApiErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
   if (axios.isAxiosError<ApiErrorBody>(error)) {
     const data = error.response?.data;

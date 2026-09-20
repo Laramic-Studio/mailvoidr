@@ -26,7 +26,7 @@ const NAV_GROUPS: { label: string; items: NavItemConfig[] }[] = [
     label: 'Workspace',
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
-      { to: '/dashboard/send', icon: Send, label: 'Email Sending' },
+      { to: '/dashboard/send', icon: Send, label: 'Send Email' },
       { to: '/dashboard/inbox', icon: Inbox, label: 'Inbox' },
       { to: '/dashboard/virtual-emails', icon: Mail, label: 'Virtual emails' },
     ],
@@ -95,10 +95,10 @@ function NavItem({
         )
       }
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="w-4 h-4 shrink-0" />
       {expanded && (
         <>
-          <span className="min-w-0 flex-1 truncate">{label}</span>
+          <span className="flex-1 min-w-0 truncate">{label}</span>
           {badge && (
             <span className="shrink-0 rounded border border-border px-1.5 font-mono text-[10px] text-muted-foreground">
               {badge}
@@ -112,7 +112,7 @@ function NavItem({
   if (expanded) return <li>{link}</li>;
 
   return (
-    <li className="flex w-full justify-center">
+    <li className="flex justify-center w-full">
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>{link}</TooltipTrigger>
         <TooltipContent side="right">{label}</TooltipContent>
@@ -176,9 +176,9 @@ export function DashboardSidebar({
             onClick={toggleSidebar}
             data-testid="sidebar-collapse"
             aria-label="Collapse sidebar"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="inline-flex items-center justify-center w-8 h-8 transition-colors rounded-md shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
-            <PanelLeftClose className="h-4 w-4" />
+            <PanelLeftClose className="w-4 h-4" />
           </button>
         )}
       </div>
@@ -194,13 +194,13 @@ export function DashboardSidebar({
       </div>
 
       {/* Nav */}
-      <nav className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-2">
+      <nav className="flex-1 min-h-0 py-2 overflow-x-hidden overflow-y-auto scrollbar-none">
         <div className={cn('space-y-3', !expanded && 'space-y-2')}>
           {groups.map((group) => (
             <div key={group.label}>
               {/* Label animates in/out without layout jump */}
               <div
-                className="label-mono mb-1 px-4 overflow-hidden whitespace-nowrap"
+                className="px-4 mb-1 overflow-hidden label-mono whitespace-nowrap"
                 style={{
                   opacity: expanded ? 1 : 0,
                   maxHeight: expanded ? 24 : 0,
@@ -225,15 +225,15 @@ export function DashboardSidebar({
 
       {/* Expand toggle (collapsed) */}
       {showCollapseToggle && !expanded && (
-        <div className="flex shrink-0 justify-center border-t border-border py-2">
+        <div className="flex justify-center py-2 border-t shrink-0 border-border">
           <button
             type="button"
             onClick={toggleSidebar}
             data-testid="sidebar-expand"
             aria-label="Expand sidebar"
-            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex items-center justify-center transition-colors rounded-md h-9 w-9 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
-            <PanelLeft className="h-4 w-4" />
+            <PanelLeft className="w-4 h-4" />
           </button>
         </div>
       )}

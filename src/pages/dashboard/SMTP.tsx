@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CodeBlock } from '@/components/CodeBlock';
@@ -123,7 +124,7 @@ function TestSmtpToolbar() {
 
 function TestSmtpPanel() {
   const [showPassword, setShowPassword] = useState(false);
-  const { data, isLoading, isError } = useSandbox();
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useSandbox();
   const { enable } = useSandboxMutations();
   const inbox = data?.inbox ?? null;
 
@@ -150,7 +151,7 @@ function TestSmtpPanel() {
   }
 
   if (isError) {
-    return <ErrorPanel message="Could not load sandbox SMTP credentials." />;
+    return <ErrorPanel subject="sandbox SMTP credentials" error={loadError} onRetry={() => void reload()} retrying={reloading} />;
   }
 
   if (!inbox) {
@@ -313,7 +314,7 @@ function LiveSmtpToolbar() {
 
 function LiveSmtpPanel() {
   const [showPassword, setShowPassword] = useState(false);
-  const { data, isLoading, isError } = useSmtpCredentials();
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useSmtpCredentials();
   const { enable } = useSmtpCredentialMutations();
 
   const credential = data?.credential ?? null;
@@ -336,7 +337,7 @@ function LiveSmtpPanel() {
   }
 
   if (isError) {
-    return <ErrorPanel message="Could not load live SMTP credentials." />;
+    return <ErrorPanel subject="live SMTP credentials" error={loadError} onRetry={() => void reload()} retrying={reloading} />;
   }
 
   return (
@@ -582,8 +583,16 @@ function LoadingPanel() {
   );
 }
 
-function ErrorPanel({ message }: { message: string }) {
-  return <p className="text-sm text-destructive">{message}</p>;
+function ErrorPanel(props: { subject: string; error: unknown; onRetry: () => void; retrying: boolean }) {
+  return (
+    <QueryErrorState
+      framed
+      error={props.error}
+      subject={props.subject}
+      onRetry={props.onRetry}
+      retrying={props.retrying}
+    />
+  );
 }
 
 function KV({

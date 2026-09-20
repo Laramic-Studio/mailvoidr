@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -23,7 +24,7 @@ export default function TemplateMarketplace() {
   const [previewData, setPreviewData] = useState<TemplatePreview | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = useTemplateMarketplace(
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useTemplateMarketplace(
     search.trim() || undefined,
     category || undefined,
   );
@@ -105,9 +106,7 @@ export default function TemplateMarketplace() {
           <Loader2 className="h-4 w-4 animate-spin" />
         </div>
       ) : isError ? (
-        <div className="border border-border bg-card p-8 text-[13px] text-destructive">
-          Could not load marketplace.
-        </div>
+        <QueryErrorState framed error={loadError} subject="marketplace" onRetry={reload} retrying={reloading} />
       ) : listings.length === 0 ? (
         <EmptyState
           framed

@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -133,7 +134,7 @@ export default function Domains() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [domainToDelete, setDomainToDelete] = useState<VerifiedDomain | null>(null);
 
-  const { data, isLoading, isError } = useDomains();
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useDomains();
   const { create, verify, remove } = useDomainMutations();
 
   const domains = data?.data ?? [];
@@ -239,7 +240,7 @@ export default function Domains() {
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : isError ? (
-          <p className="p-8 text-sm text-destructive">Could not load domains.</p>
+          <QueryErrorState error={loadError} subject="domains" onRetry={reload} retrying={reloading} />
         ) : domains.length === 0 ? (
           <EmptyState
             testId="domains-empty"

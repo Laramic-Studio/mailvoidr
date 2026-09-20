@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { Calendar, Download, Loader2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { downloadAnalyticsExport } from '@/lib/api/analytics';
@@ -93,14 +94,6 @@ function LoadingPanel() {
   return (
     <div className="flex items-center justify-center border border-border bg-card p-16 text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
-    </div>
-  );
-}
-
-function ErrorPanel() {
-  return (
-    <div className="border border-border bg-card p-8 text-[13px] text-destructive">
-      Could not load analytics for this tab.
     </div>
   );
 }
@@ -607,7 +600,13 @@ export default function Analytics() {
       ) : activeQuery?.isLoading ? (
         <LoadingPanel />
       ) : activeQuery?.isError ? (
-        <ErrorPanel />
+        <QueryErrorState
+          framed
+          error={activeQuery.error}
+          subject="analytics"
+          onRetry={() => void activeQuery.refetch()}
+          retrying={activeQuery.isFetching}
+        />
       ) : (
         <>
           <SummaryGrid cards={summaryCards} />

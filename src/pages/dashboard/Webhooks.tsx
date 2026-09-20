@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -37,8 +38,15 @@ export default function Webhooks() {
   const [selectedEvents, setSelectedEvents] = useState<string[]>(['email.queued', 'email.delivered']);
   const [replayingId, setReplayingId] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = useWebhooks();
-  const { data: deliveriesData, isLoading: deliveriesLoading } = useWebhookDeliveries();
+  const { data, isLoading, isError, error: loadError, refetch: reload, isFetching: reloading } = useWebhooks();
+  const {
+    data: deliveriesData,
+    isLoading: deliveriesLoading,
+    isError: deliveriesError,
+    error: deliveriesLoadError,
+    refetch: reloadDeliveries,
+    isFetching: reloadingDeliveries,
+  } = useWebhookDeliveries();
   const { create, update, remove, rotateSecret, sendTest, replay } = useWebhookMutations();
 
   const endpoints = useMemo(() => data?.data ?? [], [data?.data]);
@@ -187,9 +195,7 @@ export default function Webhooks() {
               <Loader2 className="h-4 w-4 animate-spin" />
             </div>
           ) : isError ? (
-            <div className="border border-border bg-card p-8 text-[13px] text-destructive">
-              Could not load webhook endpoints.
-            </div>
+            <QueryErrorState framed error={loadError} subject="webhook endpoints" onRetry={reload} retrying={reloading} />
           ) : endpoints.length === 0 ? (
             <EmptyState
               framed
@@ -289,6 +295,14 @@ export default function Webhooks() {
             <div className="flex items-center justify-center p-16 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
             </div>
+          ) : deliveriesError ? (
+            <QueryErrorState
+              size="compact"
+              error={deliveriesLoadError}
+              subject="webhook deliveries"
+              onRetry={() => void reloadDeliveries()}
+              retrying={reloadingDeliveries}
+            />
           ) : deliveries.length === 0 ? (
             <EmptyState
               size="compact"
