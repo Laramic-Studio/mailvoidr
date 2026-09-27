@@ -100,32 +100,6 @@ function lerp(a, b, t) {
     return a + (b - a) * t;
 }
 
-const EnvelopeIcon = ({ variant }) => {
-    const p = PALETTE[variant];
-    const gradId = variant === "primary" ? "envGradPrimary" : "envGradAccent";
-    return (
-        <svg width="22" height="22" viewBox="0 0 24 24" style={{ overflow: "visible" }}>
-            <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor={p.from} />
-                    <stop offset="100%" stopColor={p.to} />
-                </linearGradient>
-            </defs>
-            <circle cx="12" cy="12" r="11" fill={`url(#${gradId})`} opacity="0.14" />
-            <rect x="4" y="6.5" width="16" height="11" rx="2.2" fill={`url(#${gradId})`} stroke={p.stroke} strokeWidth="1.1" />
-            <path
-                d="M4.6 7.2 L12 13 L19.4 7.2"
-                fill="none"
-                stroke="white"
-                strokeWidth="1.1"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity="0.92"
-            />
-        </svg>
-    );
-};
-
 export default function MailvoidrEmailNetwork({
                                                   maxEnvelopes = 3,
                                                   msPerSegment = 620,

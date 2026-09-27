@@ -1,21 +1,31 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import {
-  LayoutDashboard, Send, Inbox, Mail, Globe, BarChart3,
-  ListChecks, FileCode2, KeyRound, Server, Webhook, Shield,
-  Users, CreditCard, Settings, PanelLeftClose, PanelLeft,
-} from 'lucide-react';
-import { Logo } from '@/components/Logo';
+import { LayoutDashboardIcon } from '@/components/icons/layout-dashboard';
+import { SendIcon } from '@/components/icons/send';
+import { InboxIcon } from '@/components/icons/inbox';
+import { MailIcon } from '@/components/icons/mail';
+import { GlobeIcon } from '@/components/icons/globe';
+import { ShieldCheckIcon } from '@/components/icons/shield-check';
+import { ChartColumnIncreasingIcon } from '@/components/icons/chart-column-increasing';
+import { ListChecksIcon } from '@/components/icons/list-checks';
+import { FileCodeIcon } from '@/components/icons/file-code';
+import { KeyRoundIcon } from '@/components/icons/key-round';
+import { ServerIcon } from '@/components/icons/server';
+import { WebhookIcon } from '@/components/icons/webhook';
+import { UsersIcon } from '@/components/icons/users';
+import { CreditCardIcon } from '@/components/icons/credit-card';
+import { SettingsIcon } from '@/components/icons/settings';
+import type { AnimatedIcon, AnimatedIconHandle } from '@/components/icons/types';
 import { WorkspaceSwitcher } from '@/components/dashboard/WorkspaceSwitcher';
+import { SidebarThemeSwitcher } from '@/components/dashboard/SidebarThemeSwitcher';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePlanFeature } from '@/hooks/useBilling';
-import { useUiStore } from '@/stores/ui-store';
 import { SIDEBAR_EASE, SIDEBAR_TRANSITION_MS } from '@/components/dashboard/sidebar-constants';
 import { cn } from '@/lib/utils';
 
 type NavItemConfig = {
   to: string;
-  icon: typeof LayoutDashboard;
+  icon: AnimatedIcon;
   label: string;
   end?: boolean;
   feature?: string;
@@ -25,36 +35,36 @@ const NAV_GROUPS: { label: string; items: NavItemConfig[] }[] = [
   {
     label: 'Workspace',
     items: [
-      { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
-      { to: '/dashboard/send', icon: Send, label: 'Send Email' },
-      { to: '/dashboard/inbox', icon: Inbox, label: 'Inbox' },
-      { to: '/dashboard/virtual-emails', icon: Mail, label: 'Virtual emails' },
+      { to: '/dashboard', icon: LayoutDashboardIcon, label: 'Overview', end: true },
+      { to: '/dashboard/send', icon: SendIcon, label: 'Send Email' },
+      { to: '/dashboard/inbox', icon: InboxIcon, label: 'Inbox' },
+      { to: '/dashboard/virtual-emails', icon: MailIcon, label: 'Virtual emails' },
     ],
   },
   {
     label: 'Operate',
     items: [
-      { to: '/dashboard/domains', icon: Globe, label: 'Domains' },
-      { to: '/dashboard/ip-whitelist', icon: Shield, label: 'IP whitelist' },
-      { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics', feature: 'analytics' },
-      { to: '/dashboard/logs', icon: ListChecks, label: 'Email Logs' },
-      { to: '/dashboard/templates', icon: FileCode2, label: 'Templates', feature: 'templates' },
+      { to: '/dashboard/domains', icon: GlobeIcon, label: 'Domains' },
+      { to: '/dashboard/ip-whitelist', icon: ShieldCheckIcon, label: 'IP whitelist' },
+      { to: '/dashboard/analytics', icon: ChartColumnIncreasingIcon, label: 'Analytics', feature: 'analytics' },
+      { to: '/dashboard/logs', icon: ListChecksIcon, label: 'Email Logs' },
+      { to: '/dashboard/templates', icon: FileCodeIcon, label: 'Templates', feature: 'templates' },
     ],
   },
   {
     label: 'Developer',
     items: [
-      { to: '/dashboard/api-keys', icon: KeyRound, label: 'API Keys' },
-      { to: '/dashboard/smtp', icon: Server, label: 'SMTP' },
-      { to: '/dashboard/webhooks', icon: Webhook, label: 'Webhooks', feature: 'webhooks' },
+      { to: '/dashboard/api-keys', icon: KeyRoundIcon, label: 'API Keys' },
+      { to: '/dashboard/smtp', icon: ServerIcon, label: 'SMTP' },
+      { to: '/dashboard/webhooks', icon: WebhookIcon, label: 'Webhooks', feature: 'webhooks' },
     ],
   },
   {
     label: 'Account',
     items: [
-      { to: '/dashboard/teams', icon: Users, label: 'Team' },
-      { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
-      { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
+      { to: '/dashboard/teams', icon: UsersIcon, label: 'Team' },
+      { to: '/dashboard/billing', icon: CreditCardIcon, label: 'Billing' },
+      { to: '/dashboard/settings', icon: SettingsIcon, label: 'Settings' },
     ],
   },
 ];
@@ -62,7 +72,6 @@ const NAV_GROUPS: { label: string; items: NavItemConfig[] }[] = [
 interface DashboardSidebarProps {
   expanded: boolean;
   onNavigate?: () => void;
-  showCollapseToggle?: boolean;
   className?: string;
 }
 
@@ -70,18 +79,21 @@ function NavItem({
   to, icon: Icon, label, end, badge, expanded, onNavigate,
 }: {
   to: string;
-  icon: typeof LayoutDashboard;
+  icon: AnimatedIcon;
   label: string;
   end?: boolean;
   badge?: string;
   expanded: boolean;
   onNavigate?: () => void;
 }) {
+  const iconRef = useRef<AnimatedIconHandle>(null);
   const link = (
     <NavLink
       to={to}
       end={end}
       onClick={onNavigate}
+      onMouseEnter={() => iconRef.current?.startAnimation()}
+      onMouseLeave={() => iconRef.current?.stopAnimation()}
       data-testid={`side-nav-${label.toLowerCase().replace(/\s+/g, '-')}`}
       className={({ isActive }) =>
         cn(
@@ -95,7 +107,7 @@ function NavItem({
         )
       }
     >
-      <Icon className="w-4 h-4 shrink-0" />
+      <Icon ref={iconRef} size={16} className="shrink-0" />
       {expanded && (
         <>
           <span className="flex-1 min-w-0 truncate">{label}</span>
@@ -124,10 +136,8 @@ function NavItem({
 export function DashboardSidebar({
   expanded,
   onNavigate,
-  showCollapseToggle = true,
   className,
 }: DashboardSidebarProps) {
-  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const hasAnalytics = usePlanFeature('analytics');
   const hasTemplates = usePlanFeature('templates');
   const hasWebhooks = usePlanFeature('webhooks');
@@ -158,35 +168,10 @@ export function DashboardSidebar({
       className={cn('flex h-full min-h-0 w-full flex-col overflow-hidden', className)}
       style={{ ['--sidebar-ease' as string]: SIDEBAR_EASE }}
     >
-      {/* Header */}
-      <div
-        className={cn(
-          'flex h-14 shrink-0 items-center border-b border-border',
-          expanded ? 'justify-between px-2.5' : 'justify-center px-0',
-        )}
-      >
-        <Logo
-          small={!expanded}
-          onClick={!expanded ? toggleSidebar : undefined}
-          aria-label={!expanded ? 'Expand sidebar' : undefined}
-        />
-        {showCollapseToggle && expanded && (
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            data-testid="sidebar-collapse"
-            aria-label="Collapse sidebar"
-            className="inline-flex items-center justify-center w-8 h-8 transition-colors rounded-md shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <PanelLeftClose className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
       {/* Workspace switcher */}
       <div
         className={cn(
-          'flex shrink-0 justify-center border-b border-border bg-muted/20 py-2',
+          'flex h-14 shrink-0 items-center justify-center',
           expanded ? 'px-2.5' : 'px-0',
         )}
       >
@@ -194,17 +179,20 @@ export function DashboardSidebar({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 min-h-0 py-2 overflow-x-hidden overflow-y-auto scrollbar-none">
-        <div className={cn('space-y-3', !expanded && 'space-y-2')}>
+      <nav className="flex-1 min-h-0 py-3 overflow-x-hidden overflow-y-auto scrollbar-none">
+        <div className={expanded ? 'space-y-5' : 'space-y-3'}>
           {groups.map((group) => (
             <div key={group.label}>
               {/* Label animates in/out without layout jump */}
               <div
-                className="px-4 mb-1 overflow-hidden label-mono whitespace-nowrap"
+                className="px-4 overflow-hidden font-medium label-mono whitespace-nowrap"
                 style={{
+                  fontSize: 10,
+                  letterSpacing: '0.1em',
+                  marginBottom: expanded ? 6 : 0,
                   opacity: expanded ? 1 : 0,
                   maxHeight: expanded ? 24 : 0,
-                  transition: `opacity ${SIDEBAR_TRANSITION_MS}ms ${SIDEBAR_EASE}, max-height ${SIDEBAR_TRANSITION_MS}ms ${SIDEBAR_EASE}`,
+                  transition: `opacity ${SIDEBAR_TRANSITION_MS}ms ${SIDEBAR_EASE}, max-height ${SIDEBAR_TRANSITION_MS}ms ${SIDEBAR_EASE}, margin-bottom ${SIDEBAR_TRANSITION_MS}ms ${SIDEBAR_EASE}`,
                 }}
               >
                 {group.label}
@@ -223,20 +211,15 @@ export function DashboardSidebar({
         </div>
       </nav>
 
-      {/* Expand toggle (collapsed) */}
-      {showCollapseToggle && !expanded && (
-        <div className="flex justify-center py-2 border-t shrink-0 border-border">
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            data-testid="sidebar-expand"
-            aria-label="Expand sidebar"
-            className="flex items-center justify-center transition-colors rounded-md h-9 w-9 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <PanelLeft className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      {/* Footer: theme switcher */}
+      <div
+        className={cn(
+          'flex shrink-0 flex-col items-center gap-1 py-2.5',
+          expanded ? 'px-2.5' : 'px-0',
+        )}
+      >
+        <SidebarThemeSwitcher expanded={expanded} />
+      </div>
     </div>
   );
 }

@@ -17,7 +17,6 @@ import {
   useVirtualEmailMutations,
 } from '@/hooks/useVirtualEmails';
 import { useVirtualEmailRealtime } from '@/hooks/useVirtualEmailRealtime';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { downloadAttachment } from '@/lib/api/virtual-emails';
 import {
   EMAIL_PREVIEW_SANDBOX,
@@ -57,7 +56,6 @@ export default function VirtualEmailDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const { user } = useAuth();
-  const { currentWorkspace } = useWorkspaces();
   const virtualEmailId = id ?? '';
 
   const [detailTab, setDetailTab] = useState<DetailTab>('html');

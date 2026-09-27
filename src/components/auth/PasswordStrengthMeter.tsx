@@ -11,7 +11,7 @@ interface PasswordStrengthMeterProps {
 }
 
 export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) {
-  const { strength, score, checks } = scorePassword(password);
+  const { strength, score } = scorePassword(password);
   const showStrength = strength !== "empty";
 
   return (

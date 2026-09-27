@@ -10,7 +10,7 @@ import { useDomains } from '@/hooks/useDomains';
 import { useSendDetail, useSendLogMutations, useSends } from '@/hooks/useSends';
 import { downloadAnalyticsExport } from '@/lib/api/analytics';
 import { toastError, toastSuccess } from '@/lib/toast';
-import type { EmailSendTimelineEvent } from '@/types';
+import type { EmailSendRecipientDelivery, EmailSendTimelineEvent } from '@/types';
 import { ChevronLeft, ChevronRight, Download, Loader2, RefreshCw, Search, Send, X } from 'lucide-react';
 
 const STATUS_OPTIONS = ['queued', 'sent', 'delivered', 'bounced', 'failed'] as const;
@@ -398,6 +398,7 @@ function LogDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               <KV label="Domain" value={log.domain} mono />
               <KV label="Source" value={log.source} mono />
               <KV label="Provider response" value={log.response ?? '—'} mono />
+              {log.delivery && log.delivery.length > 0 && <Recipients recipients={log.delivery} />}
               <Timeline events={timeline} />
               <div>
                 <div className="label-mono mb-2">Raw event</div>
@@ -424,6 +425,35 @@ function LogDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         </div>
       </div>
     </>
+  );
+}
+
+function Recipients({ recipients }: { recipients: EmailSendRecipientDelivery[] }) {
+  return (
+    <div>
+      <div className="label-mono mb-2">Recipients</div>
+      <ul data-testid="log-recipients" className="border border-border divide-y divide-border">
+        {recipients.map((recipient) => (
+          <li key={recipient.address} className="p-3 text-[12.5px] space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-mono break-all">
+                {recipient.address}
+                {recipient.type !== 'to' && (
+                  <span className="ml-1.5 text-muted-foreground uppercase text-[10.5px]">{recipient.type}</span>
+                )}
+              </span>
+              <StatusBadge status={recipient.status} />
+            </div>
+            {recipient.response && (
+              <div className="font-mono text-[11px] text-muted-foreground break-all">{recipient.response}</div>
+            )}
+            {recipient.attempts > 1 && (
+              <div className="text-[11px] text-muted-foreground">{recipient.attempts} attempts</div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

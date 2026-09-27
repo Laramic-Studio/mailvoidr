@@ -144,10 +144,8 @@ export function useSandboxMessageRaw(messageId: string | undefined, enabled: boo
   });
 }
 
-export function useSandboxMutations(filters: SandboxMessageFilters = {}) {
+export function useSandboxMutations() {
   const queryClient = useQueryClient();
-  const search = filters.search?.trim() || undefined;
-  const unreadOnly = Boolean(filters.unread);
 
   const enable = useMutation({
     mutationFn: enableSandbox,

@@ -13,11 +13,9 @@ import {
 } from '@/hooks/useSandbox';
 import { useSandboxRealtime } from '@/hooks/useSandboxRealtime';
 import { useAuth } from '@/hooks/useAuth';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
 import {
   EMAIL_PREVIEW_SANDBOX,
   formatRelativeInboxTime,
-  parseEmailAddress,
   prepareEmailPreviewHtml,
 } from '@/lib/email-utils';
 import { toastError, toastSuccess } from '@/lib/toast';
@@ -57,7 +55,6 @@ const SESSION_KEY = 'sandboxSelectedEmailId';
 
 export default function Inbox() {
   const { user } = useAuth();
-  const { currentWorkspace } = useWorkspaces();
 
   const [detailTab, setDetailTab] = useState<DetailTab>('html');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
@@ -78,7 +75,7 @@ export default function Inbox() {
   const filters = useMemo(() => ({ search, unread: unreadOnly }), [search, unreadOnly]);
   const { data: sandboxData, isLoading: sandboxLoading, refetch: refetchSandbox } = useSandbox();
   const inbox = sandboxData?.inbox;
-  const { enable, markAllRead, clearAll } = useSandboxMutations(filters);
+  const { enable, markAllRead, clearAll } = useSandboxMutations();
   const {
     data: messagesData,
     isLoading: messagesLoading,
@@ -250,7 +247,6 @@ export default function Inbox() {
   }
 
   const displayMessage: EmailMessage | EmailMessageSummary | null = message ?? selectedSummary;
-  const from = displayMessage ? parseEmailAddress(displayMessage.from) : null;
   const analysis = message?.analysis;
   const unreadCount = inbox?.unread_count ?? messages.filter((m) => !m.is_read).length;
 

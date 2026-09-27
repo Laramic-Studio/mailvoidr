@@ -419,6 +419,20 @@ export interface EmailSendLog {
   sent_at: string | null;
   bounced_at: string | null;
   created_at: string | null;
+  /** Per-recipient delivery state; only present on the detail endpoint. */
+  delivery?: EmailSendRecipientDelivery[];
+}
+
+export interface EmailSendRecipientDelivery {
+  address: string;
+  type: 'to' | 'cc' | 'bcc';
+  status: 'pending' | 'deferred' | 'delivered' | 'failed' | 'bounced';
+  attempts: number;
+  smtp_code: number | null;
+  response: string | null;
+  delivered_at: string | null;
+  failed_at: string | null;
+  bounced_at: string | null;
 }
 
 export interface EmailSendTimelineEvent {

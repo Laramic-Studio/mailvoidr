@@ -26,21 +26,10 @@ import {
   LayoutDashboard,
   Menu,
 } from "lucide-react";
-import {
-  GitHubLight,
-  GitHubDark,
-  XDark,
-  XLight,
-} from "developer-icons";
-import { useTheme } from "next-themes";
 import Footer from "./footer";
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const GithubIcon = !isDark ? GitHubDark : GitHubLight;
-  const XIcon = !isDark ? XDark : XLight;
   const nav = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);

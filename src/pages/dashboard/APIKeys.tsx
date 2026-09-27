@@ -319,10 +319,6 @@ function ApiKeysPanel({ environment, showCreate, onShowCreateChange }: ApiKeysPa
   );
 }
 
-function tabCount(keys: ApiKey[] | undefined): number {
-  return keys?.filter((key) => !key.is_revoked).length ?? 0;
-}
-
 export default function APIKeys() {
   const [tab, setTab] = useState<ApiKeyEnvironment>('live');
   const [showCreate, setShowCreate] = useState(false);
@@ -334,9 +330,6 @@ export default function APIKeys() {
     tab === 'test'
       ? (activeMeta?.can_create_test ?? true)
       : (activeMeta?.can_create_live ?? false);
-
-  const liveActive = tabCount(liveQuery.data?.data);
-  const testActive = tabCount(testQuery.data?.data);
 
   return (
     <DashboardLayout>

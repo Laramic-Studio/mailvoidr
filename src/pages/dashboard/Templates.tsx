@@ -19,16 +19,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'; // use shadcn/ui components as directed
 
-const CATEGORY_OPTIONS = [
-  { value: 'transactional', label: 'Transactional' },
-  { value: 'marketing', label: 'Marketing' },
-] as const;
-
-const VISIBILITY_OPTIONS = [
-  { value: 'public', label: 'Public (marketplace)' },
-  { value: 'private', label: 'Private (library only)' },
-] as const;
-
 function categoryLabel(category: TemplateCategory): string {
   return category === 'marketing' ? 'Marketing' : 'Transactional';
 }

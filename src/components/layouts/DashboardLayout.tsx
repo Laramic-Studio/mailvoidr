@@ -1,6 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import {
   SIDEBAR_EASE,
@@ -13,7 +12,7 @@ import {
 } from '@/components/dashboard/GlobalSearchDialog';
 import { DashboardHeaderBreadcrumb } from '@/components/dashboard/DashboardHeaderBreadcrumb';
 import { NotificationBell } from '@/components/dashboard/NotificationBell';
-import { Menu } from 'lucide-react';
+import { Menu, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -47,6 +46,7 @@ export function DashboardLayout({
   const hydrated = useUiStore((s) => s.hydrated);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const hydrate = useUiStore((s) => s.hydrate);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearch = useCallback(() => {
@@ -85,10 +85,10 @@ export function DashboardLayout({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex h-screen overflow-hidden bg-background lg:bg-card">
         <aside
           className={cn(
-            'hidden h-full shrink-0 flex-col overflow-hidden border-r border-border bg-card lg:flex',
+            'hidden h-full shrink-0 flex-col overflow-hidden bg-card lg:flex',
             'transition-[width] ease-[var(--sidebar-ease)] will-change-[width]',
             expanded ? 'w-[240px]' : 'w-[52px]',
           )}
@@ -100,7 +100,7 @@ export function DashboardLayout({
           <DashboardSidebar expanded={expanded} />
         </aside>
 
-        <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden bg-background lg:my-2 lg:mr-2 lg:rounded-xl lg:border lg:border-border lg:shadow-sm">
           <header className="z-30 flex items-center justify-between gap-4 px-4 border-b h-14 shrink-0 border-border bg-background/80 backdrop-blur lg:px-8">
             <div className="flex items-center flex-1 max-w-md gap-3">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -117,11 +117,20 @@ export function DashboardLayout({
                 <SheetContent side="left" className="w-[280px] p-0">
                   <DashboardSidebar
                     expanded
-                    showCollapseToggle={false}
                     onNavigate={() => setMobileOpen(false)}
                   />
                 </SheetContent>
               </Sheet>
+
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                data-testid={expanded ? 'sidebar-collapse' : 'sidebar-expand'}
+                aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                className="hidden items-center justify-center w-8 h-8 -ml-2 transition-colors rounded-md shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground lg:inline-flex"
+              >
+                {expanded ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
+              </button>
 
               {emailSearchEnabled ? (
                 <GlobalSearchTrigger onOpen={openSearch} />
@@ -132,7 +141,6 @@ export function DashboardLayout({
 
             <div className="flex items-center gap-2">
               <NotificationBell />
-              <ThemeToggle size="sm" />
               <DropdownMenu>
                 <DropdownMenuTrigger
                   data-testid="user-menu-trigger"
