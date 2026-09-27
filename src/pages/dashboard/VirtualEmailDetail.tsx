@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { CodeBlock } from '@/components/CodeBlock';
 import { HtmlCheckPanel, SpamPanel } from '@/components/email/EmailAnalysisPanels';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -411,10 +412,31 @@ export default function VirtualEmailDetail() {
             }`}
           >
             {!selectedMessageId || !displayMessage ? (
-              <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-                Choose a message from the sidebar to inspect its rendered HTML, plain text, and raw
-                source.
-              </div>
+              messages.length === 0 && !messagesLoading && inbox ? (
+                <EmptyState
+                  testId="virtual-email-waiting"
+                  className="flex flex-1 flex-col justify-center"
+                  eyebrow="Virtual email"
+                  title="Waiting for your first message"
+                  description={
+                    <>
+                      Send an email to{' '}
+                      <span className="font-mono text-foreground">{inbox.email_address}</span> and it will show up
+                      here as soon as it arrives.
+                    </>
+                  }
+                  action={
+                    <EmptyStateButton variant="secondary" icon={Copy} onClick={copyAddress} testId="virtual-email-copy-address">
+                      Copy address
+                    </EmptyStateButton>
+                  }
+                />
+              ) : (
+                <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
+                  Choose a message from the sidebar to inspect its rendered HTML, plain text, and raw
+                  source.
+                </div>
+              )
             ) : (
               <>
                 <div className="border-b border-border bg-card text-foreground">

@@ -1,6 +1,6 @@
 import { MarketingLayout } from "@/components/layouts/MarketingLayout";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, Shield, Lock, FileBadge, Users, Globe, Database, Headphones, Building2 } from "lucide-react";
+import { ArrowRight, Shield, Lock, FileBadge, Users, Globe, Database, Headphones, Building2 } from "lucide-react";
 
 const COMPLIANCE = [
   { icon: Shield, label: "SOC 2 Type II" },

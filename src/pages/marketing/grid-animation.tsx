@@ -258,7 +258,7 @@ export default function MailvoidrEmailNetwork({
                 if (t >= 1) {
                     const last = env.path[env.path.length - 1];
                     spawnPulse(last.x, last.y, env.hue);
-                    env.el && env.el.remove();
+                    env.el?.remove();
                     continue;
                 }
 

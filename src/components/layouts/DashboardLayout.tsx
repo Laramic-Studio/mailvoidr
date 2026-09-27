@@ -13,7 +13,7 @@ import {
 } from '@/components/dashboard/GlobalSearchDialog';
 import { DashboardHeaderBreadcrumb } from '@/components/dashboard/DashboardHeaderBreadcrumb';
 import { NotificationBell } from '@/components/dashboard/NotificationBell';
-import { Send, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,

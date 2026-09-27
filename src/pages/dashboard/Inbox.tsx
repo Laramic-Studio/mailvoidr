@@ -303,7 +303,7 @@ export default function Inbox() {
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </IconTooltip>
-                  <IconTooltip side="top" label="SMTP credentials" side="right">
+                  <IconTooltip label="SMTP credentials" side="right">
                     <button
                       type="button"
                       onClick={() => setShowSettings(true)}
@@ -509,6 +509,7 @@ export default function Inbox() {
                           ] as const
                         ).map(([mode, Icon, label]) => (
                             <button
+                              key={mode}
                               type="button"
                               onClick={() => setPreviewMode(mode)}
                               className={`inline-flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium ${

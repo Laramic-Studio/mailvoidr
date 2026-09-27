@@ -11,7 +11,7 @@ import { useWorkspaceStore } from '@/stores/workspace-store';
 
 export function useBilling() {
   const { user } = useAuth();
-  const workspaceId = useWorkspaceStore((s) => s.selectedWorkspaceId);
+  const workspaceId = useWorkspaceStore((s) => s.workspaceId);
 
   return useQuery({
     queryKey: queryKeys.billing.context(workspaceId ?? undefined),
@@ -37,7 +37,7 @@ export function usePlanFeature(feature: string) {
 
 export function useBillingMutations() {
   const queryClient = useQueryClient();
-  const workspaceId = useWorkspaceStore((s) => s.selectedWorkspaceId);
+  const workspaceId = useWorkspaceStore((s) => s.workspaceId);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.billing.context(workspaceId ?? undefined) });

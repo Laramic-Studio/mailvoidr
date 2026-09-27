@@ -1,4 +1,5 @@
-import type { ApiKeyEnvironment, ApiKeyListResponse, ApiKey } from '@/types';
+import type { ApiKeyListResponse, ApiKey } from '@/types';
+import type { ApiKeyEnvironment } from '@/constants/api-keys';
 import { api } from '@/lib/api';
 
 export interface CreateApiKeyPayload {

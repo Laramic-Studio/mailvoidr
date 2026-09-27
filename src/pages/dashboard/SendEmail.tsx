@@ -570,9 +570,7 @@ export default function SendEmail() {
         <div className="border border-dashed border-border bg-card/30 p-16 text-center">
           <h3 className="text-base font-medium">No {tab} emails yet</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            {tab === 'templates'
-              ? 'Switch to the Templates page to manage them.'
-              : "When you create one, it'll show up here."}
+            When you create one, it&apos;ll show up here.
           </p>
         </div>
       )}

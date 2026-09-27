@@ -22,7 +22,7 @@ export function useSendHistory() {
 
 export function useSendMutations() {
   const queryClient = useQueryClient();
-  const workspaceId = useWorkspaceStore((s) => s.selectedWorkspaceId);
+  const workspaceId = useWorkspaceStore((s) => s.workspaceId);
 
   const invalidateHistory = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.send.history });

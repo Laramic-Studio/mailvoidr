@@ -3,7 +3,6 @@ import type { ApiErrorBody, AuthTokens } from '@/types';
 import {
   clearAuthStorage,
   readAccessToken,
-  TOKEN_STORAGE_KEY,
   WORKSPACE_STORAGE_KEY,
   writeAccessToken,
 } from '@/lib/auth-storage';

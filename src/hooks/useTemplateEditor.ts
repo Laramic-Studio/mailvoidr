@@ -18,7 +18,6 @@ import type {
   TemplatePreview,
   TemplateVariable,
   TemplateVersion,
-  TemplateVisibility,
 } from '@/types';
 
 export function useTemplateEditor(templateId: string | undefined) {

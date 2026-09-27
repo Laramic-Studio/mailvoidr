@@ -30,7 +30,7 @@ export function useCreditTransactions() {
 
 export function useCreditMutations() {
   const queryClient = useQueryClient();
-  const workspaceId = useWorkspaceStore((s) => s.selectedWorkspaceId);
+  const workspaceId = useWorkspaceStore((s) => s.workspaceId);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.credits.summary });

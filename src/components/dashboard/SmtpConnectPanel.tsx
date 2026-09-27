@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { LanguageTabsCodeBlock } from '@/components/ui/code-block';
 import { buildSmtpTabs } from '@/lib/smtp-snippets';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { SandboxInbox } from '@/types';
-import { ArrowRight, Check, Copy, Eye, EyeOff, Inbox as InboxIcon } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff } from 'lucide-react';
 
 const LANGUAGE_STORAGE_KEY = 'mailvoidr.smtpSnippetLanguage';
 

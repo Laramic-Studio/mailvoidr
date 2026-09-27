@@ -7,7 +7,7 @@ import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { forgotPassword, verifyPasswordResetCode } from "@/lib/api/auth";
 import axios from "axios";
 import { toastError, toastSuccess } from "@/lib/toast";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const OTP_LENGTH = 6;
 // Matches the server-side cooldown between reset codes for one address.
@@ -48,8 +48,11 @@ export default function VerifyResetCode() {
     setCode("");
     try {
       await forgotPassword(email);
+      setCooldown(RESEND_COOLDOWN_SECONDS);
       toastSuccess("If this email exist you should receieve a reset password code.");
     } catch (err) {
+      const retryAfter = axios.isAxiosError(err) ? Number(err.response?.data?.retry_after) : NaN;
+      if (Number.isFinite(retryAfter) && retryAfter > 0) setCooldown(retryAfter);
       toastError(err, "Could not resend code");
     } finally {
       setResending(false);

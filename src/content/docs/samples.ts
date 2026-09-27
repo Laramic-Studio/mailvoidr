@@ -1,6 +1,4 @@
 import { mailSendUrl } from '@/content/marketing/home';
-
-import { mailSendUrl } from '@/content/marketing/home';
 import type { LanguageTab } from '@/components/ui/code-block';
 
 export type DocsCodeSampleId = 'send_curl' | 'send_node' | 'send_python' | 'send_go';

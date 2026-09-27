@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -247,7 +248,12 @@ export default function Teams() {
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading members…
               </div>
             ) : membersQuery.isError ? (
-              <div className="p-8 text-center text-[13px] text-destructive">Could not load team members.</div>
+              <QueryErrorState
+                error={membersQuery.error}
+                subject="team members"
+                onRetry={() => void membersQuery.refetch()}
+                retrying={membersQuery.isFetching}
+              />
             ) : (
               <table className="w-full text-[13px]">
                 <thead>

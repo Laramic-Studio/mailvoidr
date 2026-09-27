@@ -5,7 +5,7 @@ import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { FormSelect } from '@/components/form/FormSelect';
 import { useSettings, useSettingsMutations } from '@/hooks/useSettings';
 import { toastError, toastSuccess } from '@/lib/toast';
-import type { NotificationPreferences, WorkspaceSettings } from '@/types';
+import type { NotificationPreferences } from '@/types';
 import { AlertTriangle, Loader2, ShieldCheck, Upload, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { workspaceInitials } from '@/hooks/useWorkspaces';

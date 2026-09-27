@@ -2,12 +2,9 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface SubmitButtonProps {
+interface SubmitButtonProps extends React.ComponentProps<typeof Button> {
   loading?: boolean;
   loadingText?: string;
-  children?: React.ReactNode
-  disabled?: boolean
-  className?: string 
 }
 
 export function SubmitButton({
