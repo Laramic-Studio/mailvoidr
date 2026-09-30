@@ -181,12 +181,20 @@ export function useInvitationTokenMutations(token: string) {
 }
 
 export function workspaceInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("")
-    .slice(0, 2);
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) return "";
+
+  // One word: first 2 letters ("Acme" -> "AC")
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  // Two or more words: first letter of each, max 3 ("Acme Corp" -> "AC")
+  return parts
+    .slice(0, 3)
+    .map((part) => part[0].toUpperCase())
+    .join("");
 }
 
 export function formatWorkspaceRole(role?: string) {

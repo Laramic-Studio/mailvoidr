@@ -81,7 +81,7 @@ export function SidebarThemeSwitcher({ expanded }: { expanded: boolean }) {
     <div
       role="radiogroup"
       aria-label="Theme"
-      className="grid w-full grid-cols-3 gap-1 rounded-lg border border-border bg-muted/40 p-1"
+      className="grid w-full grid-cols-3 gap-1 p-1 border rounded-2xl border-border bg-muted/40"
     >
       {THEME_OPTIONS.map(({ value, icon, label }) => {
         const selected = current === value;
@@ -95,7 +95,7 @@ export function SidebarThemeSwitcher({ expanded }: { expanded: boolean }) {
             onClick={() => setTheme(value)}
             data-testid={`sidebar-theme-${label.toLowerCase()}`}
             className={cn(
-              'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-1.5 text-[12px] transition-colors',
+              'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl px-1.5 text-[12px] transition-colors',
               selected
                 ? 'bg-background text-foreground font-medium shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',

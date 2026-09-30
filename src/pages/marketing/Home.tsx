@@ -183,26 +183,10 @@ export default function Home() {
 
       <section className="border-b border-border">
         <div ref={sendRevealRef} className="px-6 py-24 mx-auto max-w-7xl">
+          
           <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div data-reveal>
-              <span className="label-mono">Send</span>
-              <h2 className="mt-2 text-4xl font-medium leading-tight tracking-tight">
-                One HTTP endpoint. One SMTP relay.
-              </h2>
-              <p className="mt-4 leading-relaxed text-muted-foreground">
-                Create an API key, verify a domain, and send. Mailvoidr queues
-                the message, relays over SMTP, records lifecycle events, and
-                fires webhooks your app can trust.
-              </p>
-              <ul className="mt-6 space-y-3 text-sm">
-                {HOME_SEND_FEATURES.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary font-outfit" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
+         
+            
             <div data-reveal>
               <CodeBlock
                 code={codeSamples[lang]}
@@ -227,6 +211,27 @@ export default function Home() {
                 onTabChange={(id) => setLang(id as CodeSampleId)}
               />
             </div>
+               
+            <div data-reveal>
+              <span className="label-mono">Send</span>
+              <h2 className="mt-2 text-4xl font-medium leading-tight tracking-tight">
+                One HTTP endpoint. One SMTP relay.
+              </h2>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                Create an API key, verify a domain, and send. Mailvoidr queues
+                the message, relays over SMTP, records lifecycle events, and
+                fires webhooks your app can trust.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm">
+                {HOME_SEND_FEATURES.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary font-outfit" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
           </div>
         </div>
       </section>
