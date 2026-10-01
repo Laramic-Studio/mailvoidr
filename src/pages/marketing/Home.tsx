@@ -1,8 +1,6 @@
 import {
   useEffect,
-  useMemo,
   useRef,
-  useState,
   type ReactNode,
   type RefObject,
 } from "react";
@@ -22,35 +20,26 @@ import {
   Webhook,
 } from "lucide-react";
 import { MarketingLayout } from "@/components/layouts/MarketingLayout";
-import { CodeBlock } from "@/components/CodeBlock";
+import { HomeTrustStack } from "@/components/marketing/HomeTrustStack";
+import { HomeSend } from "@/components/marketing/HomeSend";
+import { SheetKicker } from "@/components/marketing/SheetKicker";
 import {
-  buildCodeSamples,
-  CODE_SAMPLE_LANGS,
   HOME_BENTO,
   HOME_CHART_PREVIEW,
   HOME_HERO,
   HOME_METRICS,
   HOME_PLATFORM,
+  HOME_QUOTE,
   HOME_REVIEWS,
   HOME_REVIEWS_HEADING,
-  HOME_SEND_FEATURES,
-  HOME_STACK,
   mailSendUrl,
-  type CodeSampleId,
 } from "@/content/marketing/home";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useTiltCard } from "@/hooks/useTiltCard";
 import PixelBlast from "@/components/pixel-blast";
-import { PortalFieldCollection } from "@designcodeio/threeui";
-import "@designcodeio/threeui/style.css";
-import { useTheme } from "next-themes";
 
 export default function Home() {
-  const [lang, setLang] = useState<CodeSampleId>("send_node");
   const sendUrl = mailSendUrl();
-  const codeSamples = useMemo(() => buildCodeSamples(sendUrl), [sendUrl]);
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
   const heroRef = useRef<HTMLDivElement>(null);
   const heroDottedRef = useRef<HTMLDivElement>(null);
   const heroGradientRef = useRef<HTMLDivElement>(null);
@@ -85,7 +74,6 @@ export default function Home() {
     };
   }, []);
 
-  const sendRevealRef = useScrollReveal();
   const platformRevealRef = useScrollReveal();
   const metricsRevealRef = useScrollReveal();
   const reviewsRevealRef = useScrollReveal();
@@ -102,7 +90,7 @@ export default function Home() {
 
   return (
     <MarketingLayout>
-      <section ref={heroRef} className="relative min-h-[85vh] overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[85vh] overflow-hidden border-b border-border">
         <div className="absolute inset-0 z-0">
           <PixelBlast
             variant="circle"
@@ -124,8 +112,8 @@ export default function Home() {
             transparent
           />
         </div>
-        <div className="relative z-10 flex items-center justify-center w-full min-h-[85vh] h-full px-6 mx-auto max-w-7xl ">
-          <div className="text-center">
+        <div className="relative z-10 flex min-h-[85vh] w-full items-center page-band">
+          <div className="max-w-2xl">
             <Link
               to={HOME_HERO.eyebrow.href}
               className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1 text-[12.5px] shadow-sm backdrop-blur transition-colors hover:bg-accent"
@@ -138,17 +126,17 @@ export default function Home() {
               </span>
               <ArrowRight className="w-3 h-3 text-muted-foreground" />
             </Link>
-            <h1 className="mx-auto font-sora mt-6 max-w-5xl text-balance text-5xl font-medium leading-[1] tracking-[-0.04em] md:text-7xl">
+            <h1 className="mt-6 max-w-5xl text-balance font-sora text-5xl font-medium leading-[1] tracking-[-0.04em] md:text-7xl">
               {HOME_HERO.title}
               <br />
               <span className="text-gradient-primary">
                 {HOME_HERO.titleMuted}
               </span>
             </h1>
-            <p className="max-w-2xl mx-auto mt-6 text-base leading-relaxed text-muted-foreground md:mx-0 md:text-lg">
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
               {HOME_HERO.subtitle}
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 mt-8 ">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 to="/register"
                 data-testid="hero-cta-primary"
@@ -164,7 +152,7 @@ export default function Home() {
                 <Terminal className="h-3.5 w-3.5" /> Read the docs
               </Link>
             </div>
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-4 font-outfit text-[11px] text-muted-foreground">
+            <div className="mt-10 flex flex-wrap items-center gap-4 font-outfit text-[11px] text-muted-foreground">
               {HOME_HERO.bullets.map((item) => (
                 <span key={item} className="inline-flex items-center gap-1.5">
                   <Check className="w-3 h-3 text-primary" /> {item}
@@ -175,216 +163,146 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-12 overflow-hidden">
-        <div className="reviews-edge-mask">
-          <StackMarquee items={HOME_STACK} />
+      <HomeTrustStack />
+
+      <section className="border-b border-border">
+        <blockquote className="page-band py-7 md:py-9">
+          <p className="max-w-5xl font-sora text-lg leading-snug tracking-tight text-foreground/90 md:text-3xl">
+            <span className="mr-3 font-mono text-muted-foreground">“</span>
+            {HOME_QUOTE.text}
+          </p>
+          <footer className="mt-4 font-mono text-[12px] text-muted-foreground">
+            {HOME_QUOTE.attribution}
+          </footer>
+        </blockquote>
+      </section>
+
+      <HomeSend />
+
+      <section className="border-b border-border">
+        <div ref={platformRevealRef} className="page-band border-b border-border py-10 md:py-12">
+          <SheetKicker>Platform</SheetKicker>
+          <h2 className="mt-3 max-w-2xl text-balance font-sora text-3xl font-medium tracking-tight md:text-4xl">
+            Everything you need to send, test, and observe email — in one
+            workspace.
+          </h2>
+        </div>
+        <div className="grid gap-px bg-border md:grid-cols-3">
+          <Bento
+            icon={Send}
+            title={HOME_BENTO.send.title}
+            desc={HOME_BENTO.send.desc}
+            span="md:col-span-2"
+            preview={<SendPreview endpoint={sendUrl} />}
+            tiltRef={bentoTilt1}
+          />
+          <Bento
+            icon={FlaskConical}
+            title={HOME_BENTO.testing.title}
+            desc={HOME_BENTO.testing.desc}
+            preview={<TestPreview />}
+            tiltRef={bentoTilt2}
+          />
+          <Bento
+            icon={Inbox}
+            title={HOME_BENTO.inboxes.title}
+            desc={HOME_BENTO.inboxes.desc}
+            preview={<InboxPreview />}
+            tiltRef={bentoTilt3}
+          />
+          <Bento
+            icon={LineChart}
+            title={HOME_BENTO.analytics.title}
+            desc={HOME_BENTO.analytics.desc}
+            span="md:col-span-2"
+            preview={<AnalyticsPreview />}
+            tiltRef={bentoTilt4}
+          />
+        </div>
+        <div className="grid gap-px border-t border-border bg-border sm:grid-cols-2 md:grid-cols-4">
+          <SmallFeature
+            icon={ShieldCheck}
+            title={HOME_PLATFORM[0].title}
+            desc={HOME_PLATFORM[0].desc}
+            tiltRef={smallTilt1}
+          />
+          <SmallFeature
+            icon={Webhook}
+            title={HOME_PLATFORM[1].title}
+            desc={HOME_PLATFORM[1].desc}
+            tiltRef={smallTilt2}
+          />
+          <SmallFeature
+            icon={KeyRound}
+            title={HOME_PLATFORM[2].title}
+            desc={HOME_PLATFORM[2].desc}
+            tiltRef={smallTilt3}
+          />
+          <SmallFeature
+            icon={Globe}
+            title={HOME_PLATFORM[3].title}
+            desc={HOME_PLATFORM[3].desc}
+            tiltRef={smallTilt4}
+          />
         </div>
       </section>
 
       <section className="border-b border-border">
-        <div ref={sendRevealRef} className="px-6 py-24 mx-auto max-w-7xl">
-          
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-         
-            
-            <div data-reveal>
-              <CodeBlock
-                code={codeSamples[lang]}
-                language={
-                  lang === "send_curl" ? "bash" : lang.replace("send_", "")
-                }
-                filename={
-                  lang === "send_curl"
-                    ? "send-email.sh"
-                    : lang === "send_node"
-                      ? "send-email.ts"
-                      : "send-email.py"
-                }
-                showWindowChrome
-                elevated
-                showLineNumbers
-                tabs={CODE_SAMPLE_LANGS.map((sample) => ({
-                  id: sample.id,
-                  label: sample.label,
-                }))}
-                activeTab={lang}
-                onTabChange={(id) => setLang(id as CodeSampleId)}
-              />
-            </div>
-               
-            <div data-reveal>
-              <span className="label-mono">Send</span>
-              <h2 className="mt-2 text-4xl font-medium leading-tight tracking-tight">
-                One HTTP endpoint. One SMTP relay.
-              </h2>
-              <p className="mt-4 leading-relaxed text-muted-foreground">
-                Create an API key, verify a domain, and send. Mailvoidr queues
-                the message, relays over SMTP, records lifecycle events, and
-                fires webhooks your app can trust.
-              </p>
-              <ul className="mt-6 space-y-3 text-sm">
-                {HOME_SEND_FEATURES.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary font-outfit" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-border">
-        <div ref={platformRevealRef} className="px-6 py-24 mx-auto max-w-7xl">
-          <div data-reveal className="max-w-2xl mb-12">
-            <span className="label-mono">Platform</span>
-            <h2 className="mt-2 text-4xl font-medium leading-tight tracking-tight text-balance">
-              Everything you need to send, test, and observe email — in one
-              workspace.
-            </h2>
-          </div>
-          <div className="grid gap-px border border-border bg-border md:grid-cols-3">
-            <Bento
-              icon={Send}
-              title={HOME_BENTO.send.title}
-              desc={HOME_BENTO.send.desc}
-              span="md:col-span-2"
-              preview={<SendPreview endpoint={sendUrl} />}
-              tiltRef={bentoTilt1}
-            />
-            <Bento
-              icon={FlaskConical}
-              title={HOME_BENTO.testing.title}
-              desc={HOME_BENTO.testing.desc}
-              preview={<TestPreview />}
-              tiltRef={bentoTilt2}
-            />
-            <Bento
-              icon={Inbox}
-              title={HOME_BENTO.inboxes.title}
-              desc={HOME_BENTO.inboxes.desc}
-              preview={<InboxPreview />}
-              tiltRef={bentoTilt3}
-            />
-            <Bento
-              icon={LineChart}
-              title={HOME_BENTO.analytics.title}
-              desc={HOME_BENTO.analytics.desc}
-              span="md:col-span-2"
-              preview={<AnalyticsPreview />}
-              tiltRef={bentoTilt4}
-            />
-          </div>
-          <div className="grid gap-px border border-t-0 border-border bg-border sm:grid-cols-2 md:grid-cols-4">
-            <SmallFeature
-              icon={ShieldCheck}
-              title={HOME_PLATFORM[0].title}
-              desc={HOME_PLATFORM[0].desc}
-              tiltRef={smallTilt1}
-            />
-            <SmallFeature
-              icon={Webhook}
-              title={HOME_PLATFORM[1].title}
-              desc={HOME_PLATFORM[1].desc}
-              tiltRef={smallTilt2}
-            />
-            <SmallFeature
-              icon={KeyRound}
-              title={HOME_PLATFORM[2].title}
-              desc={HOME_PLATFORM[2].desc}
-              tiltRef={smallTilt3}
-            />
-            <SmallFeature
-              icon={Globe}
-              title={HOME_PLATFORM[3].title}
-              desc={HOME_PLATFORM[3].desc}
-              tiltRef={smallTilt4}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="">
-        <div ref={metricsRevealRef} className="px-6 py-20 mx-auto max-w-7xl">
-          <div className="grid gap-px border border-border bg-border sm:grid-cols-2 md:grid-cols-4">
-            {HOME_METRICS.map(([value, label]) => (
-              <div key={label} data-reveal className="p-8 bg-card">
-                <div className="text-3xl font-medium tracking-tight">
-                  {value}
-                </div>
-                <div className="mt-2 label-mono">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="relative py-24 overflow-hidden bg-transparent">
-        <div className="absolute inset-0 pointer-events-none gradient-radial-muted" />
-
         <div
-          ref={reviewsRevealRef}
-          className="relative px-6 mx-auto text-center mb-14 max-w-7xl"
+          ref={metricsRevealRef}
+          className="grid gap-px bg-border sm:grid-cols-2 md:grid-cols-4"
         >
+          {HOME_METRICS.map(([value, label]) => (
+            <div key={label} data-reveal className="bg-background p-8 md:p-10">
+              <div className="text-3xl font-medium tracking-tight">{value}</div>
+              <div className="mt-2 label-mono">{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="border-b border-border">
+        <div ref={reviewsRevealRef} className="page-band border-b border-border py-10 md:py-12">
+          <SheetKicker>{HOME_REVIEWS_HEADING.kicker}</SheetKicker>
           <h2
             data-reveal
-            className="text-4xl font-medium tracking-tight text-balance md:text-5xl"
+            className="mt-3 text-balance font-sora text-3xl font-medium tracking-tight md:text-4xl"
           >
             {HOME_REVIEWS_HEADING.title}
           </h2>
           <p
             data-reveal
-            className="max-w-xl mx-auto mt-3 text-base text-muted-foreground md:text-lg"
+            className="mt-3 max-w-xl text-[15px] text-muted-foreground"
           >
             {HOME_REVIEWS_HEADING.subtitle}
           </p>
         </div>
-
-        <div className="relative space-y-3 reviews-edge-mask">
-          <ReviewsMarqueeRow reviews={HOME_REVIEWS} />
-          <ReviewsMarqueeRow reviews={[...HOME_REVIEWS].reverse()} reverse />
+        <div className="grid gap-px bg-border md:grid-cols-2">
+          {HOME_REVIEWS.slice(0, 4).map((review) => (
+            <ReviewCard key={review.name} review={review} />
+          ))}
         </div>
       </section>
 
-      <section className="relative  min-h-[80vh]">
-        {isDark && (
-          <div className="relative z-0 shader-frame">
-            <div className="absolute z-10 -inset-1 rounded-xl bg-gradient-to-r from-pink-500 to-violet-500 blur-md" />
-            <PortalFieldCollection
-              variant="cloud-field"
-              hue={0}
-              saturation={1.0}
-              brightness={1.0}
-              className="min-h-[80vh] z-0 absolute"
-            />
-          </div>
-        )}
-
-        <div
-          ref={ctaRevealRef}
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center w-full max-w-4xl py-32 mx-auto text-center"
-        >
-          <span data-reveal className="label-mono">
-            Get started
-          </span>
+      <section>
+        <div ref={ctaRevealRef} className="page-band py-20 md:py-28">
+          <SheetKicker>Get started</SheetKicker>
           <h2
             data-reveal
-            className="mt-3 text-4xl font-medium tracking-tight text-balance md:text-6xl"
+            className="mt-3 max-w-3xl text-balance font-sora text-4xl font-medium tracking-tight md:text-6xl"
           >
             Ship email like you ship code.
           </h2>
           <p
             data-reveal
-            className="max-w-xl mx-auto mt-4 text-muted-foreground"
+            className="mt-4 max-w-xl text-muted-foreground"
           >
             Create a workspace, verify a domain, and send your first message in
             minutes. No sales calls required.
           </p>
           <div
             data-reveal
-            className="flex flex-wrap items-center justify-center gap-3 mt-10"
+            className="mt-10 flex flex-wrap items-center gap-3"
           >
             <Link
               to="/register"
@@ -394,7 +312,7 @@ export default function Home() {
             </Link>
             <Link
               to="/pricing"
-              className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors border rounded border-border bg-card/80 backdrop-blur hover:bg-accent"
+              className="inline-flex items-center gap-2 rounded border border-border bg-card px-6 py-3 text-sm font-medium transition-colors hover:bg-accent"
             >
               See pricing
             </Link>
@@ -567,49 +485,8 @@ function AnalyticsPreview() {
   );
 }
 
-function StackMarquee({ items }: { items: readonly string[] }) {
-  const repeated = [...items, ...items, ...items, ...items];
-
-  return (
-    <div className="overflow-hidden">
-      <div className="flex items-center w-max gap-x-10 md:gap-x-14 stack-marquee-track">
-        {repeated.map((item, index) => (
-          <span
-            key={`${item}-${index}`}
-            className="text-lg font-semibold tracking-tight shrink-0 font-display text-muted-foreground/50 md:text-xl"
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReviewsMarqueeRow({
-  reviews,
-  reverse = false,
-}: {
-  reviews: readonly (typeof HOME_REVIEWS)[number][];
-  reverse?: boolean;
-}) {
-  const items = [...reviews, ...reviews, ...reviews, ...reviews];
-
-  return (
-    <div className="overflow-hidden">
-      <div
-        className={`flex w-max gap-3 ${reverse ? "reviews-marquee-track-reverse" : "reviews-marquee-track"}`}
-      >
-        {items.map((review, index) => (
-          <ReviewCard key={`${review.name}-${index}`} review={review} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function reviewAvatarHue(name: string): string {
-  const hues = ["151", "217", "38", "271", "339", "200"];
+  const hues = ["151", "160", "142", "172"];
   const index =
     [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % hues.length;
   return hues[index];
@@ -625,19 +502,19 @@ function ReviewCard({ review }: { review: (typeof HOME_REVIEWS)[number] }) {
   const hue = reviewAvatarHue(review.name);
 
   return (
-    <figure className="flex w-[min(88vw,340px)] shrink-0 flex-col justify-between rounded-lg bg-muted/50 p-6">
-      <blockquote className="text-[14px] leading-[1.65] text-foreground/90">
+    <figure className="flex flex-col justify-between bg-background p-6 md:p-8">
+      <blockquote className="text-[15px] leading-[1.65] text-foreground/90">
         {review.quote}
       </blockquote>
       <figcaption className="mt-8 flex items-center gap-2.5">
         <div
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md font-body text-[10px] font-semibold text-white"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden font-body text-[10px] font-semibold text-white"
           style={{ backgroundColor: `hsl(${hue} 45% 42%)` }}
         >
           {initials}
         </div>
         <div className="min-w-0">
-          <span className="block text-sm font-medium truncate">
+          <span className="block truncate text-sm font-medium">
             {review.name}
           </span>
           <span className="block truncate text-[12px] text-muted-foreground">

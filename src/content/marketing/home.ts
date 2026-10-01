@@ -19,20 +19,14 @@ export const HOME_HERO = {
   bullets: ['No credit card', `${FREE_SENDS_PER_MONTH} sends free every month`, 'API keys in under a minute'],
 };
 
-export const HOME_STACK = [
-  'Node.js',
-  'Python',
-  'Go',
-  'cURL',
-  'SMTP',
-  'Laravel',
-  'REST API',
-  'Live SMTP',
-  'Sandbox capture',
-  'Webhooks',
-  'Templates',
-  'Analytics',
-] as const;
+export const HOME_TRUST_INTRO = 'Built for how you already send.';
+
+export const HOME_TRUST_SUB = 'REST, SMTP, and sandbox — same workspace.';
+
+export const HOME_QUOTE = {
+  text: 'If I were building email for software teams, this is the workspace I would ship.',
+  attribution: 'How it should feel — Mailvoidr',
+} as const;
 
 export const HOME_SEND_FEATURES = [
   'HTTP API with scoped keys — or connect over SMTP on port 587',
@@ -75,8 +69,9 @@ export const HOME_PLATFORM = [
 ] as const;
 
 export const HOME_REVIEWS_HEADING = {
-  title: 'Loved by Devs',
-  subtitle: 'Mailvoidr is popular among developers worldwide.',
+  kicker: 'Community',
+  title: 'Developers ship on it. Founders, too.',
+  subtitle: 'Sandbox, SMTP, and webhooks in one workspace — not three tools glued together.',
 } as const;
 
 export const HOME_REVIEWS = [
@@ -130,12 +125,13 @@ export const HOME_CHART_PREVIEW = Array.from({ length: 14 }, (_, index) => ({
   sent: 40 + Math.round(Math.sin(index / 2) * 12) + index * 2,
 }));
 
-export type CodeSampleId = 'send_curl' | 'send_node' | 'send_python';
+export type CodeSampleId = 'send_curl' | 'send_node' | 'send_python' | 'send_go';
 
-export const CODE_SAMPLE_LANGS: { id: CodeSampleId; label: string }[] = [
-  { id: 'send_node', label: 'Node.js' },
-  { id: 'send_python', label: 'Python' },
-  { id: 'send_curl', label: 'cURL' },
+export const CODE_SAMPLE_LANGS: { id: CodeSampleId; label: string; language: string }[] = [
+  { id: 'send_node', label: 'Node.js', language: 'typescript' },
+  { id: 'send_python', label: 'Python', language: 'python' },
+  { id: 'send_go', label: 'Go', language: 'go' },
+  { id: 'send_curl', label: 'cURL', language: 'bash' },
 ];
 
 export function buildCodeSamples(sendUrl: string): Record<CodeSampleId, string> {
@@ -192,5 +188,30 @@ response = requests.post(
 
 data = response.json()
 # → 202 Accepted · status=queued`,
+    send_go: `package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+    "os"
+)
+
+func main() {
+    body, _ := json.Marshal(map[string]any{
+        "from":    "hello@mail.yourdomain.com",
+        "to":      []string{"riya@example.com"},
+        "subject": "Welcome to Acme",
+        "html":    "<h1>Hey Riya</h1><p>Glad you are here.</p>",
+    })
+
+    req, _ := http.NewRequest(http.MethodPost, "${sendUrl}", bytes.NewReader(body))
+    req.Header.Set("Authorization", "Bearer "+os.Getenv("MAILVOIDR_API_KEY"))
+    req.Header.Set("Content-Type", "application/json")
+
+    resp, _ := http.DefaultClient.Do(req)
+    defer resp.Body.Close()
+    // → 202 Accepted · status=queued
+}`,
   };
 }

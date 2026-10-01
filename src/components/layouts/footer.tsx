@@ -17,28 +17,24 @@ const Footer = ({ MARKETING_SOCIAL, MARKETING_NAV, statusClass, statusLabel, api
 
     
   return (
-<footer className="relative overflow-hidden">
-  <div className="absolute inset-x-0 h-32 pointer-events-none -top-5 bg-gradient-to-b from-background to-transparent blur-2xl" />
-  
-      {/* Large background logo */}
+    <footer className="relative overflow-hidden border-t border-border">
       <div
         aria-hidden="true"
         className="
         pointer-events-none absolute
-        inset-x-0 bottom-[-5%]
+        inset-x-0 bottom-[-8%]
         select-none text-center
         font-introvert font-medium
         leading-none tracking-wider
         text-foreground/[0.045]
-        text-[20vw]
+        text-[18vw]
         whitespace-nowrap
       "
       >
         Mailvoidr
       </div>
 
-      {/* Main footer content */}
-      <div className="flex items-center justify-between w-full pt-20 pb-10 mx-auto max-w-7xl">
+      <div className="page-band flex items-center justify-between pt-16 pb-10">
         {/* Left */}
         <div className="">
           <div className="flex items-center gap-3">
@@ -101,11 +97,10 @@ const Footer = ({ MARKETING_SOCIAL, MARKETING_NAV, statusClass, statusLabel, api
         </ul>
       </div>
 
-      {/* Bottom bar */}
-      <div className="relative z-10 mb-60">
+      <div className="relative z-10 border-t border-border">
         <div
           className="
-        mx-auto flex max-w-7xl
+        page-band flex
         flex-col gap-3
          py-5
         text-[12.5px]

@@ -19,7 +19,7 @@ export function Logo({
     <>
       <img src="/logo/favicon-32x32.png" alt="Mailvoidr" className="w-6 h-6" />
       {!small && (
-        <span className="text-[15px]  tracking-[0.03em] font-sora font-semibold">
+        <span className="text-[15px] font-sora font-semibold tracking-[0.03em] md:text-[17px]">
           Mailvoidr<span className="text-primary">.</span>
         </span>
       )}

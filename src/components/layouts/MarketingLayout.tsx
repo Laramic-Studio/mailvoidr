@@ -27,6 +27,7 @@ import {
   Menu,
 } from "lucide-react";
 import Footer from "./footer";
+import { PageFrame } from "@/components/marketing/PageFrame";
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
@@ -65,18 +66,12 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header
-        className={`sticky top-0 z-40 transition-colors duration-200 ${
-          scrolled
-            ? "bg-background/80 backdrop-blur-md border-b border-border"
-            : "border-b border-transparent"
+        className={`sticky top-0 z-40 h-[85px] border-b border-border transition-colors duration-200 ${
+          scrolled ? "bg-background/80 backdrop-blur-md" : "bg-background"
         }`}
       >
-        <div className={
-          `
-          flex items-center justify-between mx-auto max-w-7xl
-          ${ scrolled ? 'my-3' : 'mt-7'}
-          `
-        }>
+        <div className="page-canvas h-full">
+        <div className="page-inset flex h-full items-center justify-between">
           
           <div className="flex items-center gap-4 md:gap-8">
             <Logo className="text-lg" />
@@ -240,11 +235,15 @@ export function MarketingLayout({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
+        </div>
       </header>
 
-      <main className="flex-1">{children}</main>
-
-      <Footer MARKETING_SOCIAL={MARKETING_SOCIAL} statusClass={statusClass} statusLabel={statusLabel} MARKETING_NAV={MARKETING_NAV} apiHealthy={apiHealthy}/>
+      <div className="page-canvas flex-1">
+        <PageFrame>
+          <main>{children}</main>
+          <Footer MARKETING_SOCIAL={MARKETING_SOCIAL} statusClass={statusClass} statusLabel={statusLabel} MARKETING_NAV={MARKETING_NAV} apiHealthy={apiHealthy}/>
+        </PageFrame>
+      </div>
     </div>
   );
 }
