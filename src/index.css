@@ -444,6 +444,16 @@
     }
     .page-frame-handle-tl { top: -6px; left: -6px; }
     .page-frame-handle-tr { top: -6px; right: -6px; }
+    .page-frame-handle-bl { bottom: -6px; left: -6px; }
+    .page-frame-handle-br { bottom: -6px; right: -6px; }
+    .page-frame-handle-lg {
+        width: 16px;
+        height: 16px;
+    }
+    .page-frame-handle-lg.page-frame-handle-tl { top: -8px; left: -8px; }
+    .page-frame-handle-lg.page-frame-handle-tr { top: -8px; right: -8px; }
+    .page-frame-handle-lg.page-frame-handle-bl { bottom: -8px; left: -8px; }
+    .page-frame-handle-lg.page-frame-handle-br { bottom: -8px; right: -8px; }
     .page-frame-handle-outer-left,
     .page-frame-handle-outer-left-2 {
         display: none;
