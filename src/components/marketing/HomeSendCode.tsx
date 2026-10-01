@@ -83,7 +83,7 @@ export function HomeSendCode() {
   const ready = CODE_SAMPLE_LANGS.every((tab) => htmlByLang[tab.id]);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#1c1c1c] font-display text-zinc-100">
+    <div className="flex h-full min-h-0 flex-col bg-[#1c1c1c] font-display text-zinc-100">
       <div
         className="grid border-b border-white/10"
         style={{ gridTemplateColumns: `repeat(${CODE_SAMPLE_LANGS.length}, minmax(0, 1fr))` }}
@@ -119,7 +119,7 @@ export function HomeSendCode() {
         })}
       </div>
 
-      <div className="relative px-5 pb-14 pt-6">
+      <div className="relative min-h-0 flex-1 px-5 pb-14 pt-6">
         <div className="grid">
           {ready
             ? CODE_SAMPLE_LANGS.map((tab) => (

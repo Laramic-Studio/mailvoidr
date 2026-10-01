@@ -29,11 +29,23 @@ export const HOME_QUOTE = {
 } as const;
 
 export const HOME_SEND_FEATURES = [
-  'HTTP API with scoped keys — or connect over SMTP on port 587',
-  'Verified domains with SPF, DKIM, and DMARC guidance',
-  'Signed webhooks for queued, sent, delivered, bounced, opened, and clicked',
-  'Virtual inboxes and a workspace sandbox for local testing',
-];
+  {
+    title: 'Transactional mail that lands.',
+    desc: 'Receipts, invites, password resets — from one place.',
+  },
+  {
+    title: 'Send as your brand.',
+    desc: 'Your domain, authenticated. People know it\'s you.',
+  },
+  {
+    title: 'See every delivery.',
+    desc: 'Opened, clicked, bounced — no guessing.',
+  },
+  {
+    title: 'Try it before it goes live.',
+    desc: 'A sandbox inbox the whole team can use.',
+  },
+] as const;
 
 export const HOME_METRICS = [
   [`${FREE_SENDS_PER_MONTH}`, 'free sends / month'],
