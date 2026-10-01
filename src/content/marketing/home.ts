@@ -56,20 +56,20 @@ export const HOME_METRICS = [
 
 export const HOME_BENTO = {
   send: {
-    title: 'Sending',
-    desc: 'Queue mail from the dashboard or your backend. Credits, suppression, and bounce parsing built in.',
+    title: 'It leaves the queue.',
+    desc: 'API or SMTP. Credits, suppression, and bounce parsing already there.',
   },
   testing: {
-    title: 'Sandbox testing',
-    desc: 'Capture mail on :587, run spam and HTML checks, and debug before you flip live sending on.',
+    title: 'Break it in private.',
+    desc: 'Catch mail on :587. Spam and HTML checks before anyone else sees it.',
   },
   inboxes: {
-    title: 'Virtual inboxes',
-    desc: 'Spin up disposable addresses with TTL and forwarding for QA and integration tests.',
+    title: 'Fake addresses. Real mail.',
+    desc: 'Disposable inboxes with TTL and forwarding for QA.',
   },
   analytics: {
-    title: 'Analytics',
-    desc: 'Volume, deliverability, opens, and clicks — by domain and template in your workspace.',
+    title: 'What happened, by domain.',
+    desc: 'Volume, opens, clicks, deliverability — one place.',
   },
 } as const;
 
@@ -137,12 +137,18 @@ export const HOME_CHART_PREVIEW = Array.from({ length: 14 }, (_, index) => ({
   sent: 40 + Math.round(Math.sin(index / 2) * 12) + index * 2,
 }));
 
-export type CodeSampleId = 'send_curl' | 'send_node' | 'send_python' | 'send_go';
+export type CodeSampleId =
+  | 'send_curl'
+  | 'send_node'
+  | 'send_python'
+  | 'send_go'
+  | 'send_php';
 
 export const CODE_SAMPLE_LANGS: { id: CodeSampleId; label: string; language: string }[] = [
   { id: 'send_node', label: 'Node.js', language: 'typescript' },
   { id: 'send_python', label: 'Python', language: 'python' },
   { id: 'send_go', label: 'Go', language: 'go' },
+  { id: 'send_php', label: 'Laravel', language: 'php' },
   { id: 'send_curl', label: 'cURL', language: 'bash' },
 ];
 
@@ -200,6 +206,21 @@ response = requests.post(
 
 data = response.json()
 # → 202 Accepted · status=queued`,
+    send_php: `use Illuminate\\Support\\Facades\\Http;
+
+$response = Http::withToken(env('MAILVOIDR_API_KEY'))
+    ->acceptJson()
+    ->post('${sendUrl}', [
+        'from' => 'hello@mail.yourdomain.com',
+        'to' => ['riya@example.com'],
+        'subject' => 'Welcome to Acme',
+        'html' => '<h1>Hey Riya</h1><p>Glad you are here.</p>',
+        'track_opens' => true,
+        'track_clicks' => true,
+    ]);
+
+$data = $response->json();
+// → 202 Accepted · status=queued`,
     send_go: `package main
 
 import (

@@ -5,6 +5,7 @@ import { codeToHtml } from "shiki";
 import { Nodejs } from "@/components/ui/svgs/nodejs";
 import { Python } from "@/components/ui/svgs/python";
 import { Golang } from "@/components/ui/svgs/golang";
+import { Laravel } from "@/components/ui/svgs/laravel";
 import {
   buildCodeSamples,
   CODE_SAMPLE_LANGS,
@@ -40,6 +41,7 @@ const TAB_ICONS: Record<
   send_node: Nodejs,
   send_python: Python,
   send_go: Golang,
+  send_php: Laravel,
   send_curl: CurlIcon,
 };
 
@@ -127,7 +129,7 @@ export function HomeSendCode() {
                   key={tab.id}
                   aria-hidden={tab.id !== lang}
                   className={cn(
-                    "col-start-1 row-start-1 overflow-x-auto text-[13px] leading-[1.7] [&_code]:font-display [&_pre]:bg-transparent! [&_pre]:p-0! [&_pre]:font-display",
+                    "code-block col-start-1 row-start-1 overflow-x-auto font-code text-[13px] leading-[1.75] tracking-[-0.01em] antialiased [tab-size:2] [&_code]:font-code [&_pre]:bg-transparent! [&_pre]:p-0! [&_pre]:font-code",
                     tab.id === lang ? "visible" : "invisible pointer-events-none",
                   )}
                   dangerouslySetInnerHTML={{ __html: htmlByLang[tab.id] ?? "" }}

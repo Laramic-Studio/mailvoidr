@@ -83,6 +83,8 @@
         --font-subheadline: "Outfit", sans-serif;
         --font-caption: "Roboto", sans-serif;
         --font-introvert: "introvert", sans-serif;
+
+        --font-code: "Geist Mono", monospace;
     }
 }
 
@@ -565,3 +567,22 @@ input:checked + .slider:before {
   box-shadow: inset 15px -4px 0px 15px #efdf2b, 0 0 10px 0px #efdf2b;
 }
 
+
+.code-block,
+.code-block code,
+.code-block pre,
+.font-code {
+  font-family: var(--font-code), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.code-block code { counter-reset: line; }
+.code-block .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 1.25rem;
+  margin-right: 1.25rem;
+  text-align: right;
+  color: rgb(255 255 255 / 0.18);
+  user-select: none;
+}

@@ -17,6 +17,7 @@ module.exports = {
         subheadline: ['var(--font-subheadline)'],
         caption: ['var(--font-caption)'],
         introvert: ['var(--font-introvert)'],
+        code: ['var(--font-code)', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -74,7 +74,7 @@ function DashedCorner() {
       width={W}
       height={H + 1}
       viewBox={`0 0 ${W} ${H + 1}`}
-      className="pointer-events-none absolute right-0 top-0 hidden text-foreground/20 lg:block"
+      className="pointer-events-none absolute right-0 top-0 hidden text-foreground/10 lg:block"
       style={{
         maskImage: "linear-gradient(to right, transparent, black 35%)",
         WebkitMaskImage: "linear-gradient(to right, transparent, black 35%)",
