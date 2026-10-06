@@ -34,6 +34,16 @@ import Webhooks from "@/pages/dashboard/Webhooks";
 import Teams from "@/pages/dashboard/Teams";
 import Billing from "@/pages/dashboard/Billing";
 import Settings from "@/pages/dashboard/Settings";
+import Audiences from "@/pages/dashboard/Audiences";
+import AudienceDetail from "@/pages/dashboard/AudienceDetail";
+import Forms from "@/pages/dashboard/Forms";
+import FormBuilder from "@/pages/dashboard/FormBuilder";
+import Campaigns from "@/pages/dashboard/Campaigns";
+import CampaignPage from "@/pages/dashboard/CampaignPage";
+import CampaignReport from "@/pages/dashboard/CampaignReport";
+import SubscribePage from "@/pages/public/SubscribePage";
+import ConfirmPage from "@/pages/public/ConfirmPage";
+import UnsubscribePage from "@/pages/public/UnsubscribePage";
 
 import DocsLanding from "@/pages/docs/DocsLanding";
 import DocsArticle from "@/pages/docs/DocsArticle";
@@ -73,6 +83,11 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/docs" element={<DocsLanding />} />
           <Route path="/docs/:slug" element={<DocsArticle />} />
+          <Route path="/subscribe/:slug" element={<SubscribePage />} />
+          <Route path="/confirm/:token" element={<ConfirmPage />} />
+          <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
+          <Route path="/unsubscribed/:token" element={<UnsubscribePage />} />
+          <Route path="/preferences/:token" element={<UnsubscribePage preference />} />
 
           {/* Guest-only — signed-in users are redirected */}
           <Route element={<GuestLayout />}>
@@ -120,6 +135,13 @@ function App() {
               <Route path="/dashboard/teams" element={<Teams />} />
               <Route path="/dashboard/billing" element={<Billing />} />
               <Route path="/dashboard/settings" element={<Settings />} />
+              <Route path="/dashboard/audiences" element={<Audiences />} />
+              <Route path="/dashboard/audiences/:id" element={<AudienceDetail />} />
+              <Route path="/dashboard/forms" element={<Forms />} />
+              <Route path="/dashboard/forms/:id" element={<FormBuilder />} />
+              <Route path="/dashboard/campaigns" element={<Campaigns />} />
+              <Route path="/dashboard/campaigns/:id/report" element={<CampaignReport />} />
+              <Route path="/dashboard/campaigns/:id" element={<CampaignPage />} />
             </Route>
           </Route>
 

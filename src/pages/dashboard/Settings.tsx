@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -9,6 +10,7 @@ import type { NotificationPreferences } from '@/types';
 import { AlertTriangle, Loader2, ShieldCheck, Upload, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { workspaceInitials } from '@/hooks/useWorkspaces';
+import { NewsletterSettingsSection } from '@/components/newsletter/NewsletterSettingsSection';
 
 const SECTIONS = [
   'General',
@@ -16,6 +18,7 @@ const SECTIONS = [
   'Security',
   'Notifications',
   'Workspace',
+  'Newsletters',
   'Danger zone',
 ] as const;
 
@@ -36,7 +39,10 @@ const MEMBER_ROLE_OPTIONS = [
 ];
 
 export default function Settings() {
-  const [active, setActive] = useState<SectionId>('General');
+  const [params] = useSearchParams();
+  const [active, setActive] = useState<SectionId>(
+    params.get('section') === 'newsletters' ? 'Newsletters' : 'General',
+  );
   const { data, isLoading } = useSettings();
 
   return (
@@ -81,6 +87,7 @@ export default function Settings() {
               {active === 'Security' && <SecuritySection snapshot={data} />}
               {active === 'Notifications' && <NotificationsSection snapshot={data} />}
               {active === 'Workspace' && <WorkspaceSection snapshot={data} />}
+              {active === 'Newsletters' && <NewsletterSettingsSection />}
               {active === 'Danger zone' && <DangerZoneSection snapshot={data} />}
             </>
           )}

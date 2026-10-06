@@ -27,6 +27,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEmailSearchEnabled } from '@/hooks/useBilling';
 import { workspaceInitials } from '@/hooks/useWorkspaces';
 import { useUiStore } from '@/stores/ui-store';
+import { NewsletterImportWatcher } from '@/components/newsletter/NewsletterImportWatcher';
 import { cn } from '@/lib/utils';
 import { WorkspaceTwoFactorBanner } from '@/components/dashboard/WorkspaceTwoFactorBanner';
 
@@ -195,6 +196,7 @@ export function DashboardLayout({
         </div>
       </div>
       <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <NewsletterImportWatcher />
     </TooltipProvider>
   );
 }
