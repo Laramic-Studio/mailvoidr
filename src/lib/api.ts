@@ -7,12 +7,21 @@ import {
   writeAccessToken,
 } from '@/lib/auth-storage';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://ui.test/api/v1';
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://ui.test/api/v1';
 
 export { TOKEN_STORAGE_KEY, WORKSPACE_STORAGE_KEY } from '@/lib/auth-storage';
 export const REFRESH_TOKEN_STORAGE_KEY = 'mailvoidr_refresh_token';
 
 export const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
+});
+
+/** Unauthenticated client for hosted subscribe, confirm, and unsubscribe pages. */
+export const publicApi = axios.create({
   baseURL: API_URL,
   headers: {
     Accept: 'application/json',

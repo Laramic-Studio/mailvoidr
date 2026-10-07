@@ -1,3 +1,18 @@
+export type {
+  AbStatus,
+  AbVariant,
+  AbWinnerRule,
+  Audience,
+  AutoPauseReason,
+  Campaign,
+  CampaignReport,
+  CampaignStatus,
+  NewsletterForm,
+  NewsletterSettings,
+  Subscriber,
+  SubscriberStatus,
+} from '@/types/newsletter';
+
 export interface User {
   id: number;
   name: string;

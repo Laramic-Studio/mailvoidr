@@ -20,6 +20,14 @@ export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
     ],
   },
   {
+    label: 'Newsletters',
+    items: [
+      { to: '/dashboard/audiences', label: 'Audiences' },
+      { to: '/dashboard/forms', label: 'Forms' },
+      { to: '/dashboard/campaigns', label: 'Campaigns' },
+    ],
+  },
+  {
     label: 'Operate',
     items: [
       { to: '/dashboard/domains', label: 'Domains' },

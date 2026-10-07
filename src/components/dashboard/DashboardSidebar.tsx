@@ -1,7 +1,8 @@
 import { useMemo, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { LayoutDashboardIcon } from "@/components/icons/layout-dashboard";
-import { SendIcon } from "@/components/icons/send";
+import { ClipboardList, Mails, Megaphone } from "lucide-react";
+import { createNavIcon } from "@/components/icons/lucide-nav-icon";
 import { InboxIcon } from "@/components/icons/inbox";
 import { MailIcon } from "@/components/icons/mail";
 import { GlobeIcon } from "@/components/icons/globe";
@@ -41,6 +42,10 @@ type NavItemConfig = {
   feature?: string;
 };
 
+const AudiencesIcon = createNavIcon(Mails);
+const FormsIcon = createNavIcon(ClipboardList);
+const CampaignsIcon = createNavIcon(Megaphone);
+
 const NAV_GROUPS: { label: string; items: NavItemConfig[] }[] = [
   {
     label: "Workspace",
@@ -51,13 +56,20 @@ const NAV_GROUPS: { label: string; items: NavItemConfig[] }[] = [
         label: "Overview",
         end: true,
       },
-      // { to: "/dashboard/send", icon: SendIcon, label: "Send Email" },
       { to: "/dashboard/inbox", icon: InboxIcon, label: "Inbox" },
       {
         to: "/dashboard/virtual-emails",
         icon: MailIcon,
         label: "Virtual emails",
       },
+    ],
+  },
+  {
+    label: "Newsletters",
+    items: [
+      { to: "/dashboard/audiences", icon: AudiencesIcon, label: "Audiences" },
+      { to: "/dashboard/forms", icon: FormsIcon, label: "Forms" },
+      { to: "/dashboard/campaigns", icon: CampaignsIcon, label: "Campaigns" },
     ],
   },
   {

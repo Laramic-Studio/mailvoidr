@@ -20,6 +20,7 @@ import type { PricingCurrency } from '@/types';
 import { DEFAULT_VOLUME_STEP_INDEX, VOLUME_STEPS } from '@/content/marketing/pricing';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { ArrowUpRight, Loader2 } from 'lucide-react';
+import { NewsletterUsageCard } from '@/components/newsletter/NewsletterUsageCard';
 
 function defaultStepIndex(volume: number | null | undefined): number {
   if (!volume) return DEFAULT_VOLUME_STEP_INDEX;
@@ -290,6 +291,8 @@ export default function Billing() {
                 </div>
               )}
             </div>
+
+            <NewsletterUsageCard />
 
             <div className="border border-border bg-card p-6">
               <h3 className="text-base font-medium">Choose volume & plan</h3>

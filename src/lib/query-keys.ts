@@ -116,4 +116,21 @@ export const queryKeys = {
   billing: {
     context: (workspaceId?: string) => ['billing', workspaceId ?? ''] as const,
   },
+  newsletter: {
+    settings: ['newsletter', 'settings'] as const,
+    audiences: (search?: string) => ['newsletter', 'audiences', 'list', search ?? ''] as const,
+    audience: (id: string) => ['newsletter', 'audiences', 'detail', id] as const,
+    subscribers: (audienceId: string, filterKey: string) =>
+      ['newsletter', 'audiences', audienceId, 'subscribers', filterKey] as const,
+    subscriber: (audienceId: string, subscriberId: string) =>
+      ['newsletter', 'subscribers', audienceId, subscriberId] as const,
+    importJob: (id: string) => ['newsletter', 'imports', id] as const,
+    forms: (audienceId?: string) => ['newsletter', 'forms', 'list', audienceId ?? ''] as const,
+    form: (id: string) => ['newsletter', 'forms', 'detail', id] as const,
+    campaigns: ['newsletter', 'campaigns', 'list'] as const,
+    campaign: (id: string) => ['newsletter', 'campaigns', 'detail', id] as const,
+    report: (id: string) => ['newsletter', 'campaigns', id, 'report'] as const,
+    recipients: (id: string, status: string, page: number) =>
+      ['newsletter', 'campaigns', id, 'recipients', status, page] as const,
+  },
 } as const;
