@@ -17,7 +17,7 @@ import {
   secondaryButtonClass,
 } from '@/components/newsletter/classes';
 import { useNewsletterSettings, useNewsletterSettingsMutations } from '@/hooks/useNewsletter';
-import { doiImportCopy, formatShortDate, hasPhysicalAddress } from '@/lib/newsletter/format';
+import { doiImportCopy, formatShortDate } from '@/lib/newsletter/format';
 import { toastError, toastSuccess } from '@/lib/toast';
 
 const ATTESTATION =
@@ -82,7 +82,7 @@ export function NewsletterSettingsSection() {
         <div>
           <h2 className="text-base font-medium">Physical mailing address</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Required before the first campaign send. Mailvoidr adds it to every newsletter footer.
+            Required only for campaigns that include United States recipients. Mailvoidr adds it to that footer. Other campaigns can send without it.
           </p>
         </div>
         <label className="block text-[13px]" htmlFor="newsletter-physical-address">
@@ -95,9 +95,6 @@ export function NewsletterSettingsSection() {
             placeholder="Studio name, street, city, country"
           />
         </label>
-        {!hasPhysicalAddress(addressValue) ? (
-          <p className="text-[12px] text-muted-foreground">Add an address before you send a campaign.</p>
-        ) : null}
         <button type="button" className={primaryButtonClass} disabled={update.isPending} onClick={() => void saveAddress()}>
           {update.isPending ? 'Saving…' : 'Save address'}
         </button>
@@ -182,7 +179,7 @@ export function NewsletterSettingsSection() {
       </Dialog>
 
       <p className="text-[12px] text-muted-foreground">
-        Campaign footer address is read from here, not from each audience.{' '}
+        The United States footer address is read from here, not from each audience.{' '}
         <Link to="/dashboard/campaigns" className="text-primary hover:underline">
           Go to campaigns
         </Link>

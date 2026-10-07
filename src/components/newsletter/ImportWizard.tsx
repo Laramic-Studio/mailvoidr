@@ -21,10 +21,11 @@ import {
   secondaryButtonClass,
 } from '@/components/newsletter/classes';
 import { rememberNewsletterImport } from '@/components/newsletter/NewsletterImportWatcher';
+import { PlanLimitAlert, SubscriberCapNotice } from '@/components/newsletter/SubscriberLimitNotice';
 import { useImportJob, useImportMutations } from '@/hooks/useNewsletter';
 import { downloadImportErrors } from '@/lib/api/newsletter';
 import { saveBlob } from '@/lib/newsletter/download';
-import { doiImportCopy, formatBytes, formatCount } from '@/lib/newsletter/format';
+import { doiImportCopy, formatBytes, formatCount, subscriberPlanLimitMessage } from '@/lib/newsletter/format';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { Audience, ImportColumn, ImportColumnRole, NewsletterImport, NewsletterSettings } from '@/types/newsletter';
 
@@ -74,6 +75,7 @@ export function ImportWizard({
   const [consent, setConsent] = useState(false);
   const [job, setJob] = useState<NewsletterImport | null>(null);
   const [creating, setCreating] = useState(false);
+  const [limitError, setLimitError] = useState<string | null>(null);
   const { upload, commit } = useImportMutations();
   const poll = useImportJob(job?.id ?? null, open && step === 4 && job?.status === 'processing');
   const current = poll.data?.import ?? job;
@@ -100,6 +102,7 @@ export function ImportWizard({
     setJob(null);
     setColumns([]);
     setTags('');
+    setLimitError(null);
   }
 
   async function handleCreateAudience() {
@@ -119,6 +122,7 @@ export function ImportWizard({
 
   async function handleFile(file: File | undefined) {
     if (!file || !audienceId) return;
+    setLimitError(null);
     try {
       const result = await upload.mutateAsync({ audienceId, file, tags: tagList });
       const nextColumns = result.import.headers.map((header) => ({
@@ -130,12 +134,15 @@ export function ImportWizard({
       setColumns(nextColumns);
       setStep(2);
     } catch (error) {
+      const planLimit = subscriberPlanLimitMessage(error);
+      if (planLimit) setLimitError(planLimit);
       toastError(error, 'Could not read that CSV.');
     }
   }
 
   async function handleCommit() {
     if (!job || !emailMapped || !consent) return;
+    setLimitError(null);
     try {
       const result = await commit.mutateAsync({ importId: job.id, columns });
       setJob(result.import);
@@ -147,6 +154,8 @@ export function ImportWizard({
         toastSuccess('Import finished.');
       }
     } catch (error) {
+      const planLimit = subscriberPlanLimitMessage(error);
+      if (planLimit) setLimitError(planLimit);
       toastError(error, 'Could not start the import.');
     }
   }
@@ -180,6 +189,11 @@ export function ImportWizard({
             <span className="label-mono" aria-live="polite">Step {step} of 4</span>
           </SheetDescription>
         </SheetHeader>
+
+        <div className="mt-4 space-y-3">
+          <SubscriberCapNotice used={settings?.subscribers_used} limit={settings?.subscriber_limit} />
+          <PlanLimitAlert message={limitError} />
+        </div>
 
         {step === 1 ? (
           <div className="mt-6 space-y-4">

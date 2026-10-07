@@ -4,6 +4,7 @@ import {
   audienceReceiptCopy,
   autoPauseTitle,
   campaignActions,
+  campaignNeedsPhysicalAddress,
   campaignReasonLine,
   formatComplaint,
   formatRate,
@@ -13,8 +14,13 @@ import {
   reviewSendFloor,
   sendingEta,
   statusLabel,
+  subscriberCapNotice,
+  subscriberMeterCopy,
+  subscriberMeterKnown,
+  subscriberPlanLimitMessage,
   tenantCanResume,
 } from '@/lib/newsletter/format';
+import { normalizeAudience, normalizeCampaign, normalizeSettings } from '@/lib/newsletter/normalize';
 
 describe('status labels', () => {
   it('sentence-cases API words and hyphenates auto-paused', () => {
@@ -116,6 +122,46 @@ describe('review copy', () => {
     expect(audienceReceiptCopy({ eligible: 1240, pending: 86, suppressed: 31 })).toBe(
       '1,240 will receive this. 86 pending and 31 suppressed are left out.',
     );
+  });
+});
+
+describe('subscriber meter', () => {
+  it('shows subscriber used and limit and does not invent a send quota', () => {
+    expect(subscriberMeterKnown(2400, 3000)).toBe(true);
+    expect(subscriberMeterKnown(undefined, undefined)).toBe(false);
+    expect(subscriberMeterCopy(2400, 3000)).toBe(
+      '2,400 of 3,000 subscribers. Campaign sends are unlimited and follow the workspace send rate.',
+    );
+    expect(subscriberMeterCopy(10, null)).toContain('does not cap subscribers');
+    expect(subscriberCapNotice(3000, 3000)).toContain('3,000 of 3,000');
+    expect(subscriberCapNotice(2999, 3000)).toBeNull();
+  });
+
+  it('surfaces a 402 as the subscriber cap', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 402, data: { message: 'Subscriber limit reached (3000).' } },
+    };
+    expect(subscriberPlanLimitMessage(error)).toBe('Subscriber limit reached (3000).');
+    expect(subscriberPlanLimitMessage({ isAxiosError: true, response: { status: 422, data: {} } })).toBeNull();
+  });
+});
+
+describe('US physical address', () => {
+  it('requires an address only when the campaign or audience is US-targeted', () => {
+    expect(campaignNeedsPhysicalAddress(true, false)).toBe(true);
+    expect(campaignNeedsPhysicalAddress(false, true)).toBe(true);
+    expect(campaignNeedsPhysicalAddress(false, false)).toBe(false);
+    expect(campaignNeedsPhysicalAddress(null, null)).toBe(false);
+  });
+
+  it('reads subscriber meter and US targeting from the API payload', () => {
+    expect(normalizeSettings({ subscribers_used: 12, subscriber_limit: 3000 }).subscribers_used).toBe(12);
+    expect(normalizeSettings({ subscribers: { used: 4, limit: null } }).subscriber_limit).toBeNull();
+    expect(normalizeSettings({ physical_address: null }).subscribers_used).toBeUndefined();
+    expect(normalizeAudience({ id: 'a', us_targeted: true }).us_targeted).toBe(true);
+    expect(normalizeCampaign({ id: 'c', country: 'US' }).us_targeted).toBe(true);
+    expect(normalizeCampaign({ id: 'c' }).us_targeted).toBeNull();
   });
 });
 

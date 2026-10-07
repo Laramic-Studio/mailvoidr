@@ -9,6 +9,7 @@ import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { DisabledWithTooltip } from '@/components/DisabledWithTooltip';
 import { StatusPill } from '@/components/newsletter/StatusPill';
 import { ImportWizard } from '@/components/newsletter/ImportWizard';
+import { PlanLimitAlert, SubscriberCapNotice } from '@/components/newsletter/SubscriberLimitNotice';
 import {
   Sheet,
   SheetContent,
@@ -49,6 +50,7 @@ import {
   formatShortDate,
   manualResubscribeBlocked,
   statusLabel,
+  subscriberPlanLimitMessage,
 } from '@/lib/newsletter/format';
 import { SUBSCRIBER_STATUSES } from '@/types/newsletter';
 import { toastError, toastSuccess } from '@/lib/toast';
@@ -117,6 +119,10 @@ export default function AudienceDetail() {
           </div>
         }
       />
+
+      <div className="mb-4">
+        <SubscriberCapNotice used={settingsQuery.data?.subscribers_used} limit={settingsQuery.data?.subscriber_limit} />
+      </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Subscribed" value={formatCount(audience.subscribed_count)} hint="Will receive campaigns" />
@@ -266,6 +272,8 @@ export default function AudienceDetail() {
         onOpenChange={setAddOpen}
         audienceId={id}
         note={doiImportCopy(settingsQuery.data)}
+        used={settingsQuery.data?.subscribers_used}
+        limit={settingsQuery.data?.subscriber_limit}
       />
       <SubscriberSheet audienceId={id} subscriberId={selectedId} onClose={() => setSelectedId(null)} />
       <ImportWizard
@@ -331,18 +339,24 @@ function AddSubscriberDialog({
   onOpenChange,
   audienceId,
   note,
+  used,
+  limit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   audienceId: string;
   note: string;
+  used?: number | null;
+  limit?: number | null;
 }) {
   const { create } = useSubscriberMutations(audienceId);
   const [email, setEmail] = useState('');
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
+  const [limitError, setLimitError] = useState<string | null>(null);
 
   async function handleSubmit() {
+    setLimitError(null);
     try {
       const result = await create.mutateAsync({
         email: email.trim(),
@@ -355,6 +369,8 @@ function AddSubscriberDialog({
       setLast('');
       onOpenChange(false);
     } catch (error) {
+      const planLimit = subscriberPlanLimitMessage(error);
+      if (planLimit) setLimitError(planLimit);
       toastError(error, 'Could not add the subscriber.');
     }
   }
@@ -365,6 +381,8 @@ function AddSubscriberDialog({
         <DialogHeader>
           <DialogTitle>Add subscriber</DialogTitle>
         </DialogHeader>
+        <SubscriberCapNotice used={used} limit={limit} />
+        <PlanLimitAlert message={limitError} />
         <p className="text-[13px] text-muted-foreground">{note}</p>
         <label className="block text-[13px]">Email<input className={`${fieldClass} mt-1.5`} value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         <div className="grid gap-3 sm:grid-cols-2">

@@ -8,6 +8,7 @@ import { QueryErrorState } from '@/components/QueryErrorState';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { StatusPill } from '@/components/newsletter/StatusPill';
 import { ImportWizard } from '@/components/newsletter/ImportWizard';
+import { SubscriberCapNotice } from '@/components/newsletter/SubscriberLimitNotice';
 import {
   Dialog,
   DialogContent,
@@ -115,6 +116,10 @@ export default function Audiences() {
           </button>
         }
       />
+
+      <div className="mb-4">
+        <SubscriberCapNotice used={settings.data?.subscribers_used} limit={settings.data?.subscriber_limit} />
+      </div>
 
       <div className="mb-4 max-w-sm">
         <input

@@ -1,3 +1,4 @@
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/api';
 import type { CampaignListTab } from '@/lib/newsletter/tabs';
 
 export const DEFAULT_CAMPAIGN_TIMEZONE = 'Africa/Lagos';
@@ -275,17 +276,58 @@ export function sendRequiresReview(
   return eligible >= threshold;
 }
 
-export function meterOverageMessage(
+/** Free plan meters subscribers. Campaign sends stay off this card. */
+export function subscriberMeterCopy(
   used: number | null | undefined,
   limit: number | null | undefined,
-  eligible: number | null | undefined,
-): string | null {
-  if (used == null || limit == null || eligible == null) return null;
-  if (used + eligible > limit) {
-    return 'This send is over your plan’s monthly campaign sends. Upgrade before you send it.';
+): string {
+  const pace = 'Campaign sends are unlimited and follow the workspace send rate.';
+  if (typeof used === 'number' && typeof limit === 'number') {
+    return `${formatCount(used)} of ${formatCount(limit)} subscribers. ${pace}`;
   }
-  return null;
+  if (typeof used === 'number') {
+    return `${formatCount(used)} subscribers. This plan does not cap subscribers. ${pace}`;
+  }
+  if (typeof limit === 'number') {
+    return `Subscriber limit ${formatCount(limit)}. ${pace}`;
+  }
+  return 'Subscriber limits are not available yet.';
 }
+
+export function subscriberMeterKnown(
+  used: number | null | undefined,
+  limit: number | null | undefined,
+): boolean {
+  return used !== undefined || limit !== undefined;
+}
+
+/** Shown before add/import when the workspace is already at the subscriber cap. */
+export function subscriberCapNotice(
+  used: number | null | undefined,
+  limit: number | null | undefined,
+): string | null {
+  if (typeof used !== 'number' || typeof limit !== 'number' || used < limit) return null;
+  return `This workspace is at ${formatCount(used)} of ${formatCount(limit)} subscribers. Adding another one needs a higher plan.`;
+}
+
+/** 402 from add or import. Prefer the API message; the fallback names the subscriber cap. */
+export function subscriberPlanLimitMessage(error: unknown): string | null {
+  if (getApiErrorStatus(error) !== 402) return null;
+  return getApiErrorMessage(
+    error,
+    'This workspace has reached its subscriber limit. Upgrade to add more subscribers.',
+  );
+}
+
+export function campaignNeedsPhysicalAddress(
+  campaignUs: boolean | null | undefined,
+  audienceUs: boolean | null | undefined,
+): boolean {
+  return campaignUs === true || audienceUs === true;
+}
+
+export const US_ADDRESS_REQUIRED_COPY =
+  'This campaign includes United States recipients. Add a physical mailing address before you send.';
 
 export function abPickedByLabel(picked: string | null | undefined): string {
   if (picked === 'manual') return 'Picked manually';

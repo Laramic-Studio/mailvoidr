@@ -54,8 +54,14 @@ export interface NewsletterSettings {
   pending_purge_days?: number;
   plan?: string | null;
   review_turnaround?: string | null;
-  monthly_send_limit?: number | null;
-  monthly_sends_used?: number | null;
+  /**
+   * Subscriber meter. `undefined` means the API omitted the field.
+   * `null` limit means the plan does not cap subscribers.
+   * Campaign sends are not part of this meter.
+   */
+  subscribers_used?: number | null;
+  subscriber_limit?: number | null;
+  /** Workspace ramp cap. Used for the pre-send time floor, not a monthly send quota. */
   sends_per_minute?: number | null;
   first_large_send_threshold?: number | null;
   max_csv_bytes?: number | null;
@@ -78,6 +84,8 @@ export interface Audience {
   complained_count: number;
   /** Already a percent (0.1 = 0.1%). Null when there is no sample. */
   confirmation_rate: number | null;
+  /** True when this audience includes United States recipients. Null when the API omits it. */
+  us_targeted: boolean | null;
   suppressed_count?: number;
   last_campaign?: AudienceCampaignRef | null;
   created_at?: string | null;
@@ -248,6 +256,8 @@ export interface Campaign {
   auto_pause_reason: string | null;
   has_unsubscribe_link: boolean | null;
   has_physical_address: boolean | null;
+  /** True when this campaign includes United States recipients. Null when the API omits it. */
+  us_targeted: boolean | null;
   created_at?: string | null;
   updated_at?: string | null;
 }

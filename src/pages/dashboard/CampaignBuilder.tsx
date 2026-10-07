@@ -32,17 +32,18 @@ import { useTemplates } from '@/hooks/useTemplates';
 import {
   abTestBlockers,
   audienceReceiptCopy,
+  campaignNeedsPhysicalAddress,
   contentHasPhysicalAddress,
   contentHasUnsubscribe,
   DEFAULT_CAMPAIGN_TIMEZONE,
   formatCount,
   hasPhysicalAddress,
   isEmailAddress,
-  meterOverageMessage,
   perVariantCount,
   reviewSendFloor,
   sendRequiresReview,
   suppressedCount,
+  US_ADDRESS_REQUIRED_COPY,
 } from '@/lib/newsletter/format';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { Campaign } from '@/types/newsletter';
@@ -117,9 +118,10 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
   const fromAddress = localPart && domain ? `${localPart}@${domain}` : '';
   const recipients = live.total_recipients ?? eligible;
   const floor = reviewSendFloor({ totalRecipients: recipients, sendsPerMinute: live.sends_per_minute ?? settings.data?.sends_per_minute });
-  const overLimit = meterOverageMessage(settings.data?.monthly_sends_used, settings.data?.monthly_send_limit, eligible);
   const reviewHold = sendRequiresReview(live.requires_review, eligible, settings.data?.first_large_send_threshold);
   const addressReady = hasPhysicalAddress(settings.data?.physical_address);
+  const usTargeted = campaignNeedsPhysicalAddress(live.us_targeted, audience?.us_targeted);
+  const addressBlocked = usTargeted && !addressReady;
   const unsubPresent = live.has_unsubscribe_link === true || contentHasUnsubscribe(html, text);
   const addressPresent = live.has_physical_address === true || contentHasPhysicalAddress(html, text, settings.data?.physical_address);
   const perSide = perVariantCount(eligible ?? 0, share);
@@ -260,7 +262,7 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
     }
   }
 
-  const primaryDisabled = (step === 4 && (!addressReady || !fromAddress || Boolean(overLimit))) || saving;
+  const primaryDisabled = (step === 4 && (addressBlocked || !fromAddress)) || saving;
 
   return (
     <DashboardLayout>
@@ -302,11 +304,6 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
           <label className="block text-[13px]">Include tags<input className={`${fieldClass} mt-1.5`} value={includeTags} onChange={(event) => setIncludeTags(event.target.value)} placeholder="launch, customers" /></label>
           <label className="block text-[13px]">Exclude tags<input className={`${fieldClass} mt-1.5`} value={excludeTags} onChange={(event) => setExcludeTags(event.target.value)} /></label>
           {receipt ? <p className="text-[13px]">{receipt}</p> : null}
-          {overLimit ? (
-            <p className="border border-[hsl(var(--chart-3)/0.4)] bg-[hsl(var(--chart-3)/0.1)] p-3 text-[13px]">
-              {overLimit} <Link to="/dashboard/billing" className="underline">Upgrade</Link>
-            </p>
-          ) : null}
           <button type="button" className={primaryButtonClass} disabled={saving} onClick={() => void saveAudience()}>Continue</button>
         </section>
       ) : null}
@@ -377,7 +374,7 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
               <button type="button" className={primaryButtonClass} disabled={saving} onClick={() => void saveContent()}>Continue</button>
             </div>
           </div>
-          <ComplianceCard unsub={unsubPresent} address={addressPresent} addressReady={addressReady} />
+          <ComplianceCard unsub={unsubPresent} address={addressPresent} addressReady={addressReady} usTargeted={usTargeted} />
         </section>
       ) : null}
 
@@ -478,13 +475,12 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
             ))}
             {floor ? <p className="pt-3">{floor}</p> : null}
           </div>
-          {!addressReady ? (
-            <p className="text-[13px]">
-              Add a physical address before the first send.{' '}
+          {addressBlocked ? (
+            <p className="text-[13px]" role="alert">
+              {US_ADDRESS_REQUIRED_COPY}{' '}
               <Link to="/dashboard/settings?section=newsletters" className="text-primary hover:underline">Newsletter settings</Link>
             </p>
           ) : null}
-          {overLimit ? <p className="text-[13px]">{overLimit}</p> : null}
           <label className="flex items-center justify-between text-[13px]">
             Schedule instead of sending now
             <Switch checked={scheduleOn} onCheckedChange={setScheduleOn} />
@@ -545,18 +541,23 @@ function ComplianceCard({
   unsub,
   address,
   addressReady,
+  usTargeted,
 }: {
   unsub: boolean;
   address: boolean;
   addressReady: boolean;
+  usTargeted: boolean;
 }) {
+  let addressLine = 'Physical address — Not required unless this campaign includes United States recipients';
+  if (usTargeted && address) addressLine = 'Physical address ✓ inserted';
+  else if (usTargeted && addressReady) addressLine = 'Physical address — We’ll add our standard footer';
+  else if (usTargeted) addressLine = 'Physical address — Required for United States recipients. Add it in Settings';
+
   return (
     <aside className="h-fit border border-border bg-card p-4 text-[13px]">
       <p className="font-medium">Compliance check</p>
       <p className="mt-3">Unsubscribe link {unsub ? '✓ inserted' : '— We’ll add our standard footer'}</p>
-      <p className="mt-2">
-        Physical address {address ? '✓ inserted' : addressReady ? '— We’ll add our standard footer' : '— Add it in Settings'}
-      </p>
+      <p className="mt-2">{addressLine}</p>
       <p className="mt-3 text-[12px] text-muted-foreground">The standard footer cannot be removed.</p>
     </aside>
   );

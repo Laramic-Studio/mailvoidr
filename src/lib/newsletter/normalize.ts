@@ -31,6 +31,57 @@ function strOrNull(value: unknown): string | null {
   return text.length ? text : null;
 }
 
+function readOptionalNumber(record: Record<string, unknown>, keys: string[]): number | null | undefined {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(record, key)) return numOrNull(record[key]);
+  }
+  return undefined;
+}
+
+function readMeterRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function isUsLabel(value: string): boolean {
+  const text = value.trim().toLowerCase();
+  return text === 'us' || text === 'usa' || text === 'united states' || text === 'united states of america';
+}
+
+/** US targeting from the contract flag, with country aliases when that is how the API sends it. */
+export function readUsTargeted(body: Record<string, unknown>): boolean | null {
+  const flag = body.us_targeted ?? body.targets_us ?? body.is_us_targeted ?? body.requires_physical_address;
+  if (typeof flag === 'boolean') return flag;
+  if (flag === 1 || flag === '1' || flag === 'true') return true;
+  if (flag === 0 || flag === '0' || flag === 'false') return false;
+  const country = body.country ?? body.target_country ?? body.region;
+  if (typeof country === 'string' && country.trim()) return isUsLabel(country);
+  const list = body.countries ?? body.target_countries ?? body.regions;
+  if (Array.isArray(list)) {
+    return list.some((item) => typeof item === 'string' && isUsLabel(item));
+  }
+  return null;
+}
+
+function readSubscriberMeter(nested: Record<string, unknown>): {
+  subscribers_used?: number | null;
+  subscriber_limit?: number | null;
+} {
+  const meter = readMeterRecord(nested.subscribers) ?? readMeterRecord(nested.subscriber_meter);
+  const usedFromMeter = meter ? readOptionalNumber(meter, ['used', 'count']) : undefined;
+  const limitFromMeter = meter ? readOptionalNumber(meter, ['limit']) : undefined;
+  const used = usedFromMeter !== undefined
+    ? usedFromMeter
+    : readOptionalNumber(nested, ['subscribers_used', 'subscriber_count', 'subscriber_used']);
+  const limit = limitFromMeter !== undefined
+    ? limitFromMeter
+    : readOptionalNumber(nested, ['subscriber_limit', 'subscribers_limit']);
+  return {
+    ...(used !== undefined ? { subscribers_used: used } : {}),
+    ...(limit !== undefined ? { subscriber_limit: limit } : {}),
+  };
+}
+
 function strList(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((item) => String(item)).filter(Boolean);
   if (typeof value === 'string' && value.trim()) {
@@ -86,8 +137,7 @@ export function normalizeSettings(raw: unknown): NewsletterSettings {
     pending_purge_days: numOrNull(nested.pending_purge_days) ?? undefined,
     plan: strOrNull(nested.plan) ?? undefined,
     review_turnaround: strOrNull(nested.review_turnaround) ?? undefined,
-    monthly_send_limit: numOrNull(nested.monthly_send_limit),
-    monthly_sends_used: numOrNull(nested.monthly_sends_used),
+    ...readSubscriberMeter(nested),
     sends_per_minute: numOrNull(nested.sends_per_minute),
     first_large_send_threshold: numOrNull(nested.first_large_send_threshold),
     max_csv_bytes: numOrNull(nested.max_csv_bytes),
@@ -107,6 +157,7 @@ export function normalizeAudience(raw: unknown): Audience {
     bounced_count: num(body.bounced_count),
     complained_count: num(body.complained_count),
     confirmation_rate: numOrNull(body.confirmation_rate),
+    us_targeted: readUsTargeted(body),
     suppressed_count: body.suppressed_count == null ? undefined : num(body.suppressed_count),
     last_campaign: last && typeof last === 'object'
       ? {
@@ -312,6 +363,7 @@ export function normalizeCampaign(raw: unknown): Campaign {
     auto_pause_reason: strOrNull(body.auto_pause_reason),
     has_unsubscribe_link: typeof body.has_unsubscribe_link === 'boolean' ? body.has_unsubscribe_link : null,
     has_physical_address: typeof body.has_physical_address === 'boolean' ? body.has_physical_address : null,
+    us_targeted: readUsTargeted(body),
     created_at: strOrNull(body.created_at),
     updated_at: strOrNull(body.updated_at),
   };
