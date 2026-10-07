@@ -50,7 +50,7 @@ export interface NewsletterSettings {
   physical_address: string | null;
   doi_for_imports?: boolean;
   doi_imports_editable?: boolean;
-  doi_imports_disabled_by?: { name: string; at: string } | null;
+  doi_imports_disabled_by?: { name: string; at: string; text?: string } | null;
   pending_purge_days?: number;
   plan?: string | null;
   review_turnaround?: string | null;
@@ -64,7 +64,29 @@ export interface NewsletterSettings {
   /** Workspace ramp cap. Used for the pre-send time floor, not a monthly send quota. */
   sends_per_minute?: number | null;
   first_large_send_threshold?: number | null;
+  /** True after the one-time ≥1k review has already happened. Undefined when the API omits it. */
+  first_large_send_completed?: boolean;
+  /** Extra hold while trust tier is at or below large_send_tier_max. Default rule is 5,000 at T1. */
+  large_send_tier_threshold?: number | null;
+  large_send_tier_max?: string | null;
+  trust_tier?: string | null;
+  /** Null cap means uncapped. Undefined means the API omitted the field. */
+  campaign_cap?: number | null;
+  daily_cap?: number | null;
+  ramp_caps_from_api?: boolean;
+  ramp_tiers?: RampTier[];
+  queue_global_per_minute?: number | null;
+  queue_workspace_per_minute?: number | null;
+  bounce_pause_percent?: number | null;
+  complaint_warn_percent?: number | null;
+  complaint_pause_percent?: number | null;
   max_csv_bytes?: number | null;
+}
+
+export interface RampTier {
+  tier: string;
+  campaign_cap: number | null;
+  daily_cap: number | null;
 }
 
 export interface AudienceCampaignRef {
@@ -258,6 +280,14 @@ export interface Campaign {
   has_physical_address: boolean | null;
   /** True when this campaign includes United States recipients. Null when the API omits it. */
   us_targeted: boolean | null;
+  trust_tier: string | null;
+  campaign_cap: number | null;
+  daily_cap: number | null;
+  ramp_caps_from_api: boolean;
+  complaint_warning: boolean;
+  bounce_pause_percent: number | null;
+  complaint_warn_percent: number | null;
+  complaint_pause_percent: number | null;
   created_at?: string | null;
   updated_at?: string | null;
 }

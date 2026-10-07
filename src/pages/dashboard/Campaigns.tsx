@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { fieldClass, primaryButtonClass } from '@/components/newsletter/classes';
-import { useCampaignMutations, useCampaigns } from '@/hooks/useNewsletter';
+import { useCampaignMutations, useCampaigns, useNewsletterSettings } from '@/hooks/useNewsletter';
 import {
   campaignReasonLine,
   campaignScheduleLabel,
@@ -28,6 +28,11 @@ import { toastError, toastSuccess } from '@/lib/toast';
 export default function Campaigns() {
   const navigate = useNavigate();
   const query = useCampaigns();
+  const settings = useNewsletterSettings();
+  const pausePolicy = {
+    bouncePausePercent: settings.data?.bounce_pause_percent,
+    complaintPausePercent: settings.data?.complaint_pause_percent,
+  };
   const { create } = useCampaignMutations();
   const [tab, setTab] = useState<CampaignListTab>('all');
   const [open, setOpen] = useState(false);
@@ -91,7 +96,7 @@ export default function Campaigns() {
               </thead>
               <tbody>
                 {rows.map((campaign) => {
-                  const reason = campaignReasonLine(campaign);
+                  const reason = campaignReasonLine(campaign, pausePolicy);
                   return (
                     <tr key={campaign.id} className="border-b border-border last:border-0">
                       <td className="p-3">
@@ -116,7 +121,7 @@ export default function Campaigns() {
                   <span className="font-medium">{campaign.name}</span>
                   <StatusPill status={campaign.status} />
                 </div>
-                {campaignReasonLine(campaign) ? <p className="mt-1 text-[12px] text-muted-foreground">{campaignReasonLine(campaign)}</p> : null}
+                {campaignReasonLine(campaign, pausePolicy) ? <p className="mt-1 text-[12px] text-muted-foreground">{campaignReasonLine(campaign, pausePolicy)}</p> : null}
                 <p className="mt-2 text-[13px] text-muted-foreground">
                   {formatRate(campaign.click_rate)} clicks · {campaignScheduleLabel(campaign)}
                 </p>

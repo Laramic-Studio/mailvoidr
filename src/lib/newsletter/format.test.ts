@@ -8,11 +8,16 @@ import {
   campaignReasonLine,
   formatComplaint,
   formatRate,
+  etaQueueRate,
   inReviewMessage,
+  largeSendDecision,
+  largeSendReviewCopy,
   maskEmail,
   perVariantCount,
+  rampSummary,
   reviewSendFloor,
   sendingEta,
+  sendRequiresReview,
   statusLabel,
   subscriberCapNotice,
   subscriberMeterCopy,
@@ -80,7 +85,8 @@ describe('review send floor', () => {
   it('uses the workspace cap only', () => {
     expect(reviewSendFloor({ totalRecipients: 480, sendsPerMinute: 1 })).toBe('At least 8 h to send');
     expect(reviewSendFloor({ totalRecipients: 30, sendsPerMinute: 2 })).toBe('At least 15 min to send');
-    expect(reviewSendFloor({ totalRecipients: 30, sendsPerMinute: null })).toBeNull();
+    expect(reviewSendFloor({ totalRecipients: 30, sendsPerMinute: null })).toBe('At least 2 min to send');
+    expect(reviewSendFloor({ totalRecipients: 1200 })).toBe('At least 1 h to send');
   });
 });
 
@@ -96,7 +102,8 @@ describe('A/B eligibility', () => {
 
 describe('auto pause', () => {
   it('maps reason codes and withholds tenant resume', () => {
-    expect(autoPauseTitle('bounce_rate_threshold')).toBe('Bounce rate passed the limit');
+    expect(autoPauseTitle('bounce_rate_threshold')).toBe('Bounce rate passed 2%');
+    expect(autoPauseTitle('bounce_rate_threshold', { bouncePausePercent: 1.5 })).toBe('Bounce rate passed 1.5%');
     expect(autoPauseTitle('complaint_rate_threshold')).toBe('Complaint rate passed the limit');
     expect(autoPauseTitle('deliverability_hold')).toBe('Sending paused to protect deliverability');
     expect(tenantCanResume('auto_paused')).toBe(false);
@@ -162,6 +169,34 @@ describe('US physical address', () => {
     expect(normalizeAudience({ id: 'a', us_targeted: true }).us_targeted).toBe(true);
     expect(normalizeCampaign({ id: 'c', country: 'US' }).us_targeted).toBe(true);
     expect(normalizeCampaign({ id: 'c' }).us_targeted).toBeNull();
+  });
+});
+
+describe('trust ramp and large-send hold', () => {
+  it('uses API caps and falls back to the tier schedule only when caps are omitted', () => {
+    expect(rampSummary({ trustTier: 'T1', campaignCap: 800, dailyCap: 2000, capsFromApi: true }))
+      .toBe('Trust tier T1. 800 per campaign, 2,000 per day.');
+    expect(rampSummary({ trustTier: 'T0' })).toBe('Trust tier T0. 200 per campaign, 500 per day.');
+    expect(rampSummary({ trustTier: 'T3', campaignCap: null, dailyCap: null, capsFromApi: true }))
+      .toBe('Trust tier T3. Per-campaign and daily caps are lifted.');
+  });
+
+  it('holds the first 1k send and any 5k send through T1', () => {
+    expect(sendRequiresReview({ eligible: 1000, trustTier: 'T0' })).toBe(true);
+    expect(largeSendDecision({ eligible: 5000, trustTier: 'T1' }).kind).toBe('tier');
+    expect(sendRequiresReview({
+      eligible: 5000,
+      trustTier: 'T2',
+      firstLargeSendCompleted: true,
+    })).toBe(false);
+    expect(largeSendReviewCopy({ eligible: 5000, trustTier: 'T0' })).toMatch(/5,000/);
+    expect(largeSendReviewCopy({ reviewReason: 'Held by trust review.' })).toBe('Held by trust review.');
+  });
+
+  it('paces the floor with the tighter of the 20 and 60 queue caps', () => {
+    expect(etaQueueRate({})).toBe(20);
+    expect(etaQueueRate({ workspacePerMinute: 20, globalPerMinute: 60 })).toBe(20);
+    expect(etaQueueRate({ sendsPerMinute: 1000, globalPerMinute: 60 })).toBe(60);
   });
 });
 

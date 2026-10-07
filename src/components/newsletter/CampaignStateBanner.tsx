@@ -13,6 +13,9 @@ import type { CampaignAction } from '@/lib/newsletter/format';
 interface CampaignStateBannerProps {
   status: string;
   autoPauseReason?: string | null;
+  bouncePausePercent?: number | null;
+  complaintPausePercent?: number | null;
+  reviewDetail?: string | null;
   turnaround?: string | null;
   scheduledLabel?: string | null;
   sentCount?: number;
@@ -28,6 +31,9 @@ interface CampaignStateBannerProps {
 export function CampaignStateBanner({
   status,
   autoPauseReason,
+  bouncePausePercent,
+  complaintPausePercent,
+  reviewDetail,
   turnaround,
   scheduledLabel,
   sentCount = 0,
@@ -65,11 +71,11 @@ export function CampaignStateBanner({
   return (
     <section role="status" className={`border p-4 ${tone}`} data-testid={`campaign-banner-${status}`}>
       {status === 'scheduled' ? <p className="text-sm">Sends {scheduledLabel || 'at the scheduled time'}.</p> : null}
-      {status === 'in_review' ? <p className="text-sm">{inReviewMessage(turnaround)}</p> : null}
+      {status === 'in_review' ? <p className="text-sm">{inReviewMessage(turnaround, reviewDetail)}</p> : null}
       {status === 'paused' ? <p className="text-sm">Paused by you.</p> : null}
       {status === 'auto_paused' ? (
         <div className="space-y-1 text-sm">
-          <p>{autoPauseTitle(autoPauseReason)}</p>
+          <p>{autoPauseTitle(autoPauseReason, { bouncePausePercent, complaintPausePercent })}</p>
           <p>Our team has been alerted.</p>
         </div>
       ) : null}

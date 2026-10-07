@@ -91,6 +91,116 @@ function durationParts(minutes: number): { amount: number; unit: 'min' | 'h' } {
   return { amount: Math.max(1, Math.round(minutes / 60)), unit: 'h' };
 }
 
+/** Locked queue paces. API values replace these when the payload includes them. */
+export const QUEUE_GLOBAL_PER_MINUTE = 60;
+export const QUEUE_WORKSPACE_PER_MINUTE = 20;
+export const FIRST_LARGE_SEND_RECIPIENTS = 1000;
+export const TIER_HOLD_RECIPIENTS = 5000;
+export const TIER_HOLD_MAX = 'T1';
+export const BOUNCE_PAUSE_PERCENT = 2;
+
+const RAMP_FALLBACK: Record<string, { campaign: number | null; daily: number | null }> = {
+  T0: { campaign: 200, daily: 500 },
+  T1: { campaign: 1000, daily: 2500 },
+  T2: { campaign: 5000, daily: 10000 },
+  T3: { campaign: null, daily: null },
+};
+
+export function normalizeTrustTier(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const match = value.trim().toUpperCase().match(/^T[0-3]$/);
+  return match ? match[0] : value.trim();
+}
+
+export function tierRank(value: string | null | undefined): number | null {
+  const tier = normalizeTrustTier(value);
+  const match = tier?.match(/^T(\d)$/);
+  return match ? Number(match[1]) : null;
+}
+
+export function tierAtMost(tier: string | null | undefined, maxTier: string | null | undefined): boolean {
+  const rank = tierRank(tier);
+  const max = tierRank(maxTier);
+  if (rank == null || max == null) return false;
+  return rank <= max;
+}
+
+export function resolveRampCaps(input: {
+  trustTier?: string | null;
+  campaignCap?: number | null;
+  dailyCap?: number | null;
+  capsFromApi?: boolean;
+}): { campaignCap: number | null; dailyCap: number | null; known: boolean } {
+  if (input.capsFromApi) {
+    return {
+      campaignCap: input.campaignCap ?? null,
+      dailyCap: input.dailyCap ?? null,
+      known: true,
+    };
+  }
+  const fallback = RAMP_FALLBACK[normalizeTrustTier(input.trustTier) ?? ''];
+  if (!fallback) return { campaignCap: null, dailyCap: null, known: false };
+  return { campaignCap: fallback.campaign, dailyCap: fallback.daily, known: true };
+}
+
+export function rampSummary(input: {
+  trustTier?: string | null;
+  campaignCap?: number | null;
+  dailyCap?: number | null;
+  capsFromApi?: boolean;
+}): string | null {
+  const tier = normalizeTrustTier(input.trustTier);
+  const caps = resolveRampCaps(input);
+  if (!tier && !caps.known) return null;
+  const label = tier ?? 'This workspace';
+  if (!caps.known) return `Trust tier ${label}. Send caps are not available yet.`;
+  if (caps.campaignCap == null && caps.dailyCap == null) {
+    return `Trust tier ${label}. Per-campaign and daily caps are lifted.`;
+  }
+  const campaign = caps.campaignCap == null ? 'no per-campaign cap' : `${formatCount(caps.campaignCap)} per campaign`;
+  const daily = caps.dailyCap == null ? 'no daily cap' : `${formatCount(caps.dailyCap)} per day`;
+  return `Trust tier ${label}. ${campaign}, ${daily}.`;
+}
+
+export function queueCaps(input: {
+  globalPerMinute?: number | null;
+  workspacePerMinute?: number | null;
+}): { globalPerMinute: number; workspacePerMinute: number } {
+  const globalPerMinute = positiveRate(input.globalPerMinute) ?? QUEUE_GLOBAL_PER_MINUTE;
+  const workspacePerMinute = positiveRate(input.workspacePerMinute) ?? QUEUE_WORKSPACE_PER_MINUTE;
+  return { globalPerMinute, workspacePerMinute };
+}
+
+function positiveRate(value: number | null | undefined): number | null {
+  if (value == null || value <= 0) return null;
+  return value;
+}
+
+/** Fastest pace the workspace is allowed: the tighter of the workspace and shared queues. */
+export function etaQueueRate(input: {
+  workspacePerMinute?: number | null;
+  globalPerMinute?: number | null;
+  sendsPerMinute?: number | null;
+}): number {
+  const queues = queueCaps({
+    globalPerMinute: input.globalPerMinute,
+    workspacePerMinute: positiveRate(input.workspacePerMinute) ?? positiveRate(input.sendsPerMinute),
+  });
+  return Math.min(queues.workspacePerMinute, queues.globalPerMinute);
+}
+
+export function queuePaceCopy(input: {
+  globalPerMinute?: number | null;
+  workspacePerMinute?: number | null;
+  sendsPerMinute?: number | null;
+}): string {
+  const queues = queueCaps({
+    globalPerMinute: input.globalPerMinute,
+    workspacePerMinute: positiveRate(input.workspacePerMinute) ?? positiveRate(input.sendsPerMinute),
+  });
+  return `Workspace queue ${formatCount(queues.workspacePerMinute)}/min. Shared queue ${formatCount(queues.globalPerMinute)}/min.`;
+}
+
 /** While sending: remaining ÷ recent observed rate. Null when the API has no recent rate. */
 export function sendingEta(input: {
   sentCount: number;
@@ -106,14 +216,17 @@ export function sendingEta(input: {
   return `About ${amount} ${unit} left`;
 }
 
-/** Before send: recipients ÷ workspace cap. Does not use a fixed or recent rate. */
+/** Before send: recipients ÷ the tighter queue cap. Does not use the recent rate. */
 export function reviewSendFloor(input: {
   totalRecipients: number | null | undefined;
-  sendsPerMinute: number | null | undefined;
+  sendsPerMinute?: number | null;
+  workspacePerMinute?: number | null;
+  globalPerMinute?: number | null;
 }): string | null {
   if (input.totalRecipients == null || input.totalRecipients <= 0) return null;
-  if (input.sendsPerMinute == null || input.sendsPerMinute <= 0) return null;
-  const { amount, unit } = durationParts(input.totalRecipients / input.sendsPerMinute);
+  const rate = etaQueueRate(input);
+  if (rate <= 0) return null;
+  const { amount, unit } = durationParts(input.totalRecipients / rate);
   return `At least ${amount} ${unit} to send`;
 }
 
@@ -138,12 +251,24 @@ export function abTestBlockers(eligible: number, sharePercent: number): string[]
   return reasons;
 }
 
-export function autoPauseTitle(code: string | null | undefined): string {
+export function formatPolicyPercent(value: number): string {
+  if (Number.isInteger(value)) return `${value}%`;
+  return formatRate(value);
+}
+
+export function autoPauseTitle(
+  code: string | null | undefined,
+  policy?: { bouncePausePercent?: number | null; complaintPausePercent?: number | null },
+): string {
+  const bounce = policy?.bouncePausePercent ?? BOUNCE_PAUSE_PERCENT;
+  const complaint = policy?.complaintPausePercent;
   switch (code) {
     case 'bounce_rate_threshold':
-      return 'Bounce rate passed the limit';
+      return `Bounce rate passed ${formatPolicyPercent(bounce)}`;
     case 'complaint_rate_threshold':
-      return 'Complaint rate passed the limit';
+      return complaint == null
+        ? 'Complaint rate passed the limit'
+        : `Complaint rate passed ${formatPolicyPercent(complaint)}`;
     case 'deliverability_hold':
       return 'Sending paused to protect deliverability';
     default:
@@ -151,23 +276,116 @@ export function autoPauseTitle(code: string | null | undefined): string {
   }
 }
 
-export function campaignReasonLine(campaign: {
-  status: string;
-  review_reason?: string | null;
-  auto_pause_reason?: string | null;
-}): string | null {
+export function complaintWarningCopy(policy?: {
+  complaintWarnPercent?: number | null;
+  complaintPausePercent?: number | null;
+}): string {
+  const warn = policy?.complaintWarnPercent;
+  const pause = policy?.complaintPausePercent;
+  if (warn != null && pause != null) {
+    return `Complaint rate is in the warning band. Warnings start at ${formatPolicyPercent(warn)} and sending pauses at ${formatPolicyPercent(pause)}.`;
+  }
+  if (warn != null) {
+    return `Complaint rate reached the warning level (${formatPolicyPercent(warn)}).`;
+  }
+  return 'Complaint rate is in the warning band.';
+}
+
+export function deliverabilityPolicyCopy(policy?: {
+  bouncePausePercent?: number | null;
+  complaintWarnPercent?: number | null;
+  complaintPausePercent?: number | null;
+}): string[] {
+  const bounce = policy?.bouncePausePercent ?? BOUNCE_PAUSE_PERCENT;
+  const lines = [`Campaigns pause when the bounce rate reaches ${formatPolicyPercent(bounce)}.`];
+  const warn = policy?.complaintWarnPercent;
+  const pause = policy?.complaintPausePercent;
+  if (warn != null && pause != null) {
+    lines.push(`Complaints warn at ${formatPolicyPercent(warn)} and pause at ${formatPolicyPercent(pause)}.`);
+  } else if (pause != null) {
+    lines.push(`Campaigns pause when the complaint rate reaches ${formatPolicyPercent(pause)}.`);
+  } else if (warn != null) {
+    lines.push(`Complaints warn at ${formatPolicyPercent(warn)}.`);
+  }
+  return lines;
+}
+
+export function campaignReasonLine(
+  campaign: {
+    status: string;
+    review_reason?: string | null;
+    auto_pause_reason?: string | null;
+    eligible_count?: number | null;
+    total_recipients?: number | null;
+    trust_tier?: string | null;
+  },
+  policy?: { bouncePausePercent?: number | null; complaintPausePercent?: number | null },
+): string | null {
   if (campaign.status === 'in_review') {
-    return campaign.review_reason?.trim() || 'Your first large send is being reviewed.';
+    return largeSendReviewCopy({
+      eligible: campaign.eligible_count ?? campaign.total_recipients,
+      trustTier: campaign.trust_tier,
+      reviewReason: campaign.review_reason,
+    });
   }
   if (campaign.status === 'paused') return 'Paused by you.';
-  if (campaign.status === 'auto_paused') return autoPauseTitle(campaign.auto_pause_reason);
+  if (campaign.status === 'auto_paused') return autoPauseTitle(campaign.auto_pause_reason, policy);
   return null;
 }
 
-export function inReviewMessage(turnaround: string | null | undefined): string {
-  const base = 'Your first large send is being reviewed.';
+export type LargeSendKind = 'tier' | 'first';
+
+export function largeSendDecision(input: {
+  eligible?: number | null;
+  requiresReview?: boolean;
+  trustTier?: string | null;
+  firstThreshold?: number | null;
+  tierHoldThreshold?: number | null;
+  tierHoldMax?: string | null;
+  firstLargeSendCompleted?: boolean | null;
+}): { hold: boolean; kind: LargeSendKind | null } {
+  const first = input.firstThreshold ?? FIRST_LARGE_SEND_RECIPIENTS;
+  const tierLine = input.tierHoldThreshold ?? TIER_HOLD_RECIPIENTS;
+  const maxTier = input.tierHoldMax ?? TIER_HOLD_MAX;
+  const eligible = input.eligible;
+  if (eligible != null && eligible >= tierLine && tierAtMost(input.trustTier, maxTier)) {
+    return { hold: true, kind: 'tier' };
+  }
+  const firstOpen = input.firstLargeSendCompleted === false
+    || (input.firstLargeSendCompleted !== true && tierAtMost(input.trustTier, maxTier));
+  if (eligible != null && eligible >= first && firstOpen) {
+    return { hold: true, kind: 'first' };
+  }
+  if (input.requiresReview) return { hold: true, kind: 'first' };
+  return { hold: false, kind: null };
+}
+
+export function largeSendReviewCopy(input: {
+  eligible?: number | null;
+  trustTier?: string | null;
+  reviewReason?: string | null;
+  firstThreshold?: number | null;
+  tierHoldThreshold?: number | null;
+  tierHoldMax?: string | null;
+  requiresReview?: boolean;
+  firstLargeSendCompleted?: boolean | null;
+}): string {
+  const reason = input.reviewReason?.trim();
+  if (reason) return reason;
+  const decision = largeSendDecision({ ...input, requiresReview: input.requiresReview ?? true });
+  if (decision.kind === 'tier') {
+    const line = input.tierHoldThreshold ?? TIER_HOLD_RECIPIENTS;
+    const max = normalizeTrustTier(input.tierHoldMax) ?? TIER_HOLD_MAX;
+    return `Sends of ${formatCount(line)} or more stay in review while your trust tier is ${max} or below.`;
+  }
+  const first = input.firstThreshold ?? FIRST_LARGE_SEND_RECIPIENTS;
+  return `Sends of ${formatCount(first)} or more go to review the first time.`;
+}
+
+export function inReviewMessage(turnaround: string | null | undefined, reason?: string | null): string {
+  const base = reason?.trim() || 'Your first large send is being reviewed.';
   const text = turnaround?.trim();
-  if (!text) return base;
+  if (!text || base.includes(text)) return base;
   return `${base} This usually takes up to ${text}.`;
 }
 
@@ -266,14 +484,16 @@ export function hasPhysicalAddress(value: string | null | undefined): boolean {
   return Boolean(value && value.trim().length > 0);
 }
 
-export function sendRequiresReview(
-  requiresReview: boolean,
-  eligible: number | null | undefined,
-  threshold: number | null | undefined,
-): boolean {
-  if (requiresReview) return true;
-  if (threshold == null || eligible == null) return false;
-  return eligible >= threshold;
+export function sendRequiresReview(input: {
+  requiresReview?: boolean;
+  eligible?: number | null;
+  trustTier?: string | null;
+  firstThreshold?: number | null;
+  tierHoldThreshold?: number | null;
+  tierHoldMax?: string | null;
+  firstLargeSendCompleted?: boolean | null;
+}): boolean {
+  return largeSendDecision(input).hold;
 }
 
 /** Free plan meters subscribers. Campaign sends stay off this card. */

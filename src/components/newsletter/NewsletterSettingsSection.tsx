@@ -17,7 +17,7 @@ import {
   secondaryButtonClass,
 } from '@/components/newsletter/classes';
 import { useNewsletterSettings, useNewsletterSettingsMutations } from '@/hooks/useNewsletter';
-import { doiImportCopy, formatShortDate } from '@/lib/newsletter/format';
+import { deliverabilityPolicyCopy, doiImportCopy, formatShortDate, queuePaceCopy, rampSummary } from '@/lib/newsletter/format';
 import { toastError, toastSuccess } from '@/lib/toast';
 
 const ATTESTATION =
@@ -35,6 +35,17 @@ export function NewsletterSettingsSection() {
   const doiExposed = settings?.doi_for_imports !== undefined || settings?.doi_imports_editable !== undefined;
   const importsOn = settings?.doi_for_imports !== false;
   const purgeDays = settings?.pending_purge_days ?? 30;
+  const rampLine = rampSummary({
+    trustTier: settings?.trust_tier,
+    campaignCap: settings?.campaign_cap,
+    dailyCap: settings?.daily_cap,
+    capsFromApi: settings?.ramp_caps_from_api,
+  });
+  const policyLines = deliverabilityPolicyCopy({
+    bouncePausePercent: settings?.bounce_pause_percent,
+    complaintWarnPercent: settings?.complaint_warn_percent,
+    complaintPausePercent: settings?.complaint_pause_percent,
+  });
 
   async function saveAddress() {
     try {
@@ -101,6 +112,33 @@ export function NewsletterSettingsSection() {
       </section>
 
       <section className="space-y-3 border border-border bg-card p-5">
+        <h2 className="text-base font-medium">Sending trust</h2>
+        <p className="text-[13px]">
+          {rampLine ?? 'Trust tier and send caps are not available yet.'}
+        </p>
+        {settings?.ramp_tiers && settings.ramp_tiers.length > 0 ? (
+          <ul className="space-y-1 text-[13px] text-muted-foreground">
+            {settings.ramp_tiers.map((tier) => (
+              <li key={tier.tier}>
+                {tier.tier}: {tier.campaign_cap == null ? 'uncapped' : tier.campaign_cap.toLocaleString('en-US')}
+                {' / '}
+                {tier.daily_cap == null ? 'uncapped' : tier.daily_cap.toLocaleString('en-US')}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className="text-[13px] text-muted-foreground">
+          {queuePaceCopy({
+            globalPerMinute: settings?.queue_global_per_minute,
+            workspacePerMinute: settings?.queue_workspace_per_minute ?? settings?.sends_per_minute,
+          })}
+        </p>
+        {policyLines.map((line) => (
+          <p key={line} className="text-[13px] text-muted-foreground">{line}</p>
+        ))}
+      </section>
+
+      <section className="space-y-3 border border-border bg-card p-5">
         <h2 className="text-base font-medium">Double opt-in for API and imports</h2>
         <p className="text-[13px] text-muted-foreground">
           Form signups always send a confirmation email. This switch covers API and CSV imports on paid plans.
@@ -139,6 +177,9 @@ export function NewsletterSettingsSection() {
           <p className="text-[13px]">
             Turned off by {settings.doi_imports_disabled_by.name} on {formatShortDate(settings.doi_imports_disabled_by.at)}.
           </p>
+        ) : null}
+        {settings?.doi_imports_disabled_by?.text ? (
+          <p className="text-[13px]">Attestation: {settings.doi_imports_disabled_by.text}</p>
         ) : null}
         <p className="text-[13px] text-muted-foreground">
           Unconfirmed signups are removed after {purgeDays} days.

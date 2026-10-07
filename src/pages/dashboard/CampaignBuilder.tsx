@@ -40,6 +40,10 @@ import {
   hasPhysicalAddress,
   isEmailAddress,
   perVariantCount,
+  inReviewMessage,
+  largeSendReviewCopy,
+  queuePaceCopy,
+  rampSummary,
   reviewSendFloor,
   sendRequiresReview,
   suppressedCount,
@@ -117,8 +121,43 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
   const abAllowed = blockers.length === 0;
   const fromAddress = localPart && domain ? `${localPart}@${domain}` : '';
   const recipients = live.total_recipients ?? eligible;
-  const floor = reviewSendFloor({ totalRecipients: recipients, sendsPerMinute: live.sends_per_minute ?? settings.data?.sends_per_minute });
-  const reviewHold = sendRequiresReview(live.requires_review, eligible, settings.data?.first_large_send_threshold);
+  const trustTier = live.trust_tier ?? settings.data?.trust_tier ?? null;
+  const capsFromApi = live.ramp_caps_from_api || settings.data?.ramp_caps_from_api === true;
+  const rampLine = rampSummary({
+    trustTier,
+    campaignCap: capsFromApi ? (live.ramp_caps_from_api ? live.campaign_cap : settings.data?.campaign_cap) : null,
+    dailyCap: capsFromApi ? (live.ramp_caps_from_api ? live.daily_cap : settings.data?.daily_cap) : null,
+    capsFromApi,
+  });
+  const queueInput = {
+    globalPerMinute: settings.data?.queue_global_per_minute,
+    workspacePerMinute: settings.data?.queue_workspace_per_minute,
+    sendsPerMinute: settings.data?.queue_workspace_per_minute == null
+      ? (live.sends_per_minute ?? settings.data?.sends_per_minute)
+      : null,
+  };
+  const floor = reviewSendFloor({ totalRecipients: recipients, ...queueInput });
+  const reviewHold = sendRequiresReview({
+    requiresReview: live.requires_review,
+    eligible,
+    trustTier,
+    firstThreshold: settings.data?.first_large_send_threshold,
+    tierHoldThreshold: settings.data?.large_send_tier_threshold,
+    tierHoldMax: settings.data?.large_send_tier_max,
+    firstLargeSendCompleted: settings.data?.first_large_send_completed,
+  });
+  const reviewCopy = reviewHold
+    ? inReviewMessage(settings.data?.review_turnaround ?? live.review_turnaround, largeSendReviewCopy({
+      eligible,
+      trustTier,
+      reviewReason: live.review_reason,
+      firstThreshold: settings.data?.first_large_send_threshold,
+      tierHoldThreshold: settings.data?.large_send_tier_threshold,
+      tierHoldMax: settings.data?.large_send_tier_max,
+      requiresReview: live.requires_review,
+      firstLargeSendCompleted: settings.data?.first_large_send_completed,
+    }))
+    : null;
   const addressReady = hasPhysicalAddress(settings.data?.physical_address);
   const usTargeted = campaignNeedsPhysicalAddress(live.us_targeted, audience?.us_targeted);
   const addressBlocked = usTargeted && !addressReady;
@@ -304,6 +343,7 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
           <label className="block text-[13px]">Include tags<input className={`${fieldClass} mt-1.5`} value={includeTags} onChange={(event) => setIncludeTags(event.target.value)} placeholder="launch, customers" /></label>
           <label className="block text-[13px]">Exclude tags<input className={`${fieldClass} mt-1.5`} value={excludeTags} onChange={(event) => setExcludeTags(event.target.value)} /></label>
           {receipt ? <p className="text-[13px]">{receipt}</p> : null}
+          {rampLine ? <p className="text-[13px] text-muted-foreground">{rampLine}</p> : null}
           <button type="button" className={primaryButtonClass} disabled={saving} onClick={() => void saveAudience()}>Continue</button>
         </section>
       ) : null}
@@ -474,6 +514,8 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
               </div>
             ))}
             {floor ? <p className="pt-3">{floor}</p> : null}
+            <p className="pt-2 text-muted-foreground">{queuePaceCopy(queueInput)}</p>
+            {rampLine ? <p className="pt-2">{rampLine}</p> : null}
           </div>
           {addressBlocked ? (
             <p className="text-[13px]" role="alert">
@@ -497,12 +539,7 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
               </Select>
             </div>
           ) : null}
-          {reviewHold ? (
-            <p className="text-[13px] text-muted-foreground">
-              This send is above the first-large-send threshold, so it goes to review
-              {settings.data?.review_turnaround ? ` (usually up to ${settings.data.review_turnaround})` : ''}.
-            </p>
-          ) : null}
+          {reviewCopy ? <p className="text-[13px] text-muted-foreground">{reviewCopy}</p> : null}
           <div className="flex gap-2">
             <button type="button" className={secondaryButtonClass} onClick={() => setStep(3)}>Back</button>
             <button type="button" className={primaryButtonClass} disabled={primaryDisabled} onClick={() => setConfirmOpen(true)}>

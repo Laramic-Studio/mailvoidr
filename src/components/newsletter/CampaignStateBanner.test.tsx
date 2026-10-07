@@ -24,7 +24,7 @@ describe('CampaignStateBanner', () => {
     renderBanner(
       <CampaignStateBanner status="auto_paused" autoPauseReason="bounce_rate_threshold" />,
     );
-    expect(screen.getByText('Bounce rate passed the limit')).toBeTruthy();
+    expect(screen.getByText('Bounce rate passed 2%')).toBeTruthy();
     expect(screen.getByText('Our team has been alerted.')).toBeTruthy();
     expect(screen.getByTestId('campaign-contact-support')).toBeTruthy();
     expect(screen.queryByTestId('campaign-resume')).toBeNull();

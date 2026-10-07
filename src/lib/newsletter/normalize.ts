@@ -1,6 +1,7 @@
 import type {
   Audience,
   Campaign,
+  RampTier,
   CampaignRecipient,
   CampaignReport,
   NewsletterForm,
@@ -61,6 +62,107 @@ export function readUsTargeted(body: Record<string, unknown>): boolean | null {
     return list.some((item) => typeof item === 'string' && isUsLabel(item));
   }
   return null;
+}
+
+function attestationRecord(value: unknown): { name: string; at: string; text?: string } | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const row = value as Record<string, unknown>;
+  const text = strOrNull(row.text ?? row.statement ?? row.attestation);
+  return {
+    name: String(row.name ?? ''),
+    at: String(row.at ?? row.created_at ?? ''),
+    ...(text ? { text } : {}),
+  };
+}
+
+function firstDefined<T>(...values: Array<T | undefined>): T | undefined {
+  return values.find((value) => value !== undefined);
+}
+
+function readBool(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  if (value === 1 || value === '1' || value === 'true') return true;
+  if (value === 0 || value === '0' || value === 'false') return false;
+  return undefined;
+}
+
+function readRampTier(raw: unknown): RampTier | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const row = raw as Record<string, unknown>;
+  const tier = strOrNull(row.tier ?? row.trust_tier);
+  if (!tier) return null;
+  const campaign = readOptionalNumber(row, ['campaign_cap', 'per_campaign_cap', 'per_campaign']);
+  const daily = readOptionalNumber(row, ['daily_cap', 'per_day_cap', 'per_day']);
+  return {
+    tier,
+    campaign_cap: campaign === undefined ? null : campaign,
+    daily_cap: daily === undefined ? null : daily,
+  };
+}
+
+function readTrust(record: Record<string, unknown>): {
+  trust_tier: string | null;
+  campaign_cap: number | null;
+  daily_cap: number | null;
+  ramp_caps_from_api: boolean;
+  ramp_tiers?: RampTier[];
+  queue_global_per_minute?: number | null;
+  queue_workspace_per_minute?: number | null;
+  bounce_pause_percent?: number | null;
+  complaint_warn_percent?: number | null;
+  complaint_pause_percent?: number | null;
+  complaint_warning: boolean;
+} {
+  const ramp = readMeterRecord(record.send_ramp) ?? readMeterRecord(record.ramp);
+  const queue = readMeterRecord(record.queue);
+  const policy = readMeterRecord(record.deliverability) ?? readMeterRecord(record.deliverability_policy);
+  const source = ramp ?? record;
+  const trust = strOrNull(record.trust_tier ?? source.trust_tier ?? source.tier);
+  const campaignFromRamp = readOptionalNumber(source, ['campaign_cap', 'per_campaign_cap', 'per_campaign']);
+  const dailyFromRamp = readOptionalNumber(source, ['daily_cap', 'per_day_cap', 'per_day']);
+  const campaignCap = campaignFromRamp !== undefined
+    ? campaignFromRamp
+    : readOptionalNumber(record, ['campaign_cap', 'per_campaign_cap']);
+  const dailyCap = dailyFromRamp !== undefined
+    ? dailyFromRamp
+    : readOptionalNumber(record, ['daily_cap', 'per_day_cap']);
+  const tierRows = record.ramp_tiers ?? record.tiers ?? source.tiers;
+  const rampTiers = Array.isArray(tierRows)
+    ? tierRows.map(readRampTier).filter((row): row is RampTier => row != null)
+    : undefined;
+  const globalQueue = queue
+    ? readOptionalNumber(queue, ['global_per_minute', 'global_sends_per_minute'])
+    : readOptionalNumber(record, ['queue_global_per_minute', 'global_sends_per_minute']);
+  const workspaceQueue = queue
+    ? readOptionalNumber(queue, ['workspace_per_minute', 'workspace_sends_per_minute'])
+    : readOptionalNumber(record, ['queue_workspace_per_minute', 'workspace_sends_per_minute']);
+  const bounce = firstDefined(
+    policy ? readOptionalNumber(policy, ['bounce_pause_percent', 'bounce_pause_rate']) : undefined,
+    readOptionalNumber(record, ['bounce_pause_percent', 'bounce_pause_rate']),
+  );
+  const warn = firstDefined(
+    policy ? readOptionalNumber(policy, ['complaint_warn_percent', 'complaint_warning_percent']) : undefined,
+    readOptionalNumber(record, ['complaint_warn_percent', 'complaint_warning_percent']),
+  );
+  const pause = firstDefined(
+    policy ? readOptionalNumber(policy, ['complaint_pause_percent', 'complaint_pause_rate']) : undefined,
+    readOptionalNumber(record, ['complaint_pause_percent', 'complaint_pause_rate']),
+  );
+  const warning = readBool(record.complaint_warning)
+    ?? (record.deliverability_warning === 'complaint_rate_warning' ? true : undefined);
+  return {
+    trust_tier: trust,
+    campaign_cap: campaignCap === undefined ? null : campaignCap,
+    daily_cap: dailyCap === undefined ? null : dailyCap,
+    ramp_caps_from_api: campaignCap !== undefined || dailyCap !== undefined,
+    ...(rampTiers && rampTiers.length > 0 ? { ramp_tiers: rampTiers } : {}),
+    ...(globalQueue !== undefined ? { queue_global_per_minute: globalQueue } : {}),
+    ...(workspaceQueue !== undefined ? { queue_workspace_per_minute: workspaceQueue } : {}),
+    ...(bounce !== undefined ? { bounce_pause_percent: bounce } : {}),
+    ...(warn !== undefined ? { complaint_warn_percent: warn } : {}),
+    ...(pause !== undefined ? { complaint_pause_percent: pause } : {}),
+    complaint_warning: warning === true,
+  };
 }
 
 function readSubscriberMeter(nested: Record<string, unknown>): {
@@ -128,18 +230,17 @@ export function normalizeSettings(raw: unknown): NewsletterSettings {
     doi_imports_editable: typeof nested.doi_imports_editable === 'boolean'
       ? nested.doi_imports_editable
       : undefined,
-    doi_imports_disabled_by: disabledBy && typeof disabledBy === 'object'
-      ? {
-          name: String((disabledBy as { name?: unknown }).name ?? ''),
-          at: String((disabledBy as { at?: unknown }).at ?? ''),
-        }
-      : undefined,
+    doi_imports_disabled_by: attestationRecord(disabledBy ?? nested.import_attestation),
     pending_purge_days: numOrNull(nested.pending_purge_days) ?? undefined,
     plan: strOrNull(nested.plan) ?? undefined,
     review_turnaround: strOrNull(nested.review_turnaround) ?? undefined,
     ...readSubscriberMeter(nested),
     sends_per_minute: numOrNull(nested.sends_per_minute),
     first_large_send_threshold: numOrNull(nested.first_large_send_threshold),
+    first_large_send_completed: readBool(nested.first_large_send_completed),
+    large_send_tier_threshold: readOptionalNumber(nested, ['large_send_tier_threshold', 'tier_hold_threshold']),
+    large_send_tier_max: strOrNull(nested.large_send_tier_max ?? nested.tier_hold_max) ?? undefined,
+    ...readTrust(nested),
     max_csv_bytes: numOrNull(nested.max_csv_bytes),
   };
 }
@@ -364,6 +465,7 @@ export function normalizeCampaign(raw: unknown): Campaign {
     has_unsubscribe_link: typeof body.has_unsubscribe_link === 'boolean' ? body.has_unsubscribe_link : null,
     has_physical_address: typeof body.has_physical_address === 'boolean' ? body.has_physical_address : null,
     us_targeted: readUsTargeted(body),
+    ...readTrust(body),
     created_at: strOrNull(body.created_at),
     updated_at: strOrNull(body.updated_at),
   };
