@@ -51,7 +51,7 @@ export default function ConfirmPage() {
           </h1>
           <p className="mt-3">{state.message || 'Thanks. You will receive emails from this list.'}</p>
           {state.redirect_url ? (
-            <a href={state.redirect_url} className={`${publicButtonClass} mt-6`}>
+            <a href={state.redirect_url} rel="noopener noreferrer" className={`${publicButtonClass} mt-6`}>
               Continue
             </a>
           ) : null}
