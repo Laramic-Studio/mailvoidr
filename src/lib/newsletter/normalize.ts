@@ -419,6 +419,7 @@ export function normalizeForm(raw: unknown): NewsletterForm {
 
 export function normalizeCampaign(raw: unknown): Campaign {
   const body = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const trust = readTrust(body);
   return {
     id: String(body.id ?? ''),
     name: String(body.name ?? 'Untitled campaign'),
@@ -465,7 +466,10 @@ export function normalizeCampaign(raw: unknown): Campaign {
     has_unsubscribe_link: typeof body.has_unsubscribe_link === 'boolean' ? body.has_unsubscribe_link : null,
     has_physical_address: typeof body.has_physical_address === 'boolean' ? body.has_physical_address : null,
     us_targeted: readUsTargeted(body),
-    ...readTrust(body),
+    ...trust,
+    bounce_pause_percent: trust.bounce_pause_percent ?? null,
+    complaint_warn_percent: trust.complaint_warn_percent ?? null,
+    complaint_pause_percent: trust.complaint_pause_percent ?? null,
     created_at: strOrNull(body.created_at),
     updated_at: strOrNull(body.updated_at),
   };
