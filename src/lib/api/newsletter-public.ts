@@ -30,8 +30,15 @@ export async function submitPublicSubscribe(
   return normalizeSubscribeResult(data);
 }
 
+/** Read-only lookup. Must never be used to confirm — scanners follow GET links. */
 export async function fetchPublicConfirm(token: string): Promise<PublicConfirmState> {
   const { data } = await publicApi.get(`/public/newsletter/confirm/${token}`);
+  return normalizeConfirmState(data);
+}
+
+/** Confirms the subscription. Called once by the confirm page after it mounts; GETs never confirm. */
+export async function submitPublicConfirm(token: string): Promise<PublicConfirmState> {
+  const { data } = await publicApi.post(`/public/newsletter/confirm/${token}`);
   return normalizeConfirmState(data);
 }
 

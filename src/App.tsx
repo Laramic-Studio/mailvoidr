@@ -84,6 +84,7 @@ function App() {
           <Route path="/docs" element={<DocsLanding />} />
           <Route path="/docs/:slug" element={<DocsArticle />} />
           <Route path="/subscribe/:slug" element={<SubscribePage />} />
+          <Route path="/confirm/invalid" element={<ConfirmPage />} />
           <Route path="/confirm/:token" element={<ConfirmPage />} />
           <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
           <Route path="/unsubscribed/:token" element={<UnsubscribePage />} />
