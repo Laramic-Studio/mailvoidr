@@ -318,11 +318,12 @@ export function DottedBg<T extends ElementType = "div">({
     damping,
   });
 
-  const Tag = (as ?? "div") as ElementType;
+  // `ElementType` collapses JSX props to `never` under TypeScript 6. The runtime tag is still `as`.
+  const Tag = (as ?? "div") as unknown as "div";
 
   return (
     <Tag
-      ref={ref}
+      ref={ref as RefObject<HTMLDivElement>}
       className={cn(
         "dotted-bg",
         overlay ? "pointer-events-none absolute inset-0 -z-10" : "relative isolate",

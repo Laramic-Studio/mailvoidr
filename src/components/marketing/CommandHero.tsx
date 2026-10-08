@@ -92,10 +92,7 @@ export function CommandHero() {
             <h1 className="max-w-3xl font-sora text-[2.55rem] font-semibold leading-[1.05] tracking-[-0.045em] text-foreground md:text-5xl lg:text-[4.1rem]">
               {HOME_HERO.title}
               <br />
-              built for{" "}
-              <span className="hero-accent-phrase">{HOME_HERO.titleAccent}</span>
-              <br />
-              <span className="text-foreground/50">{HOME_HERO.titleBrand}</span>
+              <span className="text-foreground/50">{HOME_HERO.titleMuted}</span>
             </h1>
 
             <div className="mt-10 flex max-w-md flex-col gap-3">
