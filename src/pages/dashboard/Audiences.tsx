@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, EmptyStateButton } from '@/components/EmptyState';
 import { QueryErrorState } from '@/components/QueryErrorState';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
-import { StatusPill } from '@/components/newsletter/StatusPill';
 import { ImportWizard } from '@/components/newsletter/ImportWizard';
 import { SubscriberCapNotice } from '@/components/newsletter/SubscriberLimitNotice';
 import {
@@ -173,12 +172,7 @@ export default function Audiences() {
                       </Link>
                     </td>
                     <td className="p-3">{formatCount(audience.subscribed_count)}</td>
-                    <td className="p-3">
-                      <span className="inline-flex items-center gap-2">
-                        {formatCount(audience.pending_count)}
-                        <StatusPill status="pending" />
-                      </span>
-                    </td>
+                    <td className="p-3">{formatCount(audience.pending_count)}</td>
                     <td className="p-3">
                       <Tooltip>
                         <TooltipTrigger className="underline decoration-dotted underline-offset-4">

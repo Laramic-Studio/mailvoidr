@@ -1,45 +1,46 @@
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import {
   SIDEBAR_EASE,
   SIDEBAR_TRANSITION_MS,
-} from '@/components/dashboard/sidebar-constants';
+} from "@/components/dashboard/sidebar-constants";
 import {
   GlobalSearchDialog,
   GlobalSearchTrigger,
   useGlobalSearchShortcut,
-} from '@/components/dashboard/GlobalSearchDialog';
-import { DashboardHeaderBreadcrumb } from '@/components/dashboard/DashboardHeaderBreadcrumb';
-import { NotificationBell } from '@/components/dashboard/NotificationBell';
-import { Menu, PanelLeft, PanelLeftClose } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+} from "@/components/dashboard/GlobalSearchDialog";
+import { DashboardHeaderBreadcrumb } from "@/components/dashboard/DashboardHeaderBreadcrumb";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
+import { Menu, PanelLeft, PanelLeftClose } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { useAuth } from '@/hooks/useAuth';
-import { useEmailSearchEnabled } from '@/hooks/useBilling';
-import { workspaceInitials } from '@/hooks/useWorkspaces';
-import { useUiStore } from '@/stores/ui-store';
-import { NewsletterImportWatcher } from '@/components/newsletter/NewsletterImportWatcher';
-import { cn } from '@/lib/utils';
-import { WorkspaceTwoFactorBanner } from '@/components/dashboard/WorkspaceTwoFactorBanner';
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
+import { useEmailSearchEnabled } from "@/hooks/useBilling";
+import { workspaceInitials } from "@/hooks/useWorkspaces";
+import { useUiStore } from "@/stores/ui-store";
+import { NewsletterImportWatcher } from "@/components/newsletter/NewsletterImportWatcher";
+import { cn } from "@/lib/utils";
+import { WorkspaceTwoFactorBanner } from "@/components/dashboard/WorkspaceTwoFactorBanner";
+import { Blobatar } from "@blobatar/react";
 
 export function DashboardLayout({
   children,
   flush = false,
-  chrome = 'default',
+  chrome = "default",
 }: {
   children: ReactNode;
   flush?: boolean;
   /** `editor` hides sidebar + top nav so a page can own the full viewport. */
-  chrome?: 'default' | 'editor';
+  chrome?: "default" | "editor";
 }) {
   const nav = useNavigate();
   const { user, logout } = useAuth();
@@ -60,23 +61,29 @@ export function DashboardLayout({
     hydrate();
   }, [hydrate]);
 
-  useGlobalSearchShortcut(openSearch, emailSearchEnabled && chrome !== 'editor');
+  useGlobalSearchShortcut(
+    openSearch,
+    emailSearchEnabled && chrome !== "editor",
+  );
 
   async function handleLogout() {
     await logout();
-    nav('/login');
+    nav("/login");
   }
 
   const collapsed = !hydrated || sidebarCollapsed;
   const expanded = !collapsed;
-  const isEditorChrome = chrome === 'editor';
+  const isEditorChrome = chrome === "editor";
 
   if (isEditorChrome) {
     return (
       <TooltipProvider delayDuration={0}>
         <div className="flex flex-col h-screen overflow-hidden bg-background">
           <WorkspaceTwoFactorBanner />
-          <div className="flex flex-col flex-1 min-h-0 overflow-hidden" data-testid="dashboard-main">
+          <div
+            className="flex flex-col flex-1 min-h-0 overflow-hidden"
+            data-testid="dashboard-main"
+          >
             {children}
           </div>
         </div>
@@ -89,12 +96,12 @@ export function DashboardLayout({
       <div className="flex h-screen overflow-hidden bg-background lg:bg-card">
         <aside
           className={cn(
-            'hidden h-full shrink-0 flex-col overflow-hidden bg-card lg:flex',
-            'transition-[width] ease-[var(--sidebar-ease)] will-change-[width]',
-            expanded ? 'w-[240px]' : 'w-[52px]',
+            "hidden h-full shrink-0 flex-col overflow-hidden bg-card lg:flex",
+            "transition-[width] ease-[var(--sidebar-ease)] will-change-[width]",
+            expanded ? "w-[240px]" : "w-[52px]",
           )}
           style={{
-            ['--sidebar-ease' as string]: SIDEBAR_EASE,
+            ["--sidebar-ease" as string]: SIDEBAR_EASE,
             transitionDuration: `${SIDEBAR_TRANSITION_MS}ms`,
           }}
         >
@@ -126,11 +133,15 @@ export function DashboardLayout({
               <button
                 type="button"
                 onClick={toggleSidebar}
-                data-testid={expanded ? 'sidebar-collapse' : 'sidebar-expand'}
-                aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
-                className="hidden items-center justify-center w-8 h-8 -ml-2 transition-colors rounded-md shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground lg:inline-flex"
+                data-testid={expanded ? "sidebar-collapse" : "sidebar-expand"}
+                aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+                className="items-center justify-center hidden w-8 h-8 -ml-2 transition-colors rounded-md shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground lg:inline-flex"
               >
-                {expanded ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
+                {expanded ? (
+                  <PanelLeftClose className="w-4 h-4" />
+                ) : (
+                  <PanelLeft className="w-4 h-4" />
+                )}
               </button>
 
               {emailSearchEnabled ? (
@@ -145,21 +156,28 @@ export function DashboardLayout({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   data-testid="user-menu-trigger"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full outline-none shrink-0 focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <Avatar className="h-8 w-8 border border-border">
+                  <Avatar className="w-8 h-8 border border-border">
                     {user?.avatar_url ? (
                       <AvatarImage src={user.avatar_url} alt={user.name} />
                     ) : null}
                     <AvatarFallback className="bg-card font-mono text-[11px]">
-                      {user ? workspaceInitials(user.name) : '—'}
+                      <Blobatar
+                        name={"keanu"}
+                        animate="always"
+                        className=""
+                        size={300}
+                      />
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <div className="text-[13px]">{user?.name ?? 'Account'}</div>
-                    <div className="font-mono text-[11px] text-muted-foreground">{user?.email}</div>
+                    <div className="text-[13px]">{user?.name ?? "Account"}</div>
+                    <div className="font-mono text-[11px] text-muted-foreground">
+                      {user?.email}
+                    </div>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -175,7 +193,9 @@ export function DashboardLayout({
                   <DropdownMenuItem asChild>
                     <Link to="/workspaces">Switch workspace</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    Sign out
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -183,12 +203,12 @@ export function DashboardLayout({
 
           <main
             className={cn(
-              'min-h-0 flex-1 overflow-y-auto',
-              flush ? 'flex flex-col p-0' : 'px-4 py-6 lg:px-8 lg:py-8',
+              "min-h-0 flex-1 overflow-y-auto",
+              flush ? "flex flex-col p-0" : "px-4 py-6 lg:px-8 lg:py-8",
             )}
             data-testid="dashboard-main"
           >
-            <div className={flush ? 'px-4 ' : undefined}>
+            <div className={flush ? "px-4 " : undefined}>
               <WorkspaceTwoFactorBanner />
             </div>
             {children}

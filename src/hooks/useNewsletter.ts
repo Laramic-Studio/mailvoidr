@@ -162,12 +162,18 @@ export function useImportJob(importId: string | null, enabled: boolean) {
     enabled: Boolean(importId && enabled),
     refetchInterval: (query) => {
       const status = query.state.data?.import.status;
-      return status === 'processing' || status === 'mapping' ? 4000 : false;
+      return status === 'processing' || status === 'pending' || status === 'mapping' || status == null
+        ? 4000
+        : false;
     },
   });
 }
 
 export function useImportMutations() {
+  const queryClient = useQueryClient();
+  const refreshAudiences = () => {
+    queryClient.invalidateQueries({ queryKey: ['newsletter', 'audiences'] });
+  };
   const upload = useMutation({
     mutationFn: ({ audienceId, file, tags }: { audienceId: string; file: File; tags: string[] }) =>
       uploadAudienceImport(audienceId, file, tags),
@@ -175,6 +181,9 @@ export function useImportMutations() {
   const commit = useMutation({
     mutationFn: ({ importId, columns }: { importId: string; columns: ImportColumn[] }) =>
       commitAudienceImport(importId, { columns, consent_confirmed: true }),
+    onSuccess: (result) => {
+      if (result.import.status === 'completed' || result.import.status === 'failed') refreshAudiences();
+    },
   });
   return { upload, commit };
 }

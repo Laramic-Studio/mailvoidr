@@ -633,8 +633,88 @@ export function contentHasPhysicalAddress(
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Platform from-domain. Any @*.mailvoidr.com address is allowed without DNS verification. */
+export const MAILVOIDR_FROM_DOMAIN = 'app.mailvoidr.com';
+
 export function isEmailAddress(value: string): boolean {
   return EMAIL_RE.test(value.trim());
+}
+
+export function isMailvoidrSendingDomain(domain: string): boolean {
+  const value = domain.trim().toLowerCase().replace(/\.$/, '');
+  return value === 'mailvoidr.com' || value.endsWith('.mailvoidr.com');
+}
+
+function sendingDomainAllowed(domain: string, allowedDomains: string[]): boolean {
+  if (isMailvoidrSendingDomain(domain)) return true;
+  const value = domain.trim().toLowerCase();
+  return allowedDomains.some((item) => item.trim().toLowerCase() === value);
+}
+
+/**
+ * Mailbox plus the chosen domain. A typed address is kept when its domain is
+ * Mailvoidr or verified. Otherwise the selected domain is used, so an
+ * unverified address can still send from Mailvoidr.
+ */
+export function composeCampaignFromAddress(mailbox: string, domain: string, allowedDomains: string[] = []): string {
+  const selected = domain.trim();
+  const typed = mailbox.trim().replace(/\s+/g, '');
+  if (!typed) return '';
+  if (!typed.includes('@')) {
+    if (!selected) return '';
+    return `${typed}@${selected}`;
+  }
+  const at = typed.lastIndexOf('@');
+  const local = typed.slice(0, at);
+  const typedDomain = typed.slice(at + 1);
+  if (!local) return '';
+  if (sendingDomainAllowed(typedDomain, allowedDomains)) return `${local}@${typedDomain.toLowerCase()}`;
+  if (selected && sendingDomainAllowed(selected, allowedDomains)) return `${local}@${selected}`;
+  return `${local}@${typedDomain}`;
+}
+
+export function campaignContentError(input: {
+  fromName: string;
+  mailbox: string;
+  domain: string;
+  subject: string;
+  allowedDomains: string[];
+}): string | null {
+  const missing: string[] = [];
+  if (!input.fromName.trim()) missing.push('from name');
+  if (!input.subject.trim()) missing.push('subject');
+  const address = composeCampaignFromAddress(input.mailbox, input.domain, input.allowedDomains);
+  if (!address) {
+    if (input.mailbox.trim()) {
+      return 'Choose app.mailvoidr.com, or verify a sending domain.';
+    }
+    missing.push('from address');
+  } else if (!isEmailAddress(address)) {
+    return 'Enter a valid from address.';
+  } else {
+    const host = address.slice(address.lastIndexOf('@') + 1);
+    if (!sendingDomainAllowed(host, input.allowedDomains)) {
+      return 'Sender domain is not verified. Choose app.mailvoidr.com, or verify this domain.';
+    }
+  }
+  if (missing.length === 0) return null;
+  const labels = missing.map((item, index) => (index === 0 ? item.charAt(0).toUpperCase() + item.slice(1) : item));
+  if (labels.length === 1) return `${labels[0]} is required.`;
+  const last = labels[labels.length - 1];
+  return `${labels.slice(0, -1).join(', ')}, and ${last} are required.`;
+}
+
+export function importFinishedCopy(job: {
+  added_count: number | null;
+  updated_count: number | null;
+  rejected_count: number | null;
+  doi_required?: boolean;
+  message?: string | null;
+}): string {
+  const summary = `Import finished. ${formatCount(job.added_count)} added, ${formatCount(job.updated_count)} updated, ${formatCount(job.rejected_count)} rejected.`;
+  const waiting = job.doi_required ? ' New contacts stay pending until they confirm the email.' : '';
+  const detail = job.message ? ` ${job.message}` : '';
+  return `${summary}${waiting}${detail}`;
 }
 
 export function manualResubscribeBlocked(status: string): boolean {

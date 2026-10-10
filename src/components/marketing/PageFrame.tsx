@@ -4,9 +4,9 @@ const RAIL_HANDLES = ["8%", "28%", "52%", "76%"] as const;
 
 export function PageFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="page-inset flex items-stretch gap-2">
+    <div className="flex items-stretch gap-2 page-inset">
       <aside
-        className="page-left-rail relative hidden shrink-0 border-x border-t border-border sm:block"
+        className="relative hidden border-t page-left-rail shrink-0 border-x border-border sm:block"
         aria-hidden
       >
         <span className="page-frame-handle page-frame-handle-tl" />
@@ -19,7 +19,7 @@ export function PageFrame({ children }: { children: ReactNode }) {
           />
         ))}
       </aside>
-      <div className="page-frame relative min-w-0 flex-1 border-x border-t border-border">
+      <div className="relative flex-1 min-w-0 border-t page-frame border-x border-border">
         <span className="page-frame-handle page-frame-handle-tl" aria-hidden />
         <span className="page-frame-handle page-frame-handle-tr" aria-hidden />
         {children}

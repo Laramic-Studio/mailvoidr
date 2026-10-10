@@ -24,6 +24,6 @@ export default function CampaignPage() {
 
   const campaign = query.data.campaign;
   const editing = campaign.status === 'draft' || (campaign.status === 'scheduled' && params.get('edit') === '1');
-  if (editing) return <CampaignBuilder campaign={campaign} />;
+  if (editing) return <CampaignBuilder key={campaign.id} campaign={campaign} />;
   return <CampaignDetail campaign={campaign} />;
 }

@@ -9,15 +9,20 @@ import {
 import { useTheme } from "next-themes";
 import { Link } from "react-router-dom";
 
-const Footer = ({ MARKETING_SOCIAL, MARKETING_NAV, statusClass, statusLabel, apiHealthy }) => {
-    const { theme } = useTheme();
-    const isDark = theme === "dark";
-    const GithubIcon = !isDark ? GitHubDark : GitHubLight;
-    const XIcon = !isDark ? XDark : XLight;
+const Footer = ({
+  MARKETING_SOCIAL,
+  MARKETING_NAV,
+  statusClass,
+  statusLabel,
+  apiHealthy,
+}) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const GithubIcon = !isDark ? GitHubDark : GitHubLight;
+  const XIcon = !isDark ? XDark : XLight;
 
-    
   return (
-    <footer className="relative overflow-hidden border-t border-border">
+    <footer className="relative overflow-hidden ">
       <div
         aria-hidden="true"
         className="
@@ -34,7 +39,7 @@ const Footer = ({ MARKETING_SOCIAL, MARKETING_NAV, statusClass, statusLabel, api
         Mailvoidr
       </div>
 
-      <div className="page-band flex items-center justify-between pt-16 pb-10">
+      <div className="flex items-center justify-between pt-6 page-band">
         {/* Left */}
         <div className="">
           <div className="flex items-center gap-3">
@@ -97,12 +102,11 @@ const Footer = ({ MARKETING_SOCIAL, MARKETING_NAV, statusClass, statusLabel, api
         </ul>
       </div>
 
-      <div className="relative z-10 border-t border-border">
+      <div className="relative z-10">
         <div
           className="
         page-band flex
         flex-col gap-3
-         py-5
         text-[12.5px]
         text-muted-foreground
         md:flex-row

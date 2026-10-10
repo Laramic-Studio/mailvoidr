@@ -59,6 +59,7 @@ import Contact from "@/pages/marketing/Contact";
 import Terms from "@/pages/marketing/Terms";
 import Privacy from "@/pages/marketing/Privacy";
 
+
 function LegacyVirtualEmailDetailRedirect() {
   const { id } = useParams();
   return <Navigate to={`/dashboard/virtual-emails/${id ?? ""}`} replace />;

@@ -185,6 +185,7 @@ export interface NewsletterImport {
   updated_count: number | null;
   rejected_count: number | null;
   skipped_suppressed_count: number | null;
+  doi_required?: boolean;
   error_report_url: string | null;
   message: string | null;
 }

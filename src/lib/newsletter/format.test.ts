@@ -4,7 +4,10 @@ import {
   audienceReceiptCopy,
   autoPauseTitle,
   campaignActions,
+  campaignContentError,
   campaignNeedsPhysicalAddress,
+  composeCampaignFromAddress,
+  MAILVOIDR_FROM_DOMAIN,
   campaignReasonLine,
   formatComplaint,
   formatRate,
@@ -197,6 +200,46 @@ describe('trust ramp and large-send hold', () => {
     expect(etaQueueRate({})).toBe(20);
     expect(etaQueueRate({ workspacePerMinute: 20, globalPerMinute: 60 })).toBe(20);
     expect(etaQueueRate({ sendsPerMinute: 1000, globalPerMinute: 60 })).toBe(60);
+  });
+});
+
+describe('campaign from address', () => {
+  it('sends from Mailvoidr when no custom domain is verified', () => {
+    expect(composeCampaignFromAddress('news', MAILVOIDR_FROM_DOMAIN)).toBe('news@app.mailvoidr.com');
+    expect(composeCampaignFromAddress('news@gmail.com', MAILVOIDR_FROM_DOMAIN)).toBe('news@app.mailvoidr.com');
+    expect(campaignContentError({
+      fromName: 'Ada',
+      mailbox: 'news',
+      domain: MAILVOIDR_FROM_DOMAIN,
+      subject: 'Hello',
+      allowedDomains: [MAILVOIDR_FROM_DOMAIN],
+    })).toBeNull();
+  });
+
+  it('keeps a verified from address and rejects an unverified one', () => {
+    expect(composeCampaignFromAddress('news@example.com', '', ['example.com'])).toBe('news@example.com');
+    expect(campaignContentError({
+      fromName: 'Ada',
+      mailbox: 'news@gmail.com',
+      domain: '',
+      subject: 'Hello',
+      allowedDomains: [],
+    })).toBe('Sender domain is not verified. Choose app.mailvoidr.com, or verify this domain.');
+  });
+
+  it('asks for a domain when only the mailbox name is filled', () => {
+    expect(composeCampaignFromAddress('news', '')).toBe('');
+    expect(campaignContentError({
+      fromName: 'Ada',
+      mailbox: 'news',
+      domain: '',
+      subject: 'Hello',
+      allowedDomains: [MAILVOIDR_FROM_DOMAIN],
+    })).toBe('Choose app.mailvoidr.com, or verify a sending domain.');
+  });
+
+  it('joins a mailbox name to the selected domain', () => {
+    expect(composeCampaignFromAddress('news', 'example.com', ['example.com'])).toBe('news@example.com');
   });
 });
 

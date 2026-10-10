@@ -7,6 +7,8 @@ import App from "@/App";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppProviders } from "@/components/AppProviders";
 import { Toaster } from "@/components/ui/sonner";
+import "blobatar/motion.css";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {

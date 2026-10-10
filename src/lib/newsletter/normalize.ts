@@ -364,6 +364,7 @@ export function normalizeImport(raw: unknown): NewsletterImport {
     skipped_suppressed_count: numOrNull(
       body.skipped_suppressed_count ?? body.skipped_because_suppressed ?? body.skipped,
     ),
+    doi_required: readBool(body.doi_required),
     error_report_url: strOrNull(body.error_report_url),
     message: strOrNull(body.message),
   };

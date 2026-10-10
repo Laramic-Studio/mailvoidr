@@ -32,6 +32,9 @@ import { useTemplates } from '@/hooks/useTemplates';
 import {
   abTestBlockers,
   audienceReceiptCopy,
+  campaignContentError,
+  composeCampaignFromAddress,
+  MAILVOIDR_FROM_DOMAIN,
   campaignNeedsPhysicalAddress,
   contentHasPhysicalAddress,
   contentHasUnsubscribe,
@@ -86,7 +89,7 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
   const [excludeTags, setExcludeTags] = useState(campaign.exclude_tags.join(', '));
   const [fromName, setFromName] = useState(campaign.from_name ?? '');
   const [localPart, setLocalPart] = useState(campaign.from_address?.split('@')[0] ?? '');
-  const [domain, setDomain] = useState(campaign.from_address?.split('@')[1] ?? '');
+  const [domain, setDomain] = useState(campaign.from_address?.split('@')[1] || MAILVOIDR_FROM_DOMAIN);
   const [replyTo, setReplyTo] = useState(campaign.reply_to ?? '');
   const [subject, setSubject] = useState(campaign.subject ?? '');
   const [previewText, setPreviewText] = useState(campaign.preview_text ?? '');
@@ -119,7 +122,6 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
   const receipt = audienceReceiptCopy({ eligible, pending, suppressed });
   const blockers = abTestBlockers(eligible ?? 0, share);
   const abAllowed = blockers.length === 0;
-  const fromAddress = localPart && domain ? `${localPart}@${domain}` : '';
   const recipients = live.total_recipients ?? eligible;
   const trustTier = live.trust_tier ?? settings.data?.trust_tier ?? null;
   const capsFromApi = live.ramp_caps_from_api || settings.data?.ramp_caps_from_api === true;
@@ -165,6 +167,15 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
   const addressPresent = live.has_physical_address === true || contentHasPhysicalAddress(html, text, settings.data?.physical_address);
   const perSide = perVariantCount(eligible ?? 0, share);
   const domainRows = domains.data?.data ?? [];
+  const verifiedDomains = domainRows.filter((item) => item.status === 'verified');
+  const allowedDomains = [MAILVOIDR_FROM_DOMAIN, ...verifiedDomains.map((item) => item.domain)];
+  const fromAddress = composeCampaignFromAddress(localPart, domain, allowedDomains);
+
+  useEffect(() => {
+    if (domain || domains.isLoading) return;
+    if (verifiedDomains.length > 0) return;
+    setDomain(MAILVOIDR_FROM_DOMAIN);
+  }, [domain, domains.isLoading, verifiedDomains.length]);
 
   const templateOptions = templates.data?.data ?? [];
   const selectedTemplate = templateOptions.find((item) => item.id === templateId);
@@ -211,21 +222,34 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
   }
 
   async function saveContent() {
-    if (!fromName.trim() || !fromAddress || !subject.trim()) {
-      toastError(null, 'From name, from address, and subject are required.');
+    const contentError = campaignContentError({
+      fromName,
+      mailbox: localPart,
+      domain,
+      subject,
+      allowedDomains,
+    });
+    if (contentError) {
+      toastError(null, contentError);
+      return;
+    }
+    if (contentMode === 'template' && !templateId) {
+      toastError(null, 'Choose a template.');
       return;
     }
     try {
       const exported = await exportEditorHtml();
+      const templateHtml = selectedTemplate?.current_version?.html_body ?? '';
+      const templateText = selectedTemplate?.current_version?.text_body ?? '';
       await save({
         from_name: fromName.trim(),
         from_address: fromAddress,
         reply_to: replyTo.trim() || null,
         subject: subject.trim(),
         preview_text: previewText.trim() || null,
-        html: exported.html,
-        text,
-        design_json: exported.design,
+        html: contentMode === 'template' ? templateHtml : exported.html,
+        text: contentMode === 'template' ? (templateText || text) : text,
+        design_json: contentMode === 'editor' ? exported.design : null,
         template_id: contentMode === 'template' ? templateId || null : null,
         template_version_id: contentMode === 'template' ? selectedTemplate?.current_version?.id ?? null : null,
       });
@@ -243,6 +267,7 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
     try {
       await save({
         ab_test_enabled: abEnabled,
+        subject: subject.trim(),
         subject_b: abEnabled ? subjectB.trim() : null,
         ab_test_share: share,
         ab_winner_rule: winnerRule,
@@ -353,23 +378,57 @@ export default function CampaignBuilder({ campaign }: CampaignBuilderProps) {
           <div className="space-y-4">
             <label className="block text-[13px]">From name<input className={`${fieldClass} mt-1.5`} value={fromName} onChange={(event) => setFromName(event.target.value)} /></label>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block text-[13px]">From address<input className={`${fieldClass} mt-1.5`} value={localPart} onChange={(event) => setLocalPart(event.target.value)} placeholder="news" /></label>
-              <label className="block text-[13px]">
+              <label className="block text-[13px]">From address
+              <input
+                className={`${fieldClass} mt-1.5`}
+                value={localPart}
+                placeholder="news or news@app.mailvoidr.com"
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const at = value.lastIndexOf('@');
+                  if (at > 0) {
+                    const typedDomain = value.slice(at + 1).trim().toLowerCase();
+                    const match = allowedDomains.find((item) => item.toLowerCase() === typedDomain);
+                    if (match) {
+                      setLocalPart(value.slice(0, at).trim());
+                      setDomain(match);
+                      return;
+                    }
+                  }
+                  setLocalPart(value);
+                }}
+              />
+            </label>
+              <div className="block text-[13px]">
                 Domain
-                <Select value={domain || undefined} onValueChange={setDomain}>
+                <Select
+                  value={domain || undefined}
+                  onValueChange={(value) => {
+                    setDomain(value);
+                    const at = localPart.lastIndexOf('@');
+                    if (at > 0) setLocalPart(localPart.slice(0, at).trim());
+                  }}
+                >
                   <SelectTrigger className="mt-1.5" aria-label="From domain"><SelectValue placeholder="Verified domain" /></SelectTrigger>
                   <SelectContent>
-                    {domainRows.map((item) => (
-                      <SelectItem key={item.id} value={item.domain} disabled={item.status !== 'verified'}>
-                        {item.domain}{item.status === 'verified' ? '' : ' — verify first'}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value={MAILVOIDR_FROM_DOMAIN}>{MAILVOIDR_FROM_DOMAIN}</SelectItem>
+                    {domainRows
+                      .filter((item) => item.domain.toLowerCase() !== MAILVOIDR_FROM_DOMAIN)
+                      .map((item) => (
+                        <SelectItem key={item.id} value={item.domain} disabled={item.status !== 'verified'}>
+                          {item.domain}{item.status === 'verified' ? '' : ' — verify first'}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
-              </label>
+              </div>
             </div>
             <p className="text-[12px] text-muted-foreground">
-              Unverified domains stay disabled. <Link to="/dashboard/domains" className="text-primary hover:underline">Verify SPF, DKIM and DMARC first</Link>
+              {fromAddress ? <>Sends as <span className="font-mono">{fromAddress}</span>. </> : null}
+              {verifiedDomains.length === 0
+                ? <>No verified domain yet, so mail sends from <span className="font-mono">{MAILVOIDR_FROM_DOMAIN}</span>.</>
+                : 'Pick a verified domain, or send from Mailvoidr.'}{' '}
+              <Link to="/dashboard/domains" className="text-primary hover:underline">Verify SPF, DKIM and DMARC</Link>
             </p>
             <label className="block text-[13px]">Reply-to<input className={`${fieldClass} mt-1.5`} value={replyTo} onChange={(event) => setReplyTo(event.target.value)} /></label>
             <label className="block text-[13px]">Subject<input className={`${fieldClass} mt-1.5`} value={subject} onChange={(event) => setSubject(event.target.value)} /></label>

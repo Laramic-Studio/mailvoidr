@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { fetchAudienceImport } from '@/lib/api/newsletter';
-import { formatCount } from '@/lib/newsletter/format';
+import { importFinishedCopy } from '@/lib/newsletter/format';
 import { toastError, toastSuccess } from '@/lib/toast';
 
 const STORAGE_KEY = 'mailvoidr_newsletter_import_id';
@@ -37,9 +37,7 @@ export function NewsletterImportWatcher() {
           toastError(null, job.message ?? 'Import failed.');
           return;
         }
-        toastSuccess(
-          `Import finished. ${formatCount(job.added_count)} added, ${formatCount(job.updated_count)} updated, ${formatCount(job.rejected_count)} rejected.`,
-        );
+        toastSuccess(importFinishedCopy(job));
       } catch (error) {
         if (!cancelled) toastError(error, 'Could not check the import.');
       }

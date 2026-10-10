@@ -25,7 +25,7 @@ import { PlanLimitAlert, SubscriberCapNotice } from '@/components/newsletter/Sub
 import { useImportJob, useImportMutations } from '@/hooks/useNewsletter';
 import { downloadImportErrors } from '@/lib/api/newsletter';
 import { saveBlob } from '@/lib/newsletter/download';
-import { doiImportCopy, formatBytes, formatCount, subscriberPlanLimitMessage } from '@/lib/newsletter/format';
+import { doiImportCopy, formatBytes, formatCount, importFinishedCopy, subscriberPlanLimitMessage } from '@/lib/newsletter/format';
 import { toastError, toastSuccess } from '@/lib/toast';
 import type { Audience, ImportColumn, ImportColumnRole, NewsletterImport, NewsletterSettings } from '@/types/newsletter';
 
@@ -77,7 +77,10 @@ export function ImportWizard({
   const [creating, setCreating] = useState(false);
   const [limitError, setLimitError] = useState<string | null>(null);
   const { upload, commit } = useImportMutations();
-  const poll = useImportJob(job?.id ?? null, open && step === 4 && job?.status === 'processing');
+  const poll = useImportJob(
+    job?.id ?? null,
+    open && step === 4 && (job?.status === 'processing' || job?.status === 'pending'),
+  );
   const current = poll.data?.import ?? job;
   useEffect(() => {
     if (!open) return;
@@ -147,11 +150,11 @@ export function ImportWizard({
       const result = await commit.mutateAsync({ importId: job.id, columns });
       setJob(result.import);
       setStep(4);
-      if (result.import.status === 'processing') {
+      if (result.import.status === 'processing' || result.import.status === 'pending') {
         rememberNewsletterImport(result.import.id);
         toastSuccess('Import started. You can leave this page.');
       } else if (result.import.status === 'completed') {
-        toastSuccess('Import finished.');
+        toastSuccess(importFinishedCopy(result.import));
       }
     } catch (error) {
       const planLimit = subscriberPlanLimitMessage(error);
@@ -348,9 +351,15 @@ export function ImportWizard({
               <Count label="Rejected" value={current.rejected_count} />
             </dl>
             <p className="text-[13px]">
-              Skipped because already unsubscribed, bounced or complained:{' '}
+              Skipped (blank, invalid, already on the list, or suppressed):{' '}
               <span className="font-medium">{formatCount(current.skipped_suppressed_count)}</span>
             </p>
+            {current.status === 'completed' && current.doi_required ? (
+              <p className="text-[13px]">New contacts stay pending until they confirm the email. They are not subscribed yet.</p>
+            ) : null}
+            {current.message && current.status !== 'processing' ? (
+              <p className="text-[13px]" role="status">{current.message}</p>
+            ) : null}
             <button type="button" className={secondaryButtonClass} onClick={() => void handleErrors()}>
               Download error report
             </button>
