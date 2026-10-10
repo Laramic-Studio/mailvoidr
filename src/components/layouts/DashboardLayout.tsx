@@ -156,21 +156,20 @@ export function DashboardLayout({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   data-testid="user-menu-trigger"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full outline-none shrink-0 focus-visible:ring-1 focus-visible:ring-ring"
+                  className="inline-flex items-center justify-center rounded-full outline-none size-10 shrink-0 focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <Avatar className="w-8 h-8 border border-border">
-                    {user?.avatar_url ? (
+                  {user?.avatar_url ? (
+                    <Avatar className="w-8 h-8 border border-border">
                       <AvatarImage src={user.avatar_url} alt={user.name} />
-                    ) : null}
-                    <AvatarFallback className="bg-card font-mono text-[11px]">
-                      <Blobatar
-                        name={"keanu"}
-                        animate="always"
-                        className=""
-                        size={300}
-                      />
-                    </AvatarFallback>
-                  </Avatar>
+                    </Avatar>
+                  ) : (
+                    <Blobatar
+                      name={"keanu"}
+                      animate="always"
+                      className=""
+                      size={400}
+                    />
+                  )}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
